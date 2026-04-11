@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng TikTok</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 0; font-size: 1.2rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: 600; font-size: 0.9rem; }
+        input[type="number"], select { width: 90%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+        input[type="text"] { width: 90%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+        .file-input-box { padding: 20px; border: 2px dashed #1a73e8; border-radius: 6px; text-align: center; background: #f8fbff; }
+        .price-tag { color: #28a745; font-weight: bold; }
+        .highlight { background-color: #fff9c4; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>1. Thông tin sản phẩm (Cấu hình mặc định)</h2>
+    <div class="section">
+        <table id="productTable">
+            <thead>
+                <tr>
+                    <th>Tên sản phẩm</th>
+                    <th>Giá nhập (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody id="productBody">
+                </tbody>
+        </table>
+    </div>
+
+    <h2>2. Tải File Excel TikTok</h2>
+    <div class="section">
+        <div class="file-input-box">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" />
+            <p style="font-size: 0.8rem; color: #666;">(Hệ thống tự động lọc theo Cột H và bỏ qua dòng tiêu đề)</p>
+        </div>
+    </div>
+
+    <h2>3. Danh sách loại đơn hàng đại diện</h2>
+    <div class="section" style="overflow-x: auto;">
+        <table id="filterTable">
+            <thead>
+                <tr>
+                    <th>ID Đơn hàng (A)</th>
+                    <th>Giá bán (H)</th>
+                    <th>Quyết toán (F)</th>
+                    <th style="width: 200px;">Loại mặt hàng</th>
+                    <th style="width: 100px;">Số lượng</th>
+                </tr>
+            </thead>
+            <tbody id="filterBody">
+                <tr><td colspan="5">Vui lòng tải file để hiển thị dữ liệu</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Khai báo sản phẩm mặc định
+    let products = [
+        { name: "Trà ba kích", price: 22000 },
+        { name: "Dây thìa canh", price: 20000 },
+        { name: "Cà gai leo", price: 21000 }
+    ];
+
+    // Lưu trữ dữ liệu sau khi lọc từ Excel
+    let filteredDataMap = new Map();
+
+    // 1. Hiển thị bảng sản phẩm cấu hình
+    function renderProductConfig() {
+        const tbody = document.getElementById('productBody');
+        tbody.innerHTML = products.map((p, i) => `
+            <tr>
+                <td><input type="text" value="${p.name}" onchange="updateProductName(${i}, this.value)"></td>
+                <td><input type="number" value="${p.price}" onchange="products[${i}].price = parseInt(this.value)"></td>
+            </tr>
+        `).join('');
+    }
+
+    function updateProductName(index, newName) {
+        products[index].name = newName;
+        // Re-render bảng dưới để cập nhật danh sách Select
+        if (filteredDataMap.size > 0) renderFilterTable();
+    }
+
+    // 2. Đọc và xử lý File Excel
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+            processExcel(rows);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function processExcel(rows) {
+        filteredDataMap = new Map();
+
+        // Duyệt từ i=1 (bỏ qua tiêu đề)
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 8) continue;
+
+            const idA = row[0];   // ID Đơn hàng
+            const payF = row[5];  // Quyết toán
+            const priceH = row[7]; // Giá bán
+
+            if (priceH !== "" && priceH !== undefined) {
+                // Nếu mức giá H này chưa có trong danh sách lọc
+                if (!filteredDataMap.has(priceH)) {
+                    filteredDataMap.set(priceH, {
+                        id: idA,
+                        pay: payF
+                    });
+                }
+            }
+        }
+        renderFilterTable();
+    }
+
+    // 3. Hiển thị bảng kết quả cuối cùng
+    function renderFilterTable() {
+        const tbody = document.getElementById('filterBody');
+        tbody.innerHTML = '';
+
+        if (filteredDataMap.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Không tìm thấy dữ liệu phù hợp</td></tr>';
+            return;
+        }
+
+        // Tạo chuỗi HTML cho các <option> dựa trên danh sách sản phẩm
+        const productOptions = products
+            .map(p => `<option value="${p.name}">${p.name}</option>`)
+            .join('');
+
+        filteredDataMap.forEach((value, priceKey) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><small>${value.id}</small></td>
+                <td class="price-tag">${Number(priceKey).toLocaleString()}</td>
+                <td>${Number(value.pay).toLocaleString()}</td>
+                <td>
+                    <select>
+                        <option value="">-- Chọn loại --</option>
+                        ${productOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" min="0" value="1" step="1">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Khởi tạo ứng dụng
+    renderProductConfig();
+</script>
+
+</body>
+</html>

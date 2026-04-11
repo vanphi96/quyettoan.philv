@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng TikTok</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 1100px; margin: auto; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 0; font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        input[type="number"], select, input[type="text"] { width: 90%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+        .file-input-box { padding: 30px; border: 2px dashed #1a73e8; border-radius: 6px; text-align: center; background: #f8fbff; cursor: pointer; }
+        .price-tag { color: #d32f2f; font-weight: bold; }
+        .settlement-tag { color: #2e7d32; font-weight: bold; }
+        .count-tag { color: #1a73e8; font-weight: bold; }
+        .total-row { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
+        small { color: #666; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>1. Thông tin sản phẩm (Cấu hình giá nhập)</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên sản phẩm</th>
+                    <th>Giá nhập (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody id="productBody"></tbody>
+        </table>
+    </div>
+
+    <h2 id="excelHeader">2. Tải File Excel TikTok</h2>
+    <div class="section">
+        <div class="file-input-box" onclick="document.getElementById('excelFile').click()">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none" />
+            <b>Click để chọn hoặc kéo thả file Excel vào đây</b>
+            <p><small>Hệ thống tự động đếm số đơn trùng mức giá H</small></p>
+        </div>
+    </div>
+
+    <h2>3. Danh sách loại đơn hàng đại diện (Giá bán H > 0)</h2>
+    <div class="section" style="overflow-x: auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Đơn hàng (A)</th>
+                    <th>Giá bán (H)</th>
+                    <th>Số lượng đơn</th>
+                    <th style="width: 200px;">Loại mặt hàng</th>
+                    <th style="width: 100px;">Số hộp / 1 đơn</th>
+                </tr>
+            </thead>
+            <tbody id="filterBody">
+                <tr><td colspan="5">Chưa có dữ liệu hợp lệ</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>4. Tổng hợp số lượng hàng</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên mặt hàng</th>
+                    <th>Tổng số lượng hộp</th>
+                    <th>Thành tiền (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+    </div>
+
+    <h2>5. Bảng chi phí</h2>
+    <div class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div><small>Thêm, sửa hoặc xóa chi phí liên quan đến đơn hàng</small></div>
+            <button id="addExpenseBtn" style="padding:6px 10px;">Thêm chi phí</button>
+        </div>
+        <table style="margin-top:10px;">
+            <thead>
+                <tr>
+                    <th>Tên chi phí</th>
+                    <th>Số tiền (VNĐ)</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="expenseBody"></tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td>Tổng chi phí</td>
+                    <td id="expenseTotal">0 đ</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <h2>6. Doanh thu - Chi phí</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>Mục</th>
+                    <th>Số tiền (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Tổng tiền hàng</td>
+                    <td id="totalGoodsValue">0 đ</td>
+                </tr>
+                <tr>
+                    <td>Tổng chi phí</td>
+                    <td id="costsValue">0 đ</td>
+                </tr>
+                <tr>
+                    <td>Số tiền quyết toán (Doanh thu)</td>
+                    <td id="revenueValue">0 đ</td>
+                </tr>
+                <tr class="total-row">
+                    <td>Lãi ròng</td>
+                    <td id="profitValue">0 đ</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let products = [
+        { name: "Trà ba kích", price: 22000 },
+        { name: "Dây thìa canh", price: 20000 },
+        { name: "Cà gai leo", price: 21000 }
+    ];
+
+    let filteredDataMap = new Map();
+    let totalPayAll = 0;
+    let totalGoodsMoney = 0;
+    // Expenses management
+    let expenses = [
+        { name: 'Quảng cáo', amount: 0 },
+        { name: 'Vật tư', amount: 0 }
+    ];
+
+    function renderExpenses() {
+        const tbody = document.getElementById('expenseBody');
+        tbody.innerHTML = expenses.map((e, i) => `
+            <tr data-idx="${i}">
+                <td><input type="text" class="exp-name" value="${e.name}" onchange="onExpenseChange(${i}, 'name', this.value)"></td>
+                <td>
+                    <input type="text" class="exp-amt" value="${(Number(e.amount) || 0).toLocaleString()}" onfocus="onExpenseFocus(${i}, this)" onblur="onExpenseBlur(${i}, this)">
+                </td>
+                <td><button onclick="removeExpense(${i})">Xóa</button></td>
+            </tr>
+        `).join('');
+        updateExpenseTotal();
+    }
+
+    function onExpenseChange(index, field, value) {
+        if (!expenses[index]) return;
+        if (field === 'name') expenses[index].name = value;
+        if (field === 'amount') expenses[index].amount = Number(value) || 0;
+        updateExpenseTotal();
+    }
+
+    function onExpenseFocus(index, input) {
+        // remove formatting so user can type plain number
+        const raw = String(input.value).replace(/[^0-9.-]+/g, '');
+        input.value = raw || '';
+    }
+
+    function onExpenseBlur(index, input) {
+        const num = Number(String(input.value).replace(/[^0-9.-]+/g, '')) || 0;
+        expenses[index].amount = num;
+        input.value = num.toLocaleString();
+        updateExpenseTotal();
+    }
+
+    function addExpense() {
+        expenses.push({ name: 'Mẫu', amount: 0 });
+        renderExpenses();
+        // focus new row's name input
+        setTimeout(() => {
+            const lastName = document.querySelector('#expenseBody tr:last-child .exp-name');
+            const lastAmt = document.querySelector('#expenseBody tr:last-child .exp-amt');
+            if (lastName) lastName.focus();
+            if (lastAmt) lastAmt.value = '0';
+        }, 50);
+    }
+
+    function removeExpense(i) {
+        expenses.splice(i, 1);
+        renderExpenses();
+    }
+
+    function updateExpenseTotal() {
+        const total = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+        document.getElementById('expenseTotal').textContent = total.toLocaleString() + ' đ';
+        // update financial summary whenever expenses change
+        updateFinancials();
+    }
+
+    document.getElementById('addExpenseBtn').addEventListener('click', addExpense);
+
+    // Render expenses on load so default rows are visible
+    renderExpenses();
+
+    function updateFinancials() {
+        // revenue comes from totalPayAll (updated when loading excel)
+        const revenueEl = document.getElementById('revenueValue');
+        const costsEl = document.getElementById('costsValue');
+        const profitEl = document.getElementById('profitValue');
+        const totalGoodsEl = document.getElementById('totalGoodsValue');
+
+    const revenue = Number(totalPayAll) || 0; // số tiền quyết toán (doanh thu từ file)
+    const costs = expenses.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const goods = Number(totalGoodsMoney) || 0; // tổng tiền hàng tính từ bảng 4
+    const profit = revenue - costs;
+
+        if (totalGoodsEl) totalGoodsEl.textContent = goods.toLocaleString() + ' đ';
+        if (revenueEl) revenueEl.textContent = revenue.toLocaleString() + ' đ';
+        if (costsEl) costsEl.textContent = costs.toLocaleString() + ' đ';
+        if (profitEl) profitEl.textContent = profit.toLocaleString() + ' đ';
+    }
+
+    function renderProductConfig() {
+        const tbody = document.getElementById('productBody');
+        tbody.innerHTML = products.map((p, i) => `
+            <tr>
+                <td><input type="text" value="${p.name}" onchange="products[${i}].name = this.value; updateAll();"></td>
+                <td><input type="number" value="${p.price}" onchange="products[${i}].price = parseInt(this.value)"></td>
+            </tr>
+        `).join('');
+        updateSummaryTable();
+    }
+
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            processExcel(rows);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function processExcel(rows) {
+        filteredDataMap = new Map();
+        totalPayAll = 0;
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 8) continue;
+            const priceH = parseFloat(row[7]);
+            // parse pay (column F, index 5) safely (remove non-numeric chars)
+            const rawPay = row[5];
+            const payF = Number(String(rawPay).replace(/[^0-9.-]+/g, '')) || 0;
+            totalPayAll += payF;
+            if (!isNaN(priceH) && priceH !== 0) {
+                if (!filteredDataMap.has(priceH)) {
+                    filteredDataMap.set(priceH, { id: row[0], paySum: payF, count: 1 });
+                } else {
+                    const entry = filteredDataMap.get(priceH);
+                    entry.count++;
+                    entry.paySum = (Number(entry.paySum) || 0) + payF;
+                }
+            }
+        }
+        // update header label with total
+        const header = document.getElementById('excelHeader');
+        if (header) header.textContent = `2. Tải File Excel TikTok (Tổng tiền quyết toán: ${totalPayAll.toLocaleString()} VND)`;
+        renderFilterTable();
+    }
+
+    function renderFilterTable() {
+        const tbody = document.getElementById('filterBody');
+        tbody.innerHTML = '';
+        if (filteredDataMap.size === 0) {
+            tbody.innerHTML = '<tr><td colspan="5">Không có đơn hàng nào hợp lệ</td></tr>';
+            return;
+        }
+
+        const productOptions = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        const sortedPrices = Array.from(filteredDataMap.keys()).sort((a, b) => b - a);
+
+        sortedPrices.forEach(priceKey => {
+            const data = filteredDataMap.get(priceKey);
+            const tr = document.createElement('tr');
+            tr.className = "order-row";
+            tr.innerHTML = `
+                <td><small>${data.id}</small></td>
+                <td class="price-tag">${priceKey.toLocaleString()} đ</td>
+                <td class="count-tag">${data.count} đơn</td>
+                <td>
+                    <select class="product-select" onchange="updateSummaryTable()">
+                        <option value="">-- Chọn sản phẩm --</option>
+                        ${productOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="qty-per-order" min="0" value="1" oninput="updateSummaryTable()" data-order-count="${data.count}">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateSummaryTable();
+    }
+
+    function updateSummaryTable() {
+        const summaryBody = document.getElementById('summaryBody');
+        const totalCounts = {};
+        const totalMoney = {};
+        products.forEach(p => totalCounts[p.name] = 0);
+        products.forEach(p => totalMoney[p.name] = 0);
+
+        const rows = document.querySelectorAll('.order-row');
+        rows.forEach(row => {
+            const productName = row.querySelector('.product-select').value;
+            const orderCount = parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0;
+            const boxesPerOrder = parseInt(row.querySelector('.qty-per-order').value) || 0;
+
+            if (productName && totalCounts.hasOwnProperty(productName)) {
+                const boxes = (orderCount * boxesPerOrder);
+                totalCounts[productName] += boxes;
+                const prod = products.find(pr => pr.name === productName);
+                const unitPrice = prod ? (Number(prod.price) || 0) : 0;
+                totalMoney[productName] += boxes * unitPrice;
+            }
+        });
+
+        summaryBody.innerHTML = products.map(p => `
+            <tr class="${totalCounts[p.name] > 0 ? 'total-row' : ''}">
+                <td>${p.name}</td>
+                <td>${totalCounts[p.name].toLocaleString()} hộp</td>
+                <td>${totalMoney[p.name].toLocaleString()} đ</td>
+            </tr>
+        `).join('');
+        // Append grand total row for all products' money
+        const grandTotal = Object.values(totalMoney).reduce((s, v) => s + (Number(v) || 0), 0);
+        const totalRow = document.createElement('tr');
+        totalRow.className = 'total-row';
+        totalRow.innerHTML = `
+            <td>Tổng tiền hàng</td>
+            <td></td>
+            <td>${grandTotal.toLocaleString()} đ</td>
+        `;
+        summaryBody.appendChild(totalRow);
+        // update global totalGoodsMoney and financials
+        totalGoodsMoney = grandTotal;
+        updateFinancials();
+    }
+
+    function updateAll() {
+        if (filteredDataMap.size > 0) renderFilterTable();
+        else renderProductConfig();
+    }
+
+    renderProductConfig();
+</script>
+</body>
+</html>

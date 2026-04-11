@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng TikTok - Báo Cáo Quyết Toán</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 1100px; margin: auto; padding-bottom: 50px; background: transparent; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 0; font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #fff; table-layout: fixed; }
+        th, td { border: 1px solid #dee2e6; padding: 12px 8px; text-align: center; word-wrap: break-word; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        input[type="number"], select, input[type="text"], input[type="date"] { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .file-input-box { padding: 30px; border: 2px dashed #1a73e8; border-radius: 6px; text-align: center; background: #f8fbff; cursor: pointer; }
+        .price-tag { color: #d32f2f; font-weight: bold; }
+        .count-tag { color: #1a73e8; font-weight: bold; }
+        .total-row { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
+        #exportPdfBtn { background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 10px 20px; }
+        #pdfMainTitle { display: none; text-align: center; font-size: 1.6rem; color: #000; margin-bottom: 25px; font-weight: bold; text-transform: uppercase; }
+        .pdf-replacement { display: inline-block; padding: 4px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="mainContent">
+    <div id="pdfMainTitle">BÁO CÁO QUYẾT TOÁN</div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px;" data-html2canvas-ignore="true">
+        <button id="exportPdfBtn">XUẤT BÁO CÁO PDF</button>
+    </div>
+
+    <h2>1. Thông tin sản phẩm (Cấu hình giá nhập)</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 60%;">Tên sản phẩm</th>
+                    <th style="width: 40%;">Giá nhập (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody id="productBody"></tbody>
+        </table>
+    </div>
+
+    <h2 id="excelHeader">2. Tải File Excel TikTok</h2>
+    <div class="section" id="uploadSection">
+        <div class="file-input-box" onclick="document.getElementById('excelFile').click()" data-html2canvas-ignore="true">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none" />
+            <b>Click để chọn hoặc kéo thả file Excel từ TikTok vào đây</b>
+        </div>
+        <div id="pdfOnlyHeader" style="display:none; font-weight:bold; color:#1a73e8; font-size:1rem; padding:10px 0;"></div>
+    </div>
+
+    <h2>3. Danh sách loại đơn hàng đại diện (Giá bán H > 0)</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Đơn (A)</th>
+                    <th>Giá bán (H)</th>
+                    <th>Số đơn</th>
+                    <th style="width: 200px;">Sản phẩm</th>
+                    <th style="width: 100px;">Số hộp/đơn</th>
+                </tr>
+            </thead>
+            <tbody id="filterBody">
+                <tr><td colspan="5">Vui lòng tải file Excel để hiển thị dữ liệu</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>4. Tổng hợp số lượng hàng</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên mặt hàng</th>
+                    <th>Tổng số lượng hộp</th>
+                    <th>Thành tiền (Vốn nhập)</th>
+                </tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+    </div>
+
+    <h2>5. Bảng chi phí vận hành</h2>
+    <div class="section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;" data-html2canvas-ignore="true">
+            <small>Thêm các chi phí khác (Quảng cáo, đóng gói...)</small>
+            <button id="addExpenseBtn" style="padding: 5px 10px;">+ Thêm chi phí</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên chi phí</th>
+                    <th>Số tiền (VNĐ)</th>
+                    <th data-html2canvas-ignore="true">Hành động</th>
+                </tr>
+            </thead>
+            <tbody id="expenseBody"></tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td>Tổng chi phí khác</td>
+                    <td id="expenseTotal">0 đ</td>
+                    <td data-html2canvas-ignore="true"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <h2>6. Doanh thu - Chi phí & Lợi nhuận</h2>
+    <div class="section" id="finalSection">
+        <table>
+            <thead>
+                <tr>
+                    <th>Hạng mục</th>
+                    <th>Số tiền (VNĐ)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td>Tổng tiền hàng (Giá nhập)</td><td id="totalGoodsValue">0 đ</td></tr>
+                <tr><td>Tổng chi phí phát sinh</td><td id="costsValue">0 đ</td></tr>
+                <tr><td>Số tiền quyết toán (Doanh thu TikTok)</td><td id="revenueValue" style="color: #2e7d32; font-weight: bold;">0 đ</td></tr>
+                <tr class="total-row" style="font-size: 1.1rem;">
+                    <td>LỢI NHUẬN RÒNG</td>
+                    <td id="profitValue">0 đ</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="pdfModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:#fff; padding:25px; border-radius:8px; width:380px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0">Xác nhận thời gian báo cáo</h3>
+        <div style="margin-bottom: 15px;">
+            <label style="display:block; font-size: 0.9rem; margin-bottom: 5px;">Ngày bắt đầu:</label>
+            <input type="date" id="pdfStartDate">
+        </div>
+        <div style="margin-bottom: 15px;">
+            <label style="display:block; font-size: 0.9rem; margin-bottom: 5px;">Ngày kết thúc:</label>
+            <input type="date" id="pdfEndDate">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button id="pdfCancel" style="padding:10px 15px; border:1px solid #ccc; background:#fff; cursor:pointer;">Hủy</button>
+            <button id="pdfGenerate" style="padding:10px 15px; background:#1a73e8; color:white; border:none; font-weight:bold; cursor:pointer;">TẠO PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Cấu hình ban đầu
+    let products = [
+        { name: "Trà ba kích", price: 22000 },
+        { name: "Dây thìa canh", price: 20000 },
+        { name: "Cà gai leo", price: 21000 }
+    ];
+    let filteredDataMap = new Map();
+    let totalPayAll = 0, totalGoodsMoney = 0;
+    let expenses = [{ name: 'Quảng cáo', amount: 0 }, { name: 'Vật tư', amount: 0 }];
+
+    // 2. Thiết lập ngày mặc định (Ngày kết thúc: Nay, Ngày bắt đầu: 10 ngày trước)
+    window.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        const tenDaysAgo = new Date();
+        tenDaysAgo.setDate(today.getDate() - 10);
+        
+        const formatDate = (d) => d.toISOString().split('T')[0];
+        document.getElementById('pdfStartDate').value = formatDate(tenDaysAgo);
+        document.getElementById('pdfEndDate').value = formatDate(today);
+        
+        renderProductConfig();
+        renderExpenses();
+    });
+
+    // 3. Xử lý PDF
+    document.getElementById('exportPdfBtn').onclick = () => document.getElementById('pdfModal').style.display = 'flex';
+    document.getElementById('pdfCancel').onclick = () => document.getElementById('pdfModal').style.display = 'none';
+
+    document.getElementById('pdfGenerate').onclick = async () => {
+        const s = document.getElementById('pdfStartDate').value;
+        const e = document.getElementById('pdfEndDate').value;
+        if (!s || !e) return alert('Vui lòng chọn đầy đủ ngày!');
+
+        const dateRange = `${s.split('-').reverse().join('/')} - ${e.split('-').reverse().join('/')}`;
+        document.getElementById('pdfModal').style.display = 'none';
+
+        // Chuẩn bị giao diện cho PDF
+        const mainTitle = document.getElementById('pdfMainTitle');
+        const pdfOnlyHeader = document.getElementById('pdfOnlyHeader');
+        const excelHeader = document.getElementById('excelHeader');
+
+        mainTitle.textContent = `BÁO CÁO QUYẾT TOÁN NGÀY ${dateRange}`;
+        mainTitle.style.display = 'block';
+        pdfOnlyHeader.textContent = `2. Tổng số tiền quyết toán đợt (${dateRange}) là: ${totalPayAll.toLocaleString()} VND`;
+        pdfOnlyHeader.style.display = 'block';
+        excelHeader.style.display = 'none';
+
+        // Fix lỗi lấp text: Thay thế Input/Select bằng thẻ Span
+        const replacements = [];
+        document.querySelectorAll('#mainContent input, #mainContent select').forEach(el => {
+            if(el.closest('[data-html2canvas-ignore]')) return;
+            const span = document.createElement('span');
+            span.className = "pdf-replacement";
+            span.textContent = el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : el.value;
+            el.parentNode.insertBefore(span, el);
+            el.style.display = 'none';
+            replacements.push({span, el});
+        });
+
+        try {
+            const canvas = await html2canvas(document.getElementById('mainContent'), {
+                scale: 2,
+                useCORS: true,
+                scrollY: -window.scrollY, // Quan trọng: Tránh mất mục 6 khi đang cuộn chuột
+                windowWidth: document.getElementById('mainContent').scrollWidth
+            });
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgW = pdf.internal.pageSize.getWidth() - 20;
+            const imgH = (canvas.height * imgW) / canvas.width;
+
+            pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, imgW, imgH);
+            pdf.save(`Bao_Cao_Quyet_Toan_${s}_${e}.pdf`);
+        } catch (err) {
+            alert("Lỗi xuất PDF: " + err);
+        } finally {
+            // Khôi phục giao diện
+            mainTitle.style.display = 'none';
+            pdfOnlyHeader.style.display = 'none';
+            excelHeader.style.display = 'block';
+            replacements.forEach(item => { item.span.remove(); item.el.style.display = ''; });
+        }
+    };
+
+    // 4. Logic Xử lý dữ liệu
+    function renderProductConfig() {
+        document.getElementById('productBody').innerHTML = products.map((p, i) => `
+            <tr>
+                <td><input type="text" value="${p.name}" onchange="products[${i}].name=this.value; updateAll();"></td>
+                <td><input type="number" value="${p.price}" onchange="products[${i}].price=Number(this.value); updateSummaryTable();"></td>
+            </tr>
+        `).join('');
+    }
+
+    document.getElementById('excelFile').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1, defval: ""});
+            processExcel(rows);
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    };
+
+    function processExcel(rows) {
+        filteredDataMap = new Map(); totalPayAll = 0;
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 8) continue;
+            const pSell = parseFloat(row[7]); // Cột H
+            const pPay = Number(String(row[5]).replace(/[^0-9.-]+/g, '')) || 0; // Cột F
+            totalPayAll += pPay;
+            if (pSell > 0) {
+                if (!filteredDataMap.has(pSell)) filteredDataMap.set(pSell, {id: row[0], count: 1});
+                else filteredDataMap.get(pSell).count++;
+            }
+        }
+        document.getElementById('excelHeader').textContent = `2. File Excel (Tổng tiền quyết toán F: ${totalPayAll.toLocaleString()} đ)`;
+        renderFilterTable();
+    }
+
+    function renderFilterTable() {
+        const opts = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        const sortedKeys = Array.from(filteredDataMap.keys()).sort((a,b) => b-a);
+        document.getElementById('filterBody').innerHTML = sortedKeys.map(k => {
+            const d = filteredDataMap.get(k);
+            return `<tr class="order-row">
+                <td><small>${d.id}</small></td>
+                <td class="price-tag">${k.toLocaleString()} đ</td>
+                <td class="count-tag">${d.count} đơn</td>
+                <td><select class="product-select" onchange="updateSummaryTable()"><option value="">-- Chọn sản phẩm --</option>${opts}</select></td>
+                <td><input type="number" class="qty-per-order" value="1" min="0" oninput="updateSummaryTable()" data-order-count="${d.count}"></td>
+            </tr>`;
+        }).join('');
+        updateSummaryTable();
+    }
+
+    function updateSummaryTable() {
+        let grandTotal = 0;
+        const res = {}; products.forEach(p => res[p.name] = 0);
+        document.querySelectorAll('.order-row').forEach(row => {
+            const name = row.querySelector('.product-select').value;
+            const totalBox = (parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0) * (parseInt(row.querySelector('.qty-per-order').value) || 0);
+            if (name && res.hasOwnProperty(name)) res[name] += totalBox;
+        });
+
+        document.getElementById('summaryBody').innerHTML = products.map(p => {
+            const cost = res[p.name] * p.price;
+            grandTotal += cost;
+            return `<tr class="${res[p.name] > 0 ? 'total-row' : ''}">
+                <td>${p.name}</td><td>${res[p.name].toLocaleString()} hộp</td><td>${cost.toLocaleString()} đ</td>
+            </tr>`;
+        }).join('') + `<tr class="total-row"><td>TỔNG TIỀN HÀNG</td><td></td><td>${grandTotal.toLocaleString()} đ</td></tr>`;
+        
+        totalGoodsMoney = grandTotal;
+        updateFinancials();
+    }
+
+    function renderExpenses() {
+        document.getElementById('expenseBody').innerHTML = expenses.map((e, i) => `
+            <tr>
+                <td><input type="text" value="${e.name}" onchange="expenses[${i}].name=this.value"></td>
+                <td><input type="number" value="${e.amount}" onchange="expenses[${i}].amount=Number(this.value); updateExpenseTotal();"></td>
+                <td data-html2canvas-ignore="true"><button onclick="expenses.splice(${i},1); renderExpenses();">Xóa</button></td>
+            </tr>`).join('');
+        updateExpenseTotal();
+    }
+
+    function updateExpenseTotal() {
+        const total = expenses.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('expenseTotal').textContent = total.toLocaleString() + ' đ';
+        updateFinancials();
+    }
+
+    function updateFinancials() {
+        const otherCosts = expenses.reduce((s, e) => s + e.amount, 0);
+        const profit = totalPayAll - otherCosts - totalGoodsMoney;
+        document.getElementById('totalGoodsValue').textContent = totalGoodsMoney.toLocaleString() + ' đ';
+        document.getElementById('revenueValue').textContent = totalPayAll.toLocaleString() + ' đ';
+        document.getElementById('costsValue').textContent = otherCosts.toLocaleString() + ' đ';
+        const pEl = document.getElementById('profitValue');
+        pEl.textContent = profit.toLocaleString() + ' đ';
+        pEl.style.color = profit >= 0 ? '#2e7d32' : '#d32f2f';
+    }
+
+    document.getElementById('addExpenseBtn').onclick = () => { expenses.push({name:'', amount:0}); renderExpenses(); };
+    function updateAll() { renderProductConfig(); if(filteredDataMap.size) renderFilterTable(); }
+</script>
+
+</body>
+</html>

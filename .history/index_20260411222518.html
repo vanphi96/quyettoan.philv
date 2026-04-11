@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng TikTok</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 20px; background-color: #f0f2f5; }
+        .container { max-width: 1100px; margin: auto; }
+        .section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; font-size: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: center; }
+        th { background-color: #f8f9fa; }
+        .price-tag { color: #d32f2f; font-weight: bold; }
+        .count-tag { color: #1a73e8; font-weight: bold; }
+        .total-row { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
+        input, select { width: 90%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>1. Thông tin sản phẩm & Giá nhập</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr><th>Tên sản phẩm</th><th>Giá nhập (VNĐ)</th></tr>
+            </thead>
+            <tbody id="productBody"></tbody>
+        </table>
+    </div>
+
+    <h2>2. Tải File Excel TikTok</h2>
+    <div class="section">
+        <input type="file" id="excelFile" accept=".xlsx, .xls" />
+        <p><small>* Hệ thống tự động đếm số lượng đơn trùng mức giá (Cột H > 0)</small></p>
+    </div>
+
+    <h2>3. Danh sách loại đơn hàng đại diện</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID Đại diện (A)</th>
+                    <th>Giá bán (H)</th>
+                    <th>Số lượng đơn</th>
+                    <th>Quyết toán (F)</th>
+                    <th>Loại mặt hàng</th>
+                    <th>Số hộp / 1 đơn</th>
+                </tr>
+            </thead>
+            <tbody id="filterBody">
+                <tr><td colspan="6">Vui lòng tải file Excel</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>4. Tổng hợp số lượng hàng cần đóng</h2>
+    <div class="section">
+        <table>
+            <thead>
+                <tr><th>Tên mặt hàng</th><th>Tổng số hộp (Đơn × Hộp/đơn)</th></tr>
+            </thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    let products = [
+        { name: "Trà ba kích", price: 22000 },
+        { name: "Dây thìa canh", price: 20000 },
+        { name: "Cà gai leo", price: 21000 }
+    ];
+
+    let filteredDataMap = new Map();
+
+    function renderProductConfig() {
+        const tbody = document.getElementById('productBody');
+        tbody.innerHTML = products.map((p, i) => `
+            <tr>
+                <td><input type="text" value="${p.name}" onchange="products[${i}].name = this.value; updateAll();"></td>
+                <td><input type="number" value="${p.price}" onchange="products[${i}].price = parseInt(this.value)"></td>
+            </tr>
+        `).join('');
+        updateSummaryTable();
+    }
+
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+            processExcel(rows);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    function processExcel(rows) {
+        filteredDataMap = new Map();
+
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 8) continue;
+            
+            const priceH = parseFloat(row[7]); 
+            if (!isNaN(priceH) && priceH !== 0) {
+                if (!filteredDataMap.has(priceH)) {
+                    // Lần đầu thấy mức giá này: tạo object mới
+                    filteredDataMap.set(priceH, { 
+                        id: row[0], 
+                        pay: row[5],
+                        count: 1 // Bắt đầu đếm đơn đầu tiên
+                    });
+                } else {
+                    // Nếu đã có mức giá này: tăng số lượng đơn lên
+                    filteredDataMap.get(priceH).count++;
+                }
+            }
+        }
+        renderFilterTable();
+    }
+
+    function renderFilterTable() {
+        const tbody = document.getElementById('filterBody');
+        tbody.innerHTML = '';
+        if (filteredDataMap.size === 0) return;
+
+        const productOptions = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        const sortedPrices = Array.from(filteredDataMap.keys()).sort((a, b) => b - a);
+
+        sortedPrices.forEach(priceKey => {
+            const data = filteredDataMap.get(priceKey);
+            const tr = document.createElement('tr');
+            tr.className = "order-row";
+            tr.innerHTML = `
+                <td><small>${data.id}</small></td>
+                <td class="price-tag">${priceKey.toLocaleString()}đ</td>
+                <td class="count-tag">${data.count} đơn</td>
+                <td>${Number(data.pay).toLocaleString()}đ</td>
+                <td>
+                    <select class="product-select" onchange="updateSummaryTable()">
+                        <option value="">-- Chọn trà --</option>
+                        ${productOptions}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="qty-per-order" min="0" value="1" oninput="updateSummaryTable()" data-order-count="${data.count}">
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        updateSummaryTable();
+    }
+
+    function updateSummaryTable() {
+        const summaryBody = document.getElementById('summaryBody');
+        const totalCounts = {};
+        products.forEach(p => totalCounts[p.name] = 0);
+
+        const rows = document.querySelectorAll('.order-row');
+        rows.forEach(row => {
+            const productName = row.querySelector('.product-select').value;
+            const orderCount = parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0;
+            const boxesPerOrder = parseInt(row.querySelector('.qty-per-order').value) || 0;
+
+            if (productName && totalCounts.hasOwnProperty(productName)) {
+                totalCounts[productName] += (orderCount * boxesPerOrder);
+            }
+        });
+
+        summaryBody.innerHTML = products.map(p => `
+            <tr class="${totalCounts[p.name] > 0 ? 'total-row' : ''}">
+                <td>${p.name}</td>
+                <td>${totalCounts[p.name].toLocaleString()} hộp</td>
+            </tr>
+        `).join('');
+    }
+
+    function updateAll() {
+        if (filteredDataMap.size > 0) renderFilterTable();
+        else renderProductConfig();
+    }
+
+    renderProductConfig();
+</script>
+</body>
+</html>
