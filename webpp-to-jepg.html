@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebP to JPEG Converter | Chuyển đổi ảnh chuyên nghiệp</title>
+    <meta name="description" content="Công cụ trực tuyến miễn phí giúp chuyển đổi hình ảnh từ định dạng WebP sang JPEG một cách nhanh chóng và giữ nguyên chất lượng.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <main class="container">
+        <header class="header">
+            <h1>WebP <span class="accent-text">to</span> JPEG</h1>
+            <p>Chuyển đổi hình ảnh nhanh chóng, bảo mật và hoàn toàn miễn phí ngay trên trình duyệt của bạn.</p>
+        </header>
+
+        <section class="converter-box" id="drop-zone">
+            <div class="upload-ui">
+                <div class="icon-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <h3>Kéo và thả file WebP vào đây</h3>
+                <p>Hoặc click để chọn file từ máy tính</p>
+                <input type="file" id="file-input" accept="image/webp" multiple hidden>
+                <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">Chọn File</button>
+            </div>
+
+            <div class="processing-ui hidden" id="processing-ui">
+                <div class="status-summary">
+                    <div class="spinner"></div>
+                    <p id="process-status">Đang xử lý 0/0 hình ảnh...</p>
+                </div>
+            </div>
+
+            <div class="result-ui hidden" id="result-ui">
+                <div id="file-list" class="file-list">
+                    <!-- File items will be injected here -->
+                </div>
+                <div class="actions">
+                    <button id="download-all" class="btn btn-success hidden">Tải xuống tất cả (.zip)</button>
+                    <button class="btn btn-secondary" onclick="resetConverter()">Thêm file khác</button>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>&copy; 2026 WebP Converter. Công nghệ xử lý tại thiết bị của bạn.</p>
+        </footer>
+    </main>
+
+    <canvas id="conversion-canvas" style="display: none;"></canvas>
+    <script src="script.js"></script>
+</body>
+</html>

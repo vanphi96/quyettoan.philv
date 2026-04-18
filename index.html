@@ -3,272 +3,253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản Lý Đơn Hàng TikTok - Screenshot</title>
+    <title>Tiện Ích Cá Nhân - Dashboard</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
-        .container { max-width: 1000px; margin: auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        .section-title { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 25px; font-size: 1.1rem; }
-        .section-title:first-of-type { margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; table-layout: fixed; }
-        th, td { border: 1px solid #dee2e6; padding: 12px 8px; text-align: center; word-wrap: break-word; }
-        th { background-color: #f8f9fa; font-weight: 600; }
-        input, select { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .file-input-box { padding: 30px; border: 2px dashed #1a73e8; border-radius: 6px; text-align: center; background: #f8fbff; cursor: pointer; margin-top: 10px; }
-        .total-row { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
-        #screenshotBtn { background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 12px 25px; font-size: 1rem; }
-        #screenshotBtn:hover { background: #d35400; }
-        .btn-add { background: #34a853; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-        .btn-delete { background: #ea4335; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-        
-        #reportTitle { display: none; text-align: center; font-size: 1.8rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; color: #2c3e50; }
-        .pdf-replacement { display: inline-block; font-weight: 500; }
+        :root {
+            --primary: #1a73e8;
+            --primary-light: #e8f0fe;
+            --accent: #ff6b6b;
+            --bg: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1000px;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 30px;
+        }
+
+        .header {
+            margin-bottom: 50px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            font-weight: 300;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 3fr));
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .tool-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 35px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-hover);
+            background: #ffffff;
+        }
+
+        .tool-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tool-card:hover::before {
+            opacity: 1;
+        }
+
+        .icon-box {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: var(--primary-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 25px;
+            transition: transform 0.3s;
+        }
+
+        .tool-card:hover .icon-box {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .tool-card svg {
+            width: 40px;
+            height: 40px;
+            color: var(--primary);
+        }
+
+        .tool-card h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-main);
+        }
+
+        .tool-card p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .card-footer {
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            transform: translateY(10px);
+        }
+
+        .tool-card:hover .card-footer {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 640px) {
+            .dashboard {
+                padding: 20px;
+            }
+            .header h1 {
+                font-size: 2rem;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div id="captureArea" style="background: #f0f2f5; padding: 20px;">
-    <div class="container">
-        <div id="reportTitle">BÁO CÁO QUYẾT TOÁN</div>
+    <div class="dashboard">
+        <header class="header">
+            <h1>Công Cụ Cá Nhân</h1>
+            <p>Tất cả các tiện ích bạn cần ở một nơi</p>
+        </header>
 
-        <div style="display:flex; justify-content:flex-end; margin-bottom:15px;" data-html2canvas-ignore="true">
-            <button id="screenshotBtn">CHỤP ẢNH BÁO CÁO (LONG SCREENSHOT)</button>
-        </div>
+        <div class="grid">
+            <!-- Quyết Toán -->
+            <a href="quyet-toan.html" class="tool-card">
+                <div class="badge">TikTok Shop</div>
+                <div class="icon-box">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                </div>
+                <h2>Quyết Toán</h2>
+                <p>Phân tích file Excel TikTok, tính toán doanh thu và lợi nhuận ròng.</p>
+                <div class="card-footer">
+                    Mở ứng dụng ➜
+                </div>
+            </a>
 
-        <h2 class="section-title">1. Cấu hình giá nhập sản phẩm</h2>
-        <div style="display:flex; justify-content:flex-end; margin-bottom: 5px;" data-html2canvas-ignore="true">
-            <button class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 50%;">Tên sản phẩm</th>
-                    <th style="width: 35%;">Giá nhập (VNĐ)</th>
-                    <th style="width: 15%;" data-html2canvas-ignore="true">Xóa</th>
-                </tr>
-            </thead>
-            <tbody id="productBody"></tbody>
-        </table>
+            <!-- PDF to Image -->
+            <a href="pdf-to-image.html" class="tool-card">
+                <div class="badge">PDF Tools</div>
+                <div class="icon-box" style="background: #fff0f0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="color: #ff4d4f;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9h1m0 4h3m-3 4h3" />
+                    </svg>
+                </div>
+                <h2>PDF sang Ảnh</h2>
+                <p>Chuyển đổi các tệp PDF thành hình ảnh chất lượng cao nhanh chóng.</p>
+                <div class="card-footer" style="color: #ff4d4f;">
+                    Mở ứng dụng ➜
+                </div>
+            </a>
 
-        <h2 class="section-title" id="excelHeader">2. Tải File Excel TikTok</h2>
-        <div class="file-input-box" onclick="document.getElementById('excelFile').click()" data-html2canvas-ignore="true">
-            <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none" />
-            <b>Bấm vào đây để chọn file Excel</b>
-        </div>
-        <div id="exportOnlyText" style="display:none; font-weight:bold; color:#1a73e8; margin-top:10px;"></div>
-
-        <h2 class="section-title">3. Danh sách đơn hàng</h2>
-        <table>
-            <thead>
-                <tr><th>ID Đơn (A)</th><th>Giá bán (H)</th><th>Số đơn</th><th style="width: 200px;">Sản phẩm</th><th>Hộp/đơn</th></tr>
-            </thead>
-            <tbody id="filterBody"><tr><td colspan="5">Chưa có dữ liệu Excel</td></tr></tbody>
-        </table>
-
-        <h2 class="section-title">4. Tổng hợp số lượng hàng</h2>
-        <table>
-            <thead><tr><th>Tên mặt hàng</th><th>Tổng số hộp</th><th>Thành tiền nhập</th></tr></thead>
-            <tbody id="summaryBody"></tbody>
-        </table>
-
-        <h2 class="section-title">5. Chi phí vận hành</h2>
-        <div style="display:flex; justify-content:flex-end; margin: 10px 0;" data-html2canvas-ignore="true">
-            <button class="btn-add" id="addExpenseBtn">+ Thêm chi phí</button>
-        </div>
-        <table>
-            <thead><tr><th>Tên chi phí</th><th>Số tiền (VNĐ)</th><th data-html2canvas-ignore="true">Xóa</th></tr></thead>
-            <tbody id="expenseBody"></tbody>
-            <tfoot><tr class="total-row"><td>Tổng chi phí khác</td><td id="expenseTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
-        </table>
-
-        <h2 class="section-title">6. Tổng kết Lợi nhuận</h2>
-        <table>
-            <thead><tr><th>Hạng mục</th><th>Số tiền (VNĐ)</th></tr></thead>
-            <tbody>
-                <tr><td>Tiền hàng (Giá nhập)</td><td id="totalGoodsValue">0 đ</td></tr>
-                <tr><td>Chi phí vận hành</td><td id="costsValue">0 đ</td></tr>
-                <tr><td>Doanh thu quyết toán</td><td id="revenueValue" style="color:#2e7d32; font-weight:bold;">0 đ</td></tr>
-                <tr class="total-row" style="font-size: 1.2rem;"><td>LỢI NHUẬN RÒNG</td><td id="profitValue">0 đ</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:9999;">
-    <div style="background:#fff; padding:25px; border-radius:8px; width:350px;">
-        <h3 style="margin-top:0">Chọn thời gian báo cáo</h3>
-        <div style="margin-bottom:15px;"><label>Ngày bắt đầu:</label><br><input type="date" id="startDate"></div>
-        <div style="margin-bottom:15px;"><label>Ngày kết thúc:</label><br><input type="date" id="endDate"></div>
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button onclick="document.getElementById('dateModal').style.display='none'">Hủy</button>
-            <button id="confirmBtn" style="background:#1a73e8; color:white; border:none; padding:8px 15px; font-weight:bold; cursor:pointer;">BẮT ĐẦU CHỤP</button>
+            <!-- WebP to JPEG -->
+            <a href="webpp-to-jepg.html" class="tool-card">
+                <div class="badge">Image Tools</div>
+                <div class="icon-box" style="background: #f0fdf4;">
+                    <svg xmlns="http://www.w3.org/2000/svg" style="color: #22c55e;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                </div>
+                <h2>WebP sang JPEG</h2>
+                <p>Chuyển đổi hình ảnh định dạng WebP sang JPEG để dễ dàng sử dụng.</p>
+                <div class="card-footer" style="color: #22c55e;">
+                    Mở ứng dụng ➜
+                </div>
+            </a>
         </div>
     </div>
-</div>
 
-<script>
-    let products = [{name: "Trà ba kích", price: 22000}, {name: "Dây thìa canh", price: 20000}, {name: "Cà gai leo", price: 21000}];
-    let filteredMap = new Map();
-    let totalF = 0, totalGoods = 0;
-    let expenses = [{name: 'Quảng cáo', amount: 0}, {name: 'Vật tư', amount: 0}];
-
-    window.onload = () => {
-        const today = new Date();
-        const start = new Date();
-        start.setDate(today.getDate() - 10);
-        document.getElementById('endDate').value = today.toISOString().split('T')[0];
-        document.getElementById('startDate').value = start.toISOString().split('T')[0];
-        renderProductConfig();
-        renderExpenses();
-    };
-
-    // --- QUẢN LÝ SẢN PHẨM (BẢNG 1) ---
-    function addProduct() {
-        products.push({name: "", price: 0});
-        renderProductConfig();
-        if(filteredMap.size > 0) renderFilterTable(); // Cập nhật dropdown ở bảng 3
-    }
-
-    function removeProduct(index) {
-        if(products.length <= 1) return alert("Phải có ít nhất một sản phẩm.");
-        products.splice(index, 1);
-        renderProductConfig();
-        updateAll();
-    }
-
-    function renderProductConfig() {
-        document.getElementById('productBody').innerHTML = products.map((p, i) => `
-            <tr>
-                <td><input type="text" value="${p.name}" placeholder="Tên sp..." onchange="products[${i}].name=this.value; updateAll();"></td>
-                <td><input type="number" value="${p.price}" onchange="products[${i}].price=Number(this.value); updateSummaryTable();"></td>
-                <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="removeProduct(${i})">✕</button></td>
-            </tr>`).join('');
-    }
-
-    // --- SCREENSHOT ---
-    document.getElementById('screenshotBtn').onclick = () => document.getElementById('dateModal').style.display = 'flex';
-    document.getElementById('confirmBtn').onclick = async () => {
-        const s = document.getElementById('startDate').value;
-        const e = document.getElementById('endDate').value;
-        if (!s || !e) return alert("Chọn ngày!");
-        const dateRange = `${s.split('-').reverse().join('/')} - ${e.split('-').reverse().join('/')}`;
-        document.getElementById('dateModal').style.display = 'none';
-
-        const reportTitle = document.getElementById('reportTitle');
-        const exportText = document.getElementById('exportOnlyText');
-        reportTitle.textContent = `BÁO CÁO QUYẾT TOÁN (${dateRange})`;
-        reportTitle.style.display = 'block';
-        exportText.textContent = `Tổng quyết toán đợt (${dateRange}): ${totalF.toLocaleString()} đ`;
-        exportText.style.display = 'block';
-
-        const replacements = [];
-        document.querySelectorAll('#captureArea input, #captureArea select').forEach(el => {
-            if(el.closest('[data-html2canvas-ignore]')) return;
-            const span = document.createElement('span');
-            span.className = "pdf-replacement";
-            span.textContent = el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : (el.type === 'number' ? Number(el.value).toLocaleString() : el.value);
-            el.parentNode.insertBefore(span, el);
-            el.style.display = 'none';
-            replacements.push({span, el});
-        });
-
-        try {
-            const canvas = await html2canvas(document.getElementById('captureArea'), {
-                scale: 2, useCORS: true, logging: false,
-                windowWidth: document.getElementById('captureArea').scrollWidth,
-                windowHeight: document.getElementById('captureArea').scrollHeight
-            });
-            const link = document.createElement('a');
-            link.download = `Bao_Cao_${s}_${e}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-        } finally {
-            reportTitle.style.display = 'none';
-            exportText.style.display = 'none';
-            replacements.forEach(item => { item.span.remove(); item.el.style.display = ''; });
-        }
-    };
-
-    // --- LOGIC DỮ LIỆU ---
-    document.getElementById('excelFile').onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const rows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).SheetNames[0]], {header: 1, defval: ""});
-            processExcel(rows);
-        };
-        reader.readAsArrayBuffer(e.target.files[0]);
-    };
-
-    function processExcel(rows) {
-        filteredMap = new Map(); totalF = 0;
-        for (let i = 1; i < rows.length; i++) {
-            const row = rows[i]; if (!row || !row[7]) continue;
-            const pSell = parseFloat(row[7]), pPay = Number(String(row[5]).replace(/[^0-9.-]+/g, '')) || 0;
-            totalF += pPay;
-            if (pSell > 0) {
-                if (!filteredMap.has(pSell)) filteredMap.set(pSell, {id: row[0], count: 1});
-                else filteredMap.get(pSell).count++;
-            }
-        }
-        document.getElementById('excelHeader').textContent = `2. Excel TikTok (Tổng quyết toán: ${totalF.toLocaleString()} đ)`;
-        renderFilterTable();
-    }
-
-    function renderFilterTable() {
-        const opts = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-        document.getElementById('filterBody').innerHTML = Array.from(filteredMap.keys()).sort((a,b)=>b-a).map(k => `
-            <tr class="order-row">
-                <td><small>${filteredMap.get(k).id}</small></td>
-                <td style="color:red; font-weight:bold;">${k.toLocaleString()}</td>
-                <td style="color:blue; font-weight:bold;">${filteredMap.get(k).count} đơn</td>
-                <td><select class="product-select" onchange="updateSummaryTable()"><option value="">-- Chọn --</option>${opts}</select></td>
-                <td><input type="number" class="qty-per-order" value="1" oninput="updateSummaryTable()" data-order-count="${filteredMap.get(k).count}"></td>
-            </tr>`).join('');
-        updateSummaryTable();
-    }
-
-    function updateSummaryTable() {
-        let grand = 0; const res = {}; products.forEach(p => res[p.name] = 0);
-        document.querySelectorAll('.order-row').forEach(row => {
-            const name = row.querySelector('.product-select').value;
-            const boxes = (parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0) * (parseInt(row.querySelector('.qty-per-order').value) || 0);
-            if (name && res.hasOwnProperty(name)) res[name] += boxes;
-        });
-        document.getElementById('summaryBody').innerHTML = products.map(p => {
-            const cost = res[p.name] * p.price; grand += cost;
-            return `<tr class="${res[p.name]>0?'total-row':''}"><td>${p.name}</td><td>${res[p.name]} hộp</td><td>${cost.toLocaleString()} đ</td></tr>`;
-        }).join('') + `<tr class="total-row"><td>TỔNG VỐN HÀNG</td><td></td><td>${grand.toLocaleString()} đ</td></tr>`;
-        totalGoods = grand; updateFinancials();
-    }
-
-    function renderExpenses() {
-        document.getElementById('expenseBody').innerHTML = expenses.map((e, i) => `
-            <tr>
-                <td><input type="text" value="${e.name}" onchange="expenses[${i}].name=this.value"></td>
-                <td><input type="number" value="${e.amount}" onchange="expenses[${i}].amount=Number(this.value); updateExpenseTotal();"></td>
-                <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="expenses.splice(${i},1); renderExpenses();">✕</button></td>
-            </tr>`).join('');
-        updateExpenseTotal();
-    }
-
-    function updateExpenseTotal() {
-        const total = expenses.reduce((s, e) => s + e.amount, 0);
-        document.getElementById('expenseTotal').textContent = total.toLocaleString() + ' đ';
-        updateFinancials();
-    }
-
-    function updateFinancials() {
-        const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
-        document.getElementById('totalGoodsValue').textContent = totalGoods.toLocaleString() + ' đ';
-        document.getElementById('revenueValue').textContent = totalF.toLocaleString() + ' đ';
-        document.getElementById('costsValue').textContent = expTotal.toLocaleString() + ' đ';
-        document.getElementById('profitValue').textContent = (totalF - expTotal - totalGoods).toLocaleString() + ' đ';
-    }
-
-    document.getElementById('addExpenseBtn').onclick = () => { expenses.push({name:'', amount:0}); renderExpenses(); };
-    function updateAll() { if(filteredMap.size > 0) renderFilterTable(); else updateSummaryTable(); }
-</script>
 </body>
 </html>
