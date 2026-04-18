@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>WebP to JPEG Converter</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 50px; background: #f4f4f9; }
+        .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #preview { max-width: 300px; margin-top: 20px; display: none; border-radius: 5px; }
+        .download-btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; display: none; }
+        input { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Chuyển đổi WebP sang JPEG</h2>
+    <input type="file" id="upload" accept="image/webp">
+    <br>
+    <img id="preview" alt="Preview">
+    <br>
+    <a id="download" class="download-btn">Tải về JPEG</a>
+</div>
+
+<script>
+    const upload = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const downloadBtn = document.getElementById('download');
+
+    upload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const img = new Image();
+            img.onload = function() {
+                // Tạo Canvas để vẽ lại ảnh
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                
+                const ctx = canvas.getContext('2d');
+                // Vẽ ảnh lên canvas
+                ctx.drawImage(img, 0, 0);
+                
+                // Chuyển đổi canvas thành link JPEG (chất lượng 0.9)
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                
+                // Hiển thị preview và nút tải
+                preview.src = dataUrl;
+                preview.style.display = 'block';
+                
+                downloadBtn.href = dataUrl;
+                downloadBtn.download = file.name.replace('.webp', '.jpg');
+                downloadBtn.style.display = 'inline-block';
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Đơn Hàng TikTok - Screenshot</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        .container { max-width: 1000px; margin: auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section-title { color: #1a73e8; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; margin-top: 25px; font-size: 1.1rem; }
+        .section-title:first-of-type { margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; background: #fff; table-layout: fixed; }
+        th, td { border: 1px solid #dee2e6; padding: 12px 8px; text-align: center; word-wrap: break-word; }
+        th { background-color: #f8f9fa; font-weight: 600; }
+        input, select { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .file-input-box { padding: 30px; border: 2px dashed #1a73e8; border-radius: 6px; text-align: center; background: #f8fbff; cursor: pointer; margin-top: 10px; }
+        .total-row { background-color: #e8f5e9; font-weight: bold; color: #2e7d32; }
+        #screenshotBtn { background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 12px 25px; font-size: 1rem; }
+        #screenshotBtn:hover { background: #d35400; }
+        .btn-add { background: #34a853; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-delete { background: #ea4335; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
+        
+        #reportTitle { display: none; text-align: center; font-size: 1.8rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; color: #2c3e50; }
+        .pdf-replacement { display: inline-block; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div id="captureArea" style="background: #f0f2f5; padding: 20px;">
+    <div class="container">
+        <div id="reportTitle">BÁO CÁO QUYẾT TOÁN</div>
+
+<div style="display:flex; justify-content:flex-start; margin-bottom:15px;" data-html2canvas-ignore="true">
+    <a href="convert.html"><button id="convertBtn" style="background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 12px 25px; font-size: 1rem;">Chuyển sang màn convert ảnh</button></a>
+</div>
+
+        </div>
+
+        <h2 class="section-title">1. Cấu hình giá nhập sản phẩm</h2>
+        <div style="display:flex; justify-content:flex-end; margin-bottom: 5px;" data-html2canvas-ignore="true">
+            <button class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50%;">Tên sản phẩm</th>
+                    <th style="width: 35%;">Giá nhập (VNĐ)</th>
+                    <th style="width: 15%;" data-html2canvas-ignore="true">Xóa</th>
+                </tr>
+            </thead>
+            <tbody id="productBody"></tbody>
+        </table>
+
+        <h2 class="section-title" id="excelHeader">2. Tải File Excel TikTok</h2>
+        <div class="file-input-box" onclick="document.getElementById('excelFile').click()" data-html2canvas-ignore="true">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" style="display:none" />
+            <b>Bấm vào đây để chọn file Excel</b>
+        </div>
+        <div id="exportOnlyText" style="display:none; font-weight:bold; color:#1a73e8; margin-top:10px;"></div>
+
+        <h2 class="section-title">3. Danh sách đơn hàng</h2>
+        <table>
+            <thead>
+                <tr><th>ID Đơn (A)</th><th>Giá bán (H)</th><th>Số đơn</th><th style="width: 200px;">Sản phẩm</th><th>Hộp/đơn</th></tr>
+            </thead>
+            <tbody id="filterBody"><tr><td colspan="5">Chưa có dữ liệu Excel</td></tr></tbody>
+        </table>
+
+        <h2 class="section-title">4. Tổng hợp số lượng hàng</h2>
+        <table>
+            <thead><tr><th>Tên mặt hàng</th><th>Tổng số hộp</th><th>Thành tiền nhập</th></tr></thead>
+            <tbody id="summaryBody"></tbody>
+        </table>
+
+        <h2 class="section-title">5. Chi phí vận hành</h2>
+        <div style="display:flex; justify-content:flex-end; margin: 10px 0;" data-html2canvas-ignore="true">
+            <button class="btn-add" id="addExpenseBtn">+ Thêm chi phí</button>
+        </div>
+        <table>
+            <thead><tr><th>Tên chi phí</th><th>Số tiền (VNĐ)</th><th data-html2canvas-ignore="true">Xóa</th></tr></thead>
+            <tbody id="expenseBody"></tbody>
+            <tfoot><tr class="total-row"><td>Tổng chi phí khác</td><td id="expenseTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
+        </table>
+
+        <h2 class="section-title">6. Tổng kết Lợi nhuận</h2>
+        <table>
+            <thead><tr><th>Hạng mục</th><th>Số tiền (VNĐ)</th></tr></thead>
+            <tbody>
+                <tr><td>Tiền hàng (Giá nhập)</td><td id="totalGoodsValue">0 đ</td></tr>
+                <tr><td>Chi phí vận hành</td><td id="costsValue">0 đ</td></tr>
+                <tr><td>Doanh thu quyết toán</td><td id="revenueValue" style="color:#2e7d32; font-weight:bold;">0 đ</td></tr>
+                <tr class="total-row" style="font-size: 1.2rem;"><td>LỢI NHUẬN RÒNG</td><td id="profitValue">0 đ</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:9999;">
+    <div style="background:#fff; padding:25px; border-radius:8px; width:350px;">
+        <h3 style="margin-top:0">Chọn thời gian báo cáo</h3>
+        <div style="margin-bottom:15px;"><label>Ngày bắt đầu:</label><br><input type="date" id="startDate"></div>
+        <div style="margin-bottom:15px;"><label>Ngày kết thúc:</label><br><input type="date" id="endDate"></div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button onclick="document.getElementById('dateModal').style.display='none'">Hủy</button>
+            <button id="confirmBtn" style="background:#1a73e8; color:white; border:none; padding:8px 15px; font-weight:bold; cursor:pointer;">BẮT ĐẦU CHỤP</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let products = [{name: "Trà ba kích", price: 22000}, {name: "Dây thìa canh", price: 20000}, {name: "Cà gai leo", price: 21000}];
+    let filteredMap = new Map();
+    let totalF = 0, totalGoods = 0;
+    let expenses = [{name: 'Quảng cáo', amount: 0}, {name: 'Vật tư', amount: 0}];
+
+    window.onload = () => {
+        const today = new Date();
+        const start = new Date();
+        start.setDate(today.getDate() - 10);
+        document.getElementById('endDate').value = today.toISOString().split('T')[0];
+        document.getElementById('startDate').value = start.toISOString().split('T')[0];
+        renderProductConfig();
+        renderExpenses();
+    };
+
+    // --- QUẢN LÝ SẢN PHẨM (BẢNG 1) ---
+    function addProduct() {
+        products.push({name: "", price: 0});
+        renderProductConfig();
+        if(filteredMap.size > 0) renderFilterTable(); // Cập nhật dropdown ở bảng 3
+    }
+
+    function removeProduct(index) {
+        if(products.length <= 1) return alert("Phải có ít nhất một sản phẩm.");
+        products.splice(index, 1);
+        renderProductConfig();
+        updateAll();
+    }
+
+    function renderProductConfig() {
+        document.getElementById('productBody').innerHTML = products.map((p, i) => `
+            <tr>
+                <td><input type="text" value="${p.name}" placeholder="Tên sp..." onchange="products[${i}].name=this.value; updateAll();"></td>
+                <td><input type="number" value="${p.price}" onchange="products[${i}].price=Number(this.value); updateSummaryTable();"></td>
+                <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="removeProduct(${i})">✕</button></td>
+            </tr>`).join('');
+    }
+
+    // --- SCREENSHOT ---
+    document.getElementById('screenshotBtn').onclick = () => document.getElementById('dateModal').style.display = 'flex';
+    document.getElementById('confirmBtn').onclick = async () => {
+        const s = document.getElementById('startDate').value;
+        const e = document.getElementById('endDate').value;
+        if (!s || !e) return alert("Chọn ngày!");
+        const dateRange = `${s.split('-').reverse().join('/')} - ${e.split('-').reverse().join('/')}`;
+        document.getElementById('dateModal').style.display = 'none';
+
+        const reportTitle = document.getElementById('reportTitle');
+        const exportText = document.getElementById('exportOnlyText');
+        reportTitle.textContent = `BÁO CÁO QUYẾT TOÁN (${dateRange})`;
+        reportTitle.style.display = 'block';
+        exportText.textContent = `Tổng quyết toán đợt (${dateRange}): ${totalF.toLocaleString()} đ`;
+        exportText.style.display = 'block';
+
+        const replacements = [];
+        document.querySelectorAll('#captureArea input, #captureArea select').forEach(el => {
+            if(el.closest('[data-html2canvas-ignore]')) return;
+            const span = document.createElement('span');
+            span.className = "pdf-replacement";
+            span.textContent = el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : (el.type === 'number' ? Number(el.value).toLocaleString() : el.value);
+            el.parentNode.insertBefore(span, el);
+            el.style.display = 'none';
+            replacements.push({span, el});
+        });
+
+        document.getElementById('convertBtn').style.display = 'none';
+
+        try {
+            const canvas = await html2canvas(document.getElementById('captureArea'), {
+                scale: 2, useCORS: true, logging: false,
+                windowWidth: document.getElementById('captureArea').scrollWidth,
+                windowHeight: document.getElementById('captureArea').scrollHeight
+            });
+            const link = document.createElement('a');
+            link.download = `Bao_Cao_${s}_${e}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+        } finally {
+            reportTitle.style.display = 'none';
+            exportText.style.display = 'none';
+            replacements.forEach(item => { item.span.remove(); item.el.style.display = ''; });
+            document.getElementById('convertBtn').style.display = '';
+        }
+    };
+
+    // --- LOGIC DỮ LIỆU ---
+    document.getElementById('excelFile').onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const rows = XLSX.utils.sheet_to_json(XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).Sheets[XLSX.read(new Uint8Array(evt.target.result), {type: 'array'}).SheetNames[0]], {header: 1, defval: ""});
+            processExcel(rows);
+        };
+        reader.readAsArrayBuffer(e.target.files[0]);
+    };
+
+    function processExcel(rows) {
+        filteredMap = new Map(); totalF = 0;
+        for (let i = 1; i < rows.length; i++) {
+            const row = rows[i]; if (!row || !row[7]) continue;
+            const pSell = parseFloat(row[7]), pPay = Number(String(row[5]).replace(/[^0-9.-]+/g, '')) || 0;
+            totalF += pPay;
+            if (pSell > 0) {
+                if (!filteredMap.has(pSell)) filteredMap.set(pSell, {id: row[0], count: 1});
+                else filteredMap.get(pSell).count++;
+            }
+        }
+        document.getElementById('excelHeader').textContent = `2. Excel TikTok (Tổng quyết toán: ${totalF.toLocaleString()} đ)`;
+        renderFilterTable();
+    }
+
+    function renderFilterTable() {
+        const opts = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        document.getElementById('filterBody').innerHTML = Array.from(filteredMap.keys()).sort((a,b)=>b-a).map(k => `
+            <tr class="order-row">
+                <td><small>${filteredMap.get(k).id}</small></td>
+                <td style="color:red; font-weight:bold;">${k.toLocaleString()}</td>
+                <td style="color:blue; font-weight:bold;">${filteredMap.get(k).count} đơn</td>
+                <td><select class="product-select" onchange="updateSummaryTable()"><option value="">-- Chọn --</option>${opts}</select></td>
+                <td><input type="number" class="qty-per-order" value="1" oninput="updateSummaryTable()" data-order-count="${filteredMap.get(k).count}"></td>
+            </tr>`).join('');
+        updateSummaryTable();
+    }
+
+    function updateSummaryTable() {
+        let grand = 0; const res = {}; products.forEach(p => res[p.name] = 0);
+        document.querySelectorAll('.order-row').forEach(row => {
+            const name = row.querySelector('.product-select').value;
+            const boxes = (parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0) * (parseInt(row.querySelector('.qty-per-order').value) || 0);
+            if (name && res.hasOwnProperty(name)) res[name] += boxes;
+        });
+        document.getElementById('summaryBody').innerHTML = products.map(p => {
+            const cost = res[p.name] * p.price; grand += cost;
+            return `<tr class="${res[p.name]>0?'total-row':''}"><td>${p.name}</td><td>${res[p.name]} hộp</td><td>${cost.toLocaleString()} đ</td></tr>`;
+        }).join('') + `<tr class="total-row"><td>TỔNG VỐN HÀNG</td><td></td><td>${grand.toLocaleString()} đ</td></tr>`;
+        totalGoods = grand; updateFinancials();
+    }
+
+    function renderExpenses() {
+        document.getElementById('expenseBody').innerHTML = expenses.map((e, i) => `
+            <tr>
+                <td><input type="text" value="${e.name}" onchange="expenses[${i}].name=this.value"></td>
+                <td><input type="number" value="${e.amount}" onchange="expenses[${i}].amount=Number(this.value); updateExpenseTotal();"></td>
+                <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="expenses.splice(${i},1); renderExpenses();">✕</button></td>
+            </tr>`).join('');
+        updateExpenseTotal();
+    }
+
+    function updateExpenseTotal() {
+        const total = expenses.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('expenseTotal').textContent = total.toLocaleString() + ' đ';
+        updateFinancials();
+    }
+
+    function updateFinancials() {
+        const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
+        document.getElementById('totalGoodsValue').textContent = totalGoods.toLocaleString() + ' đ';
+        document.getElementById('revenueValue').textContent = totalF.toLocaleString() + ' đ';
+        document.getElementById('costsValue').textContent = expTotal.toLocaleString() + ' đ';
+        document.getElementById('profitValue').textContent = (totalF - expTotal - totalGoods).toLocaleString() + ' đ';
+    }
+
+    document.getElementById('addExpenseBtn').onclick = () => { expenses.push({name:'', amount:0}); renderExpenses(); };
+    function updateAll() { if(filteredMap.size > 0) renderFilterTable(); else updateSummaryTable(); }
+</script>
+</body>
+</html>
