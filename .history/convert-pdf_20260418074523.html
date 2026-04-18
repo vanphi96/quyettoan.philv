@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Image Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            border: 3px dashed #667eea;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            background: #f9f9f9;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .upload-box:hover {
+            background: #f0f2ff;
+        }
+
+        .upload-box.drag-over {
+            background: #e8ebff;
+            border-color: #764ba2;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .control-panel {
+            display: none;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .control-panel.show {
+            display: block;
+        }
+
+        .control-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #convertBtn {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .progress-box {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-box.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+        }
+
+        .results-box {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results-box.show {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 15px;
+        }
+
+        .results-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .download-all-btn {
+            background: #28a745;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .image-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background: white;
+        }
+
+        .image-footer {
+            padding: 12px;
+        }
+
+        .image-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .image-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-buttons button {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .image-buttons button:nth-child(1) {
+            background: #667eea;
+        }
+
+        .image-buttons button:nth-child(2) {
+            background: #28a745;
+        }
+
+        .error-box {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-box.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Image Converter</h1>
+        
+        <div id="errorBox" class="error-box"></div>
+        
+        <div id="uploadBox" class="upload-box">
+            <p><strong>Keo tha file PDF vao day hoac nhan de chon</strong></p>
+            <p style="color: #999; font-size: 14px;">Chi tro file PDF</p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf">
+        
+        <div id="controlPanel" class="control-panel">
+            <div class="control-row">
+                <div>
+                    <label>Chat luong (DPI):</label>
+                    <input type="number" id="quality" value="150" min="72" max="300" step="10">
+                </div>
+                <div>
+                    <label>Dinh dang:</label>
+                    <select id="format">
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Ti le:</label>
+                    <input type="number" id="scale" value="2" min="1" max="4" step="0.5">
+                </div>
+            </div>
+            <button id="convertBtn">Bat dau chuyen doi</button>
+        </div>
+        
+        <div id="progressBox" class="progress-box">
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill">0%</div>
+            </div>
+            <div class="progress-text" id="progressText">Chuan bi...</div>
+        </div>
+        
+        <div id="resultsBox" class="results-box">
+            <div class="results-header">
+                <h2>Hoan tat</h2>
+                <button id="downloadAllBtn" class="download-all-btn">Tai tat ca ZiP</button>
+            </div>
+            <div id="gridImages" class="images-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        var uploadBox = document.getElementById('uploadBox');
+        var fileInput = document.getElementById('fileInput');
+        var controlPanel = document.getElementById('controlPanel');
+        var convertBtn = document.getElementById('convertBtn');
+        var progressBox = document.getElementById('progressBox');
+        var resultsBox = document.getElementById('resultsBox');
+        var errorBox = document.getElementById('errorBox');
+        var selectedFile = null;
+        var images = [];
+
+        uploadBox.addEventListener('click', function() {
+            fileInput.click();
+        });
+
+        uploadBox.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadBox.classList.add('drag-over');
+        });
+
+        uploadBox.addEventListener('dragleave', function() {
+            uploadBox.classList.remove('drag-over');
+        });
+
+        uploadBox.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadBox.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFile(this.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            errorBox.classList.remove('show');
+            
+            if (!file.type.includes('pdf')) {
+                showError('Chi chon file PDF');
+                return;
+            }
+
+            selectedFile = file;
+            var mb = (file.size / 1024 / 1024).toFixed(2);
+            uploadBox.innerHTML = '<p><strong>Da chon: ' + file.name + '</strong></p><p style="color:#999;font-size:14px">Kich thuoc: ' + mb + ' MB</p>';
+            controlPanel.classList.add('show');
+        }
+
+        convertBtn.addEventListener('click', startConversion);
+
+        function startConversion() {
+            if (!selectedFile) {
+                showError('Vui long chon file');
+                return;
+            }
+
+            convertBtn.disabled = true;
+            progressBox.classList.add('show');
+            resultsBox.classList.remove('show');
+            images = [];
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                convertPDF(e.target.result);
+            };
+            reader.readAsArrayBuffer(selectedFile);
+        }
+
+        function convertPDF(arrayBuffer) {
+            pdfjsLib.getDocument({data: arrayBuffer}).promise.then(function(pdf) {
+                var quality = parseInt(document.getElementById('quality').value);
+                var scale = parseFloat(document.getElementById('scale').value);
+                var format = document.getElementById('format').value;
+                var totalPages = pdf.numPages;
+
+                var pageIndex = 0;
+
+                function processPage() {
+                    if (pageIndex >= totalPages) {
+                        finishConversion();
+                        return;
+                    }
+
+                    pageIndex++;
+                    updateProgress(Math.round((pageIndex / totalPages) * 100), 'Xu ly trang ' + pageIndex + '/' + totalPages);
+
+                    pdf.getPage(pageIndex).then(function(page) {
+                        var viewport = page.getViewport({scale: scale});
+                        var canvas = document.createElement('canvas');
+                        var context = canvas.getContext('2d');
+                        canvas.width = viewport.width;
+                        canvas.height = viewport.height;
+
+                        page.render({
+                            canvasContext: context,
+                            viewport: viewport
+                        }).promise.then(function() {
+                            var imageData = canvas.toDataURL('image/' + format, format === 'jpg' ? 0.95 : 1.0);
+                            images.push({
+                                data: imageData,
+                                pageNum: pageIndex,
+                                filename: selectedFile.name.replace('.pdf', '') + '_page_' + pageIndex + '.' + format
+                            });
+                            processPage();
+                        });
+                    });
+                }
+
+                processPage();
+            }).catch(function(error) {
+                showError('Loi doc PDF: ' + error);
+                progressBox.classList.remove('show');
+                convertBtn.disabled = false;
+            });
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressFill').innerText = percent + '%';
+            document.getElementById('progressText').innerText = text;
+        }
+
+        function finishConversion() {
+            progressBox.classList.remove('show');
+            displayImages();
+            convertBtn.disabled = false;
+        }
+
+        function displayImages() {
+            var grid = document.getElementById('gridImages');
+            grid.innerHTML = '';
+
+            images.forEach(function(image, index) {
+                var card = document.createElement('div');
+                card.className = 'image-card';
+
+                var img = document.createElement('img');
+                img.src = image.data;
+                img.className = 'image-preview';
+
+                var footer = document.createElement('div');
+                footer.className = 'image-footer';
+
+                var title = document.createElement('div');
+                title.className = 'image-title';
+                title.innerText = 'Trang ' + image.pageNum;
+
+                var buttons = document.createElement('div');
+                buttons.className = 'image-buttons';
+
+                var viewBtn = document.createElement('button');
+                viewBtn.innerText = 'Xem';
+                viewBtn.onclick = function() {
+                    previewImage(index);
+                };
+
+                var downloadBtn = document.createElement('button');
+                downloadBtn.innerText = 'Tai';
+                downloadBtn.onclick = function() {
+                    download1Image(index);
+                };
+
+                buttons.appendChild(viewBtn);
+                buttons.appendChild(downloadBtn);
+
+                footer.appendChild(title);
+                footer.appendChild(buttons);
+
+                card.appendChild(img);
+                card.appendChild(footer);
+                grid.appendChild(card);
+            });
+
+            resultsBox.classList.add('show');
+        }
+
+        function previewImage(index) {
+            var image = images[index];
+            var win = window.open();
+            win.document.write('<html><head><title>Trang ' + image.pageNum + '</title></head>');
+            win.document.write('<body style="margin:0;padding:20px;background:#f0f0f0;display:flex;justify-content:center;align-items:center;min-height:100vh;">');
+            win.document.write('<img src="' + image.data + '" style="max-width:100%;max-height:100%;border:1px solid #ddd;">');
+            win.document.write('</body></html>');
+            win.document.close();
+        }
+
+        function download1Image(index) {
+            var image = images[index];
+            var link = document.createElement('a');
+            link.href = image.data;
+            link.download = image.filename;
+            link.click();
+        }
+
+        document.getElementById('downloadAllBtn').addEventListener('click', function() {
+            if (images.length === 1) {
+                download1Image(0);
+                return;
+            }
+
+            var zip = new JSZip();
+            images.forEach(function(image) {
+                var base64 = image.data.split(',')[1];
+                zip.file(image.filename, base64, {base64: true});
+            });
+
+            zip.generateAsync({type: 'blob'}).then(function(content) {
+                var url = URL.createObjectURL(content);
+                var link = document.createElement('a');
+                link.href = url;
+                link.download = selectedFile.name.replace('.pdf', '') + '_images.zip';
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+        });
+
+        function showError(msg) {
+            errorBox.innerText = msg;
+            errorBox.classList.add('show');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Image Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2em;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .upload-area p {
+            color: #666;
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .small-text {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .settings {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .setting-group {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .images-section {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .images-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .download-all-btn {
+            background: #28a745;
+        }
+
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .image-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: contain;
+            background: white;
+            display: block;
+        }
+
+        .image-info {
+            padding: 15px;
+        }
+
+        .image-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .image-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            background: #667eea;
+        }
+
+        .image-actions button:nth-child(2) {
+            background: #28a745;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .info-msg {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+
+        #settingsArea {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Image Converter</h1>
+        
+        <div class="info-msg">
+            Chon file PDF, cau hinh chat luong, sau do nhan "Chuyen doi"
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>Keo & tha file PDF tai day</p>
+            <p>hoac</p>
+            <p style="color: #667eea; font-weight: 600;">Nhan de chon file</p>
+            <p class="small-text">Chi ho tro file PDF</p>
+        </div>
+        <input type="file" id="fileInput" accept=".pdf" />
+
+        <div id="settingsArea">
+            <div class="settings">
+                <div class="setting-group">
+                    <label>Chat luong (DPI):</label>
+                    <input type="number" id="quality" value="150" min="72" max="300" step="10">
+                </div>
+                <div class="setting-group">
+                    <label>Dinh dang:</label>
+                    <select id="format">
+                        <option value="png">PNG</option>
+                        <option value="jpg">JPG</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label>Ti le:</label>
+                    <input type="number" id="scale" value="2" min="1" max="4" step="0.5">
+                </div>
+            </div>
+            <button id="convertBtn" style="width: 100%; margin-top: 20px;">Chuyen doi</button>
+        </div>
+
+        <div class="progress-section" id="progressSection">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">Dang xu ly...</div>
+        </div>
+
+        <div class="images-section" id="imagesSection">
+            <div class="images-header">
+                <h2>Hoan tat!</h2>
+                <button class="download-all-btn" id="downloadAllBtn">Tai tat ca</button>
+            </div>
+            <div class="images-grid" id="imagesGrid"></div>
+        </div>
+    </div>
+
+    <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    var uploadArea = document.getElementById('uploadArea');
+    var fileInput = document.getElementById('fileInput');
+    var settingsArea = document.getElementById('settingsArea');
+    var convertBtn = document.getElementById('convertBtn');
+    var progressSection = document.getElementById('progressSection');
+    var imagesSection = document.getElementById('imagesSection');
+    var errorDiv = document.getElementById('error');
+    var selectedFile = null;
+    var images = [];
+
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function() {
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        var files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        if (!file.type.includes('pdf')) {
+            showError('Vui long chon file PDF!');
+            return;
+        }
+        selectedFile = file;
+        var sizeInMB = (file.size / 1024 / 1024).toFixed(2);
+        uploadArea.innerHTML = '<p>Da chon: <strong>' + file.name + '</strong></p><p class="small-text">Kich thuoc: ' + sizeInMB + ' MB</p>';
+        settingsArea.style.display = 'block';
+        errorDiv.classList.remove('show');
+    }
+
+    convertBtn.addEventListener('click', convertPdfToImages);
+
+    async function convertPdfToImages() {
+        if (!selectedFile) {
+            showError('Vui long chon file PDF!');
+            return;
+        }
+
+        convertBtn.disabled = true;
+        progressSection.style.display = 'block';
+        imagesSection.style.display = 'none';
+        images = [];
+        errorDiv.classList.remove('show');
+
+        try {
+            var arrayBuffer = await selectedFile.arrayBuffer();
+            var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            var quality = parseInt(document.getElementById('quality').value);
+            var scale = parseFloat(document.getElementById('scale').value);
+            var format = document.getElementById('format').value;
+            var totalPages = pdf.numPages;
+
+            updateProgress(0, 'Chuan bi chuyen doi ' + totalPages + ' trang...');
+
+            for (var pageNum = 1; pageNum <= totalPages; pageNum++) {
+                try {
+                    var page = await pdf.getPage(pageNum);
+                    var viewport = page.getViewport({ scale: scale });
+                    
+                    var canvas = document.createElement('canvas');
+                    var context = canvas.getContext('2d');
+                    canvas.width = viewport.width;
+                    canvas.height = viewport.height;
+
+                    var renderContext = {
+                        canvasContext: context,
+                        viewport: viewport,
+                        background: 'rgb(255,255,255)'
+                    };
+
+                    await page.render(renderContext).promise;
+
+                    var quality_value = format === 'jpg' ? 0.95 : 1.0;
+                    var imageData = canvas.toDataURL('image/' + format, quality_value);
+                    images.push({
+                        data: imageData,
+                        pageNum: pageNum,
+                        filename: selectedFile.name.replace('.pdf', '') + '_page_' + pageNum + '.' + format
+                    });
+
+                    var progress = Math.round((pageNum / totalPages) * 100);
+                    updateProgress(progress, 'Da xu ly: ' + pageNum + '/' + totalPages + ' trang');
+                } catch (error) {
+                    console.error('Loi xu ly trang ' + pageNum + ':', error);
+                }
+            }
+
+            displayImages();
+            progressSection.style.display = 'none';
+        } catch (error) {
+            showError('Loi: ' + error.message);
+            progressSection.style.display = 'none';
+            console.error(error);
+        }
+        convertBtn.disabled = false;
+    }
+
+    function updateProgress(percent, text) {
+        document.getElementById('progressFill').style.width = percent + '%';
+        document.getElementById('progressText').textContent = text;
+    }
+
+    function displayImages() {
+        var grid = document.getElementById('imagesGrid');
+        grid.innerHTML = '';
+
+        images.forEach(function(image, index) {
+            var item = document.createElement('div');
+            item.className = 'image-item';
+            
+            var html = '<img class="image-preview" src="' + image.data + '" alt="Trang ' + image.pageNum + '">';
+            html += '<div class="image-info">';
+            html += '<div class="image-title">Trang ' + image.pageNum + '</div>';
+            html += '<div class="image-actions">';
+            html += '<button onclick="previewImage(' + index + ')">Xem</button>';
+            html += '<button onclick="downloadImage(' + index + ')">Tai</button>';
+            html += '</div></div>';
+            
+            item.innerHTML = html;
+            grid.appendChild(item);
+        });
+
+        imagesSection.style.display = 'block';
+    }
+
+    function previewImage(index) {
+        var image = images[index];
+        var newWindow = window.open();
+        var html = '<html><head><title>Xem trang ' + image.pageNum + '</title></head>';
+        html += '<body style="margin:0; padding:10px; background:#f0f0f0; display:flex; justify-content:center; align-items:center; min-height:100vh;">';
+        html += '<img src="' + image.data + '" style="max-width:100%; max-height:100%; border:1px solid #ddd; box-shadow: 0 0 10px rgba(0,0,0,0.3);">';
+        html += '</body></html>';
+        newWindow.document.write(html);
+        newWindow.document.close();
+    }
+
+    function downloadImage(index) {
+        var image = images[index];
+        var link = document.createElement('a');
+        link.href = image.data;
+        link.download = image.filename;
+        link.click();
+    }
+
+    document.getElementById('downloadAllBtn').addEventListener('click', downloadAllImages);
+
+    function downloadAllImages() {
+        if (images.length === 1) {
+            downloadImage(0);
+            return;
+        }
+
+        var JSZip = window.JSZip;
+        var zip = new JSZip();
+        
+        images.forEach(function(image) {
+            var base64 = image.data.split(',')[1];
+            zip.file(image.filename, base64, { base64: true });
+        });
+
+        zip.generateAsync({ type: 'blob' }).then(function(content) {
+            var url = URL.createObjectURL(content);
+            var link = document.createElement('a');
+            link.href = url;
+            link.download = selectedFile.name.replace('.pdf', '') + '_images.zip';
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    function showError(message) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    </script>
+</body>
+</html>
