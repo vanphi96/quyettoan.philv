@@ -58,6 +58,12 @@
             <b>Bấm vào đây để chọn file Excel</b>
         </div>
         <div id="exportOnlyText" style="display:none; font-weight:bold; color:#1a73e8; margin-top:10px;"></div>
+        <div id="excelStats" style="display:none; margin-top:12px; font-weight:bold; color:#2c3e50;"></div>
+        <div id="gmvHistoryTitle" style="display:none; margin-top:14px; font-weight:bold; color:#1a73e8;">Lịch sử nạp GMV</div>
+        <table id="gmvHistoryTable" style="display:none;">
+            <thead><tr><th>Ghi chú (B)</th><th>Số tiền (F)</th></tr></thead>
+            <tbody id="gmvHistoryBody"></tbody>
+        </table>
 
         <h2 class="section-title">3. Danh sách đơn hàng</h2>
         <table>
@@ -67,13 +73,21 @@
             <tbody id="filterBody"><tr><td colspan="5">Chưa có dữ liệu Excel</td></tr></tbody>
         </table>
 
-        <h2 class="section-title">4. Tổng hợp số lượng hàng</h2>
+        <h2 class="section-title">4. Danh sách đơn hàng hoàn hủy</h2>
+        <table>
+            <thead>
+                <tr><th>ID Đơn (A)</th><th>Quyết toán (F)</th><th>Ghi chú</th><th style="width: 200px;">Sản phẩm</th><th>Hộp/đơn</th></tr>
+            </thead>
+            <tbody id="returnBody"><tr><td colspan="5">Chưa có dữ liệu Excel</td></tr></tbody>
+        </table>
+
+        <h2 class="section-title">5. Tổng hợp số lượng hàng</h2>
         <table>
             <thead><tr><th>Tên mặt hàng</th><th>Tổng số hộp</th><th>Thành tiền nhập</th></tr></thead>
             <tbody id="summaryBody"></tbody>
         </table>
 
-        <h2 class="section-title">5. Chi phí vận hành</h2>
+        <h2 class="section-title">6. Chi phí vận hành</h2>
         <div style="display:flex; justify-content:flex-end; margin: 10px 0;" data-html2canvas-ignore="true">
             <button class="btn-add" id="addExpenseBtn">+ Thêm chi phí</button>
         </div>
@@ -83,7 +97,7 @@
             <tfoot><tr class="total-row"><td>Tổng chi phí khác</td><td id="expenseTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
         </table>
 
-        <h2 class="section-title">6. Tổng kết Lợi nhuận</h2>
+        <h2 class="section-title">7. Tổng kết Lợi nhuận</h2>
         <table>
             <thead><tr><th>Hạng mục</th><th>Số tiền (VNĐ)</th></tr></thead>
             <tbody>
@@ -109,8 +123,11 @@
 </div>
 
 <script>
-    let products = [{name: "Trà ba kích", price: 22000}, {name: "Dây thìa canh", price: 20000}, {name: "Cà gai leo", price: 21000}];
+    let products = [{name: "Trà ba kích", price: 22000}, {name: "Dây thìa canh", price: 21000}, {name: "Cà gai leo", price: 21000}];
     let filteredMap = new Map();
+    let returnOrders = [];
+    let gmvHistory = [];
+    let totalOrderCount = 0;
     let totalF = 0, totalGoods = 0;
     let expenses = [{name: 'Quảng cáo', amount: 0}, {name: 'Vật tư', amount: 0}];
 
@@ -128,7 +145,7 @@
     function addProduct() {
         products.push({name: "", price: 0});
         renderProductConfig();
-        if(filteredMap.size > 0) renderFilterTable(); // Cập nhật dropdown ở bảng 3
+        if(filteredMap.size > 0 || returnOrders.length > 0) renderOrderTables(); // Cập nhật dropdown ở bảng 3, 4
     }
 
     function removeProduct(index) {
@@ -202,23 +219,93 @@
     };
 
     function processExcel(rows) {
-        filteredMap = new Map(); totalF = 0;
+        filteredMap = new Map(); returnOrders = []; gmvHistory = []; totalOrderCount = 0; totalF = 0;
+        const returnMap = new Map();
+        const orderIds = new Set();
         for (let i = 1; i < rows.length; i++) {
-            const row = rows[i]; if (!row || !row[7]) continue;
-            const pSell = parseFloat(row[7]), pPay = Number(String(row[5]).replace(/[^0-9.-]+/g, '')) || 0;
+            const row = rows[i]; if (!row) continue;
+            const note = String(row[1] || '').trim();
+            const pPay = parseMoney(row[5]);
+            if (isGmvPaymentRow(row)) {
+                gmvHistory.push({note, amount: pPay});
+                continue;
+            }
+            if (pPay === 0) continue;
+            const orderId = row[0] || `row-${i}`;
+            orderIds.add(orderId);
             totalF += pPay;
+            if (pPay === 40000 || pPay < 0) {
+                const id = row[0] || '(Không có ID)';
+                if (!returnMap.has(id)) returnMap.set(id, {id, pays: []});
+                returnMap.get(id).pays.push(pPay);
+                continue;
+            }
+            if (!row[7]) continue;
+            const pSell = parseMoney(row[7]);
             if (pSell > 0) {
                 if (!filteredMap.has(pSell)) filteredMap.set(pSell, {id: row[0], count: 1});
                 else filteredMap.get(pSell).count++;
             }
         }
-        document.getElementById('excelHeader').textContent = `2. Excel TikTok (Tổng quyết toán: ${totalF.toLocaleString()} đ)`;
+        returnOrders = Array.from(returnMap.values());
+        totalOrderCount = orderIds.size;
+        document.getElementById('excelHeader').textContent = '2. Excel TikTok';
+        renderExcelStats();
+        renderOrderTables();
+    }
+
+    function parseMoney(value) {
+        const text = String(value ?? '').trim();
+        const isNegative = text.startsWith('-') || text.endsWith('-');
+        const amount = Number(text.replace(/\D/g, '')) || 0;
+        return isNegative ? -amount : amount;
+    }
+
+    function isGmvPaymentRow(row) {
+        return String(row[1] || '').trim().toLowerCase().startsWith('gmv thanh toán');
+    }
+
+    function renderExcelStats() {
+        document.getElementById('excelStats').style.display = 'block';
+        document.getElementById('excelStats').textContent = `Doanh thu: ${totalF.toLocaleString()} đ | Tổng số đơn: ${totalOrderCount.toLocaleString()} đơn`;
+
+        const title = document.getElementById('gmvHistoryTitle');
+        const table = document.getElementById('gmvHistoryTable');
+        const body = document.getElementById('gmvHistoryBody');
+        if (gmvHistory.length === 0) {
+            title.style.display = 'none';
+            table.style.display = 'none';
+            body.innerHTML = '';
+            return;
+        }
+
+        title.style.display = 'block';
+        table.style.display = 'table';
+        body.innerHTML = gmvHistory.map(item => `
+            <tr>
+                <td>${escapeHtml(item.note)}</td>
+                <td style="font-weight:bold; color:#1a73e8;">${item.amount.toLocaleString()} đ</td>
+            </tr>`).join('');
+    }
+
+    function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    function renderOrderTables() {
         renderFilterTable();
+        renderReturnTable();
     }
 
     function renderFilterTable() {
         const opts = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
-        document.getElementById('filterBody').innerHTML = Array.from(filteredMap.keys()).sort((a,b)=>b-a).map(k => `
+        const rows = Array.from(filteredMap.keys()).sort((a,b)=>b-a).map(k => `
             <tr class="order-row">
                 <td><small>${filteredMap.get(k).id}</small></td>
                 <td style="color:red; font-weight:bold;">${k.toLocaleString()}</td>
@@ -226,12 +313,27 @@
                 <td><select class="product-select" onchange="updateSummaryTable()"><option value="">-- Chọn --</option>${opts}</select></td>
                 <td><input type="number" class="qty-per-order" value="1" oninput="updateSummaryTable()" data-order-count="${filteredMap.get(k).count}"></td>
             </tr>`).join('');
+        document.getElementById('filterBody').innerHTML = rows || '<tr><td colspan="5">Không có đơn hàng phù hợp</td></tr>';
+        updateSummaryTable();
+    }
+
+    function renderReturnTable() {
+        const opts = products.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+        const rows = returnOrders.map(order => `
+            <tr class="return-order-row">
+                <td><small>${order.id}</small></td>
+                <td style="color:${order.pays.some(v => v < 0) ? 'red' : '#e67e22'}; font-weight:bold;">${order.pays.map(v => v.toLocaleString()).join('<br>')}</td>
+                <td>${order.pays.length > 1 ? `${order.pays.length} trạng thái quyết toán` : 'Hoàn/hủy'}</td>
+                <td><select class="product-select" onchange="updateSummaryTable()"><option value="">-- Chọn --</option>${opts}</select></td>
+                <td><input type="number" class="qty-per-order" value="1" oninput="updateSummaryTable()" data-order-count="1"></td>
+            </tr>`).join('');
+        document.getElementById('returnBody').innerHTML = rows || '<tr><td colspan="5">Không có đơn hàng hoàn hủy</td></tr>';
         updateSummaryTable();
     }
 
     function updateSummaryTable() {
         let grand = 0; const res = {}; products.forEach(p => res[p.name] = 0);
-        document.querySelectorAll('.order-row').forEach(row => {
+        document.querySelectorAll('.order-row, .return-order-row').forEach(row => {
             const name = row.querySelector('.product-select').value;
             const boxes = (parseInt(row.querySelector('.qty-per-order').dataset.orderCount) || 0) * (parseInt(row.querySelector('.qty-per-order').value) || 0);
             if (name && res.hasOwnProperty(name)) res[name] += boxes;
@@ -268,7 +370,7 @@
     }
 
     document.getElementById('addExpenseBtn').onclick = () => { expenses.push({name:'', amount:0}); renderExpenses(); };
-    function updateAll() { if(filteredMap.size > 0) renderFilterTable(); else updateSummaryTable(); }
+    function updateAll() { if(filteredMap.size > 0 || returnOrders.length > 0) renderOrderTables(); else updateSummaryTable(); }
 </script>
 </body>
 </html>
