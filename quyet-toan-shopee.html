@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quyết toán Shopee</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f6f8;
+            --panel: #ffffff;
+            --line: #d9e0e7;
+            --text: #1f2933;
+            --muted: #66788a;
+            --brand: #ee4d2d;
+            --brand-dark: #c93f25;
+            --good: #168a4a;
+            --bad: #c62828;
+            --focus: #1769aa;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 22px auto;
+            padding: 0 16px 32px;
+        }
+
+        h1 {
+            margin: 0 0 6px;
+            color: var(--brand);
+            font-size: 28px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--brand);
+            background: #fff7f4;
+            border-radius: 8px;
+            padding: 22px;
+            text-align: center;
+            cursor: pointer;
+            min-height: 106px;
+        }
+
+        .upload-box:hover { background: #fff0ea; }
+        .upload-box strong { display: block; color: var(--brand-dark); margin-bottom: 6px; }
+        .file-name { color: var(--muted); font-size: 13px; }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .stat-card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .stat-card .label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            margin-top: 14px;
+            overflow: hidden;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--line);
+            background: #fafbfc;
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 17px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--line);
+            padding: 10px 9px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+            font-size: 14px;
+        }
+
+        th {
+            color: #344054;
+            font-size: 12px;
+            background: #f7f9fb;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        input, select {
+            width: 100%;
+            min-height: 34px;
+            border: 1px solid #cfd8e3;
+            border-radius: 5px;
+            padding: 6px 8px;
+            font: inherit;
+            background: #fff;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 70px;
+            border: 1px solid #cfd8e3;
+            border-radius: 5px;
+            padding: 6px 8px;
+            font: inherit;
+            resize: vertical;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid rgba(23, 105, 170, 0.18);
+            border-color: var(--focus);
+        }
+
+        button {
+            border: 0;
+            border-radius: 5px;
+            padding: 8px 11px;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--brand);
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        button:hover { background: var(--brand-dark); }
+        .btn-delete { background: #c62828; }
+        .btn-delete:hover { background: #9f1f1f; }
+        .number { text-align: right; font-variant-numeric: tabular-nums; }
+        .positive { color: var(--good); font-weight: 700; }
+        .negative { color: var(--bad); font-weight: 700; }
+        .empty { color: var(--muted); text-align: center; padding: 22px; }
+        .muted { color: var(--muted); }
+        .total-row { background: #edf7ef; font-weight: 700; }
+        .scroll { overflow-x: auto; }
+        #reportTitle {
+            display: none;
+            text-align: center;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 18px;
+            text-transform: uppercase;
+            color: #2c3e50;
+        }
+        #exportOnlyText {
+            display: none;
+            margin: 0 0 14px;
+            font-weight: 700;
+            color: var(--brand-dark);
+        }
+        #screenshotBtn {
+            background: #e67e22;
+            padding: 10px 16px;
+        }
+        #screenshotBtn:hover { background: #d35400; }
+        .top-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 12px;
+        }
+        .pdf-replacement {
+            display: inline-block;
+            min-height: 24px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 900px) {
+            .upload-grid, .stats { grid-template-columns: 1fr; }
+            h1 { font-size: 23px; }
+            th, td { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="captureArea">
+    <main class="container">
+        <div id="reportTitle">BÁO CÁO QUYẾT TOÁN SHOPEE</div>
+        <div class="top-actions" data-html2canvas-ignore="true">
+            <button type="button" id="screenshotBtn">CHỤP ẢNH BÁO CÁO (LONG SCREENSHOT)</button>
+        </div>
+        <h1>Quyết toán Shopee</h1>
+        <div class="subtitle">Tải 2 file Excel, map theo mã đơn hàng, tính tiền hàng, quảng cáo, chi phí khác và lợi nhuận.</div>
+        <div id="exportOnlyText"></div>
+
+        <div class="upload-grid" data-html2canvas-ignore="true">
+            <label class="upload-box" for="settlementFile">
+                <strong>File 1: lịch sử quyết toán</strong>
+                <span class="file-name" id="settlementFileName">Báo cáo balance transaction Shopee</span>
+                <input type="file" id="settlementFile" accept=".xlsx,.xls" hidden>
+            </label>
+            <label class="upload-box" for="orderFile">
+                <strong>File 2: lịch sử order</strong>
+                <span class="file-name" id="orderFileName">Order.all từ Shopee</span>
+                <input type="file" id="orderFile" accept=".xlsx,.xls" hidden>
+            </label>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="label">Đơn quyết toán</div>
+                <div class="value" id="settlementOrderCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Có dữ liệu order</div>
+                <div class="value" id="mappedOrderCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Cần nhập tay</div>
+                <div class="value" id="unmappedOrderCount">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Doanh thu quyết toán</div>
+                <div class="value" id="revenueValue">0 đ</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Nạp quảng cáo</div>
+                <div class="value" id="adValue">0 đ</div>
+            </div>
+        </div>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">1. Cấu hình mặt hàng</h2>
+                <button type="button" id="addProductBtn" data-html2canvas-ignore="true">+ Thêm mặt hàng</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên mặt hàng</th>
+                            <th>Tên sản phẩm dùng để nhận diện</th>
+                            <th class="number">Giá nhập / hộp</th>
+                            <th style="width: 86px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">2. Danh sách đơn hàng từ file quyết toán</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Mã đơn hàng</th>
+                            <th class="number" style="width: 130px;">Quyết toán</th>
+                            <th>Tên sản phẩm</th>
+                            <th style="width: 190px;">Loại mặt hàng (cột U)</th>
+                            <th class="number" style="width: 80px;">SL</th>
+                            <th style="width: 72px;" data-html2canvas-ignore="true">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mappedOrderBody">
+                        <tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">2.1. Đơn hoàn hủy</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Mã đơn hàng</th>
+                            <th class="number" style="width: 130px;">Quyết toán âm</th>
+                            <th>Tên sản phẩm</th>
+                            <th style="width: 190px;">Loại mặt hàng (cột U)</th>
+                            <th class="number" style="width: 80px;">SL</th>
+                            <th style="width: 72px;" data-html2canvas-ignore="true">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="returnOrderBody">
+                        <tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">3. Quy đổi loại đơn sang số hộp</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên sản phẩm</th>
+                            <th style="width: 180px;">Tên phân loại</th>
+                            <th class="number" style="width: 120px;">Số hộp / SL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="variantBody">
+                        <tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">4. Tổng hợp tiền hàng</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên sản phẩm</th>
+                            <th>Loại mặt hàng</th>
+                            <th>Mặt hàng tính giá</th>
+                            <th class="number">Số đơn</th>
+                            <th class="number">Tổng số hộp</th>
+                            <th class="number">Giá nhập / hộp</th>
+                            <th class="number">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody id="goodsSummaryBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">4.1. Thống kê số lượng đơn theo mặt hàng</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên sản phẩm</th>
+                            <th>Loại mặt hàng</th>
+                            <th class="number">Đơn thành công</th>
+                            <th class="number">Đơn hoàn hủy</th>
+                            <th class="number">Tổng đơn</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orderTypeSummaryBody">
+                        <tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">5. Nạp tiền quảng cáo</h2>
+                <button type="button" id="addManualAdBtn" data-html2canvas-ignore="true">+ Thêm chuyển khoản</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nguồn</th>
+                            <th>Ghi chú</th>
+                            <th class="number">Số tiền</th>
+                            <th style="width: 86px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adBody"></tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td colspan="2">Tổng nạp quảng cáo</td>
+                            <td class="number" id="adTotalCell">0 đ</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">6. Chi phí khác</h2>
+                <button type="button" id="addExpenseBtn" data-html2canvas-ignore="true">+ Thêm chi phí</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tên chi phí</th>
+                            <th class="number">Số tiền</th>
+                            <th style="width: 86px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expenseBody"></tbody>
+                    <tfoot>
+                        <tr class="total-row">
+                            <td>Tổng chi phí khác</td>
+                            <td class="number" id="expenseTotalCell">0 đ</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">7. Tổng kết</h2>
+            </div>
+            <table>
+                <tbody>
+                    <tr><td>Doanh thu quyết toán đơn hàng đã map</td><td class="number positive" id="summaryRevenue">0 đ</td></tr>
+                    <tr><td>Tiền hàng</td><td class="number negative" id="summaryGoods">0 đ</td></tr>
+                    <tr><td>Nạp quảng cáo</td><td class="number negative" id="summaryAds">0 đ</td></tr>
+                    <tr><td>Chi phí khác</td><td class="number negative" id="summaryExpenses">0 đ</td></tr>
+                    <tr class="total-row"><td>Lợi nhuận tạm tính</td><td class="number" id="summaryProfit">0 đ</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+    </div>
+
+    <div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:9999;">
+        <div style="background:#fff; padding:25px; border-radius:8px; width:350px;">
+            <h3 style="margin-top:0">Chọn thời gian báo cáo</h3>
+            <div style="margin-bottom:15px;"><label>Ngày bắt đầu:</label><br><input type="date" id="startDate"></div>
+            <div style="margin-bottom:15px;"><label>Ngày kết thúc:</label><br><input type="date" id="endDate"></div>
+            <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" onclick="document.getElementById('dateModal').style.display='none'">Hủy</button>
+                <button type="button" id="confirmBtn" style="background:#1a73e8;">BẮT ĐẦU CHỤP</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const MONEY_FORMAT = new Intl.NumberFormat("vi-VN");
+        const SETTLEMENT_START_ROW = 19;
+        const AD_PAYMENT_PREFIX = normalizeText("Nạp tiền quảng cáo Shope");
+
+        const state = {
+            settlementLoaded: false,
+            orderLoaded: false,
+            settlementOrders: new Map(),
+            returnOrders: new Map(),
+            adFromFile: [],
+            orderItems: new Map(),
+            mappedRows: [],
+            returnRows: [],
+            manualOrders: {},
+            variantGroups: [],
+            variantConfig: {},
+            products: [
+                { name: "Trà ba kích", aliases: ["Trà ba kích", "Ba Kích", "Ngọc Cẩu"], price: 22000 },
+                { name: "Trà cà gai leo", aliases: ["Trà cà gai leo", "Cà Gai Leo"], price: 21000 },
+                { name: "Dây thìa canh", aliases: ["Dây thìa canh", "Thìa Canh"], price: 21000 }
+            ],
+            manualAds: [],
+            expenses: [{ name: "Chi phí vật tư", amount: 0 }]
+        };
+
+        window.addEventListener("load", initDates);
+        document.getElementById("settlementFile").addEventListener("change", event => loadExcel(event, "settlement"));
+        document.getElementById("orderFile").addEventListener("change", event => loadExcel(event, "order"));
+        document.getElementById("addProductBtn").addEventListener("click", addProduct);
+        document.getElementById("addManualAdBtn").addEventListener("click", addManualAd);
+        document.getElementById("addExpenseBtn").addEventListener("click", addExpense);
+        document.getElementById("screenshotBtn").addEventListener("click", () => {
+            document.getElementById("dateModal").style.display = "flex";
+        });
+        document.getElementById("confirmBtn").addEventListener("click", captureReport);
+
+        renderAll();
+
+        function initDates() {
+            const today = new Date();
+            const start = new Date();
+            start.setDate(today.getDate() - 10);
+            document.getElementById("endDate").value = today.toISOString().split("T")[0];
+            document.getElementById("startDate").value = start.toISOString().split("T")[0];
+        }
+
+        async function captureReport() {
+            const start = document.getElementById("startDate").value;
+            const end = document.getElementById("endDate").value;
+            if (!start || !end) return alert("Chọn ngày!");
+
+            const dateRange = `${start.split("-").reverse().join("/")} - ${end.split("-").reverse().join("/")}`;
+            document.getElementById("dateModal").style.display = "none";
+
+            const reportTitle = document.getElementById("reportTitle");
+            const exportText = document.getElementById("exportOnlyText");
+            reportTitle.textContent = `BÁO CÁO QUYẾT TOÁN SHOPEE (${dateRange})`;
+            reportTitle.style.display = "block";
+            exportText.textContent = `Doanh thu quyết toán (${dateRange}): ${formatMoney(mappedRevenue())}`;
+            exportText.style.display = "block";
+
+            const replacements = [];
+            document.querySelectorAll("#captureArea input, #captureArea select").forEach(element => {
+                if (element.closest("[data-html2canvas-ignore]")) return;
+
+                const span = document.createElement("span");
+                span.className = "pdf-replacement";
+                span.textContent = element.tagName === "SELECT"
+                    ? element.options[element.selectedIndex].text
+                    : (element.type === "number" ? formatInputNumber(element.value) : element.value);
+                element.parentNode.insertBefore(span, element);
+                element.style.display = "none";
+                replacements.push({ span, element });
+            });
+
+            try {
+                const captureArea = document.getElementById("captureArea");
+                const canvas = await html2canvas(captureArea, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    windowWidth: captureArea.scrollWidth,
+                    windowHeight: captureArea.scrollHeight
+                });
+                const link = document.createElement("a");
+                link.download = `Bao_Cao_Shopee_${start}_${end}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } finally {
+                reportTitle.style.display = "none";
+                exportText.style.display = "none";
+                replacements.forEach(item => {
+                    item.span.remove();
+                    item.element.style.display = "";
+                });
+            }
+        }
+
+        function loadExcel(event, type) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const fileNameId = type === "settlement" ? "settlementFileName" : "orderFileName";
+            document.getElementById(fileNameId).textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = loadEvent => {
+                const workbook = XLSX.read(new Uint8Array(loadEvent.target.result), {
+                    type: "array",
+                    cellDates: true
+                });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+
+                if (type === "settlement") processSettlementRows(rows);
+                if (type === "order") processOrderRows(rows);
+
+                buildMappedRows();
+                renderAll();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function processSettlementRows(rows) {
+            state.settlementOrders = new Map();
+            state.returnOrders = new Map();
+            state.adFromFile = [];
+
+            for (let index = SETTLEMENT_START_ROW - 1; index < rows.length; index++) {
+                const row = rows[index];
+                if (!row || row.every(cell => String(cell).trim() === "")) continue;
+
+                const date = row[0];
+                const note = String(row[2] || "").trim();
+                const rawOrderId = String(row[3] || "").trim();
+                const orderId = isOrderId(rawOrderId) ? rawOrderId : extractOrderIdFromText(note);
+                const amount = parseMoney(row[5]);
+
+                if (isOrderId(orderId) && amount > 0) {
+                    state.settlementOrders.set(orderId, { orderId, amount, date, note });
+                }
+
+                if (isOrderId(orderId) && amount >= -5000 && amount < 0) {
+                    const existing = state.returnOrders.get(orderId);
+                    if (existing) {
+                        existing.amount += amount;
+                        existing.note = `${existing.note}; ${note}`;
+                    } else {
+                        state.returnOrders.set(orderId, { orderId, amount, date, note });
+                    }
+                }
+
+                if (normalizeText(note).startsWith(AD_PAYMENT_PREFIX)) {
+                    state.adFromFile.push({ note, amount });
+                }
+            }
+
+            state.settlementLoaded = true;
+        }
+
+        function processOrderRows(rows) {
+            state.orderItems = new Map();
+
+            for (let index = 1; index < rows.length; index++) {
+                const row = rows[index];
+                if (!row || row.every(cell => String(cell).trim() === "")) continue;
+
+                const orderId = String(row[0] || "").trim(); // Cột A
+                if (!isOrderId(orderId)) continue;
+
+                const productName = String(row[16] || "").trim(); // Cột Q
+                const variantName = String(row[20] || "").trim(); // Cột U
+                const quantity = parseNumber(row[26]) || 1; // Cột AA
+                const item = { orderId, productName, variantName, quantity, fromOrderFile: true };
+
+                if (!state.orderItems.has(orderId)) state.orderItems.set(orderId, []);
+                state.orderItems.get(orderId).push(item);
+            }
+
+            state.orderLoaded = true;
+        }
+
+        function buildMappedRows() {
+            state.mappedRows = [];
+            state.returnRows = [];
+            state.variantGroups = [];
+            const groupMap = new Map();
+
+            for (const settlement of state.settlementOrders.values()) {
+                addSettlementRows(settlement, groupMap, state.mappedRows, "order");
+            }
+
+            for (const settlement of state.returnOrders.values()) {
+                addSettlementRows(settlement, groupMap, state.returnRows, "return");
+            }
+
+            state.variantGroups = Array.from(groupMap.values()).sort((a, b) => {
+                const nameCompare = a.productName.localeCompare(b.productName, "vi");
+                return nameCompare || a.variantName.localeCompare(b.variantName, "vi");
+            });
+        }
+
+        function addSettlementRows(settlement, groupMap, targetRows, rowType) {
+            const items = state.orderItems.get(settlement.orderId);
+            const sourceRows = items && items.length > 0
+                ? items
+                : [manualOrderFor(settlement.orderId)];
+
+            for (const item of sourceRows) {
+                const row = {
+                    orderId: settlement.orderId,
+                    amount: settlement.amount,
+                    productName: item.productName,
+                    variantName: item.variantName,
+                    quantity: item.quantity,
+                    fromOrderFile: item.fromOrderFile,
+                    itemRef: item,
+                    rowType
+                };
+                targetRows.push(row);
+                addVariantGroup(groupMap, row);
+            }
+        }
+
+        function manualOrderFor(orderId) {
+            if (!state.manualOrders[orderId]) {
+                state.manualOrders[orderId] = {
+                    orderId,
+                    productName: "",
+                    variantName: "",
+                    quantity: "",
+                    fromOrderFile: false
+                };
+            }
+            return state.manualOrders[orderId];
+        }
+
+        function addVariantGroup(groupMap, row) {
+            if (!String(row.productName || "").trim() && !String(row.variantName || "").trim()) return;
+
+            const key = makeVariantKey(row.productName, row.variantName);
+            if (!groupMap.has(key)) {
+                groupMap.set(key, {
+                    key,
+                    productName: row.productName,
+                    variantName: row.variantName,
+                    rows: 0,
+                    quantity: 0,
+                    orders: new Set()
+                });
+            }
+
+            const group = groupMap.get(key);
+            group.rows++;
+            group.quantity += parseNumber(row.quantity);
+            group.orders.add(row.orderId);
+
+            if (!state.variantConfig[key]) {
+                state.variantConfig[key] = {
+                    boxesPerQuantity: inferBoxesPerQuantity(row.variantName, row.productName)
+                };
+            }
+        }
+
+        function renderAll() {
+            renderProducts();
+            renderStats();
+            renderMappedOrders();
+            renderReturnOrders();
+            renderVariantGroups();
+            renderGoodsSummary();
+            renderOrderTypeSummary();
+            renderAds();
+            renderExpenses();
+            renderFinancialSummary();
+        }
+
+        function renderProducts() {
+            document.getElementById("productBody").innerHTML = state.products.map((product, index) => `
+                <tr>
+                    <td><input value="${escapeAttr(product.name)}" onchange="updateProductName(${index}, this.value)"></td>
+                    <td><textarea onchange="updateProductAliases(${index}, this.value)" placeholder="Mỗi dòng một tên sản phẩm">${escapeHtml(productAliasesText(product))}</textarea></td>
+                    <td><input class="number" type="number" value="${product.price}" onchange="updateProductPrice(${index}, this.value)"></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeProduct(${index})">Xóa</button></td>
+                </tr>
+            `).join("");
+        }
+
+        function renderStats() {
+            const orderFileIds = new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId));
+            const revenue = mappedRevenue();
+            document.getElementById("settlementOrderCount").textContent = MONEY_FORMAT.format(state.settlementOrders.size);
+            document.getElementById("mappedOrderCount").textContent = MONEY_FORMAT.format(orderFileIds.size);
+            document.getElementById("unmappedOrderCount").textContent = MONEY_FORMAT.format(Math.max(0, state.settlementOrders.size - orderFileIds.size));
+            document.getElementById("revenueValue").textContent = formatMoney(revenue);
+            document.getElementById("adValue").textContent = formatMoney(totalAds());
+        }
+
+        function renderMappedOrders() {
+            const body = document.getElementById("mappedOrderBody");
+            if (!state.settlementLoaded) {
+                body.innerHTML = '<tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>';
+                return;
+            }
+            if (state.mappedRows.length === 0) {
+                body.innerHTML = '<tr><td class="empty" colspan="6">Không có đơn quyết toán hợp lệ</td></tr>';
+                return;
+            }
+
+            body.innerHTML = state.mappedRows.map((row, index) => `
+                <tr>
+                    <td>${escapeHtml(row.orderId)}</td>
+                    <td class="number positive">${formatMoney(row.amount)}</td>
+                    <td><input value="${escapeAttr(row.productName)}" onchange="updateSettlementRow('order', ${index}, 'productName', this.value)"></td>
+                    <td><input value="${escapeAttr(row.variantName)}" onchange="updateSettlementRow('order', ${index}, 'variantName', this.value)"></td>
+                    <td><input class="number" type="number" min="0" step="1" value="${row.quantity}" onchange="updateSettlementRow('order', ${index}, 'quantity', this.value)"></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeSettlementOrder('order', '${encodeURIComponent(row.orderId)}')">X</button></td>
+                </tr>
+            `).join("");
+        }
+
+        function renderReturnOrders() {
+            const body = document.getElementById("returnOrderBody");
+            if (!state.settlementLoaded) {
+                body.innerHTML = '<tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>';
+                return;
+            }
+            if (state.returnRows.length === 0) {
+                body.innerHTML = '<tr><td class="empty" colspan="6">Không có đơn hoàn hủy dưới 5.000 đ</td></tr>';
+                return;
+            }
+
+            body.innerHTML = state.returnRows.map((row, index) => `
+                <tr>
+                    <td>${escapeHtml(row.orderId)}</td>
+                    <td class="number negative">${formatMoney(row.amount)}</td>
+                    <td><input value="${escapeAttr(row.productName)}" onchange="updateSettlementRow('return', ${index}, 'productName', this.value)"></td>
+                    <td><input value="${escapeAttr(row.variantName)}" onchange="updateSettlementRow('return', ${index}, 'variantName', this.value)"></td>
+                    <td><input class="number" type="number" min="0" step="1" value="${row.quantity}" onchange="updateSettlementRow('return', ${index}, 'quantity', this.value)"></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeSettlementOrder('return', '${encodeURIComponent(row.orderId)}')">X</button></td>
+                </tr>
+            `).join("");
+        }
+
+        function renderVariantGroups() {
+            const body = document.getElementById("variantBody");
+            if (state.variantGroups.length === 0) {
+                body.innerHTML = '<tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr>';
+                return;
+            }
+
+            body.innerHTML = state.variantGroups.map(group => {
+                const config = state.variantConfig[group.key];
+                const keyArg = encodeURIComponent(group.key);
+                return `
+                    <tr>
+                        <td>${escapeHtml(group.productName || "(Trống)")}</td>
+                        <td>${escapeHtml(group.variantName || "(Trống)")}</td>
+                        <td><input class="number" type="number" min="0" step="0.1" value="${config.boxesPerQuantity}" onchange="updateVariantBoxes('${keyArg}', this.value)"></td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function renderGoodsSummary() {
+            const rows = calculateGoodsSummary();
+            let totalCost = 0;
+
+            const html = rows.map(row => {
+                const matchedProduct = findConfiguredProduct(row.productName);
+                const price = matchedProduct ? matchedProduct.price : 0;
+                const cost = row.boxes * price;
+                totalCost += cost;
+                return `
+                    <tr>
+                        <td>${escapeHtml(row.productName || "(Trống)")}</td>
+                        <td>${escapeHtml(row.variantName || "(Trống)")}</td>
+                        <td>${escapeHtml(matchedProduct ? matchedProduct.name : "(Chưa khớp)")}</td>
+                        <td class="number">${MONEY_FORMAT.format(row.orders)}</td>
+                        <td class="number">${formatQuantity(row.boxes)}</td>
+                        <td class="number">${formatMoney(price)}</td>
+                        <td class="number">${formatMoney(cost)}</td>
+                    </tr>
+                `;
+            }).join("");
+
+            document.getElementById("goodsSummaryBody").innerHTML = (html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>') + `
+                <tr class="total-row">
+                    <td colspan="6">Tổng tiền hàng</td>
+                    <td class="number">${formatMoney(totalCost)}</td>
+                </tr>
+            `;
+        }
+
+        function renderOrderTypeSummary() {
+            const rows = calculateOrderTypeSummary();
+            const body = document.getElementById("orderTypeSummaryBody");
+            if (rows.length === 0) {
+                body.innerHTML = '<tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr>';
+                return;
+            }
+
+            body.innerHTML = rows.map(row => `
+                <tr>
+                    <td>${escapeHtml(row.productName || "(Trống)")}</td>
+                    <td>${escapeHtml(row.variantName || "(Trống)")}</td>
+                    <td class="number">${MONEY_FORMAT.format(row.successCount)}</td>
+                    <td class="number">${MONEY_FORMAT.format(row.returnCount)}</td>
+                    <td class="number">${MONEY_FORMAT.format(row.successCount + row.returnCount)}</td>
+                </tr>
+            `).join("");
+        }
+
+        function renderAds() {
+            const body = document.getElementById("adBody");
+            const fileRows = state.adFromFile.map(item => `
+                <tr>
+                    <td>File quyết toán</td>
+                    <td>${escapeHtml(item.note || "Nạp tiền quảng cáo Shopee")}</td>
+                    <td class="number negative">${formatMoney(Math.abs(item.amount))}</td>
+                    <td></td>
+                </tr>
+            `);
+
+            const manualRows = state.manualAds.map((item, index) => `
+                <tr>
+                    <td>Chuyển khoản</td>
+                    <td><input value="${escapeAttr(item.note)}" onchange="updateManualAd(${index}, 'note', this.value)"></td>
+                    <td><input class="number" type="number" value="${item.amount}" onchange="updateManualAd(${index}, 'amount', this.value)"></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeManualAd(${index})">Xóa</button></td>
+                </tr>
+            `);
+
+            body.innerHTML = fileRows.concat(manualRows).join("") || '<tr><td class="empty" colspan="4">Chưa có khoản nạp quảng cáo</td></tr>';
+            document.getElementById("adTotalCell").textContent = formatMoney(totalAds());
+        }
+
+        function renderExpenses() {
+            document.getElementById("expenseBody").innerHTML = state.expenses.map((expense, index) => `
+                <tr>
+                    <td><input value="${escapeAttr(expense.name)}" onchange="updateExpense(${index}, 'name', this.value)"></td>
+                    <td><input class="number" type="number" value="${expense.amount}" onchange="updateExpense(${index}, 'amount', this.value)"></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeExpense(${index})">Xóa</button></td>
+                </tr>
+            `).join("");
+            document.getElementById("expenseTotalCell").textContent = formatMoney(totalExpenses());
+        }
+
+        function renderFinancialSummary() {
+            const revenue = mappedRevenue();
+            const goods = totalGoodsCost();
+            const ads = totalAds();
+            const expenses = totalExpenses();
+            const profit = revenue - goods - ads - expenses;
+
+            document.getElementById("summaryRevenue").textContent = formatMoney(revenue);
+            document.getElementById("summaryGoods").textContent = formatMoney(goods);
+            document.getElementById("summaryAds").textContent = formatMoney(ads);
+            document.getElementById("summaryExpenses").textContent = formatMoney(expenses);
+            document.getElementById("summaryProfit").textContent = formatMoney(profit);
+            document.getElementById("summaryProfit").className = `number ${profit >= 0 ? "positive" : "negative"}`;
+        }
+
+        function addProduct() {
+            state.products.push({ name: "", aliases: [], price: 0 });
+            renderAll();
+        }
+
+        function removeProduct(index) {
+            if (state.products.length <= 1) return alert("Phải có ít nhất một mặt hàng.");
+            state.products.splice(index, 1);
+            renderAll();
+        }
+
+        function updateProductName(index, value) {
+            state.products[index].name = value.trim();
+            renderAll();
+        }
+
+        function updateProductAliases(index, value) {
+            state.products[index].aliases = parseAliasList(value);
+            renderAll();
+        }
+
+        function updateProductPrice(index, value) {
+            state.products[index].price = parseNumber(value);
+            renderAll();
+        }
+
+        function updateVariantBoxes(key, value) {
+            key = decodeURIComponent(key);
+            state.variantConfig[key].boxesPerQuantity = parseNumber(value);
+            renderAll();
+        }
+
+        function updateSettlementRow(rowType, index, field, value) {
+            const rows = rowType === "return" ? state.returnRows : state.mappedRows;
+            const row = rows[index];
+            if (!row) return;
+
+            const oldKey = makeVariantKey(row.productName, row.variantName);
+            const nextValue = field === "quantity" ? parseNumber(value) : value.trim();
+            row.itemRef[field] = nextValue;
+            const newKey = makeVariantKey(row.itemRef.productName, row.itemRef.variantName);
+
+            if (oldKey !== newKey && state.variantConfig[oldKey] && !state.variantConfig[newKey]) {
+                state.variantConfig[newKey] = { ...state.variantConfig[oldKey] };
+            }
+
+            buildMappedRows();
+            renderAll();
+        }
+
+        function removeSettlementOrder(rowType, orderId) {
+            orderId = decodeURIComponent(orderId);
+            if (rowType === "return") {
+                state.returnOrders.delete(orderId);
+            } else {
+                state.settlementOrders.delete(orderId);
+            }
+            buildMappedRows();
+            renderAll();
+        }
+
+        function addManualAd() {
+            state.manualAds.push({ note: "Nạp quảng cáo bằng chuyển khoản", amount: 0 });
+            renderAll();
+        }
+
+        function updateManualAd(index, field, value) {
+            state.manualAds[index][field] = field === "amount" ? parseNumber(value) : value;
+            renderAll();
+        }
+
+        function removeManualAd(index) {
+            state.manualAds.splice(index, 1);
+            renderAll();
+        }
+
+        function addExpense() {
+            state.expenses.push({ name: "", amount: 0 });
+            renderAll();
+        }
+
+        function updateExpense(index, field, value) {
+            state.expenses[index][field] = field === "amount" ? parseNumber(value) : value;
+            renderAll();
+        }
+
+        function removeExpense(index) {
+            state.expenses.splice(index, 1);
+            renderAll();
+        }
+
+        function calculateGoodsSummary() {
+            return state.variantGroups.map(group => {
+                const config = state.variantConfig[group.key];
+                return {
+                    productName: group.productName,
+                    variantName: group.variantName,
+                    orders: group.rows,
+                    boxes: group.quantity * (config ? config.boxesPerQuantity : 0)
+                };
+            });
+        }
+
+        function calculateOrderTypeSummary() {
+            const groupMap = new Map();
+
+            addRowsToOrderTypeSummary(groupMap, state.mappedRows, "successOrders");
+            addRowsToOrderTypeSummary(groupMap, state.returnRows, "returnOrders");
+
+            return Array.from(groupMap.values()).map(group => ({
+                productName: group.productName,
+                variantName: group.variantName,
+                successCount: group.successOrders.size,
+                returnCount: group.returnOrders.size
+            })).sort((a, b) => {
+                const productCompare = a.productName.localeCompare(b.productName, "vi");
+                return productCompare || a.variantName.localeCompare(b.variantName, "vi");
+            });
+        }
+
+        function addRowsToOrderTypeSummary(groupMap, rows, setName) {
+            for (const row of rows) {
+                if (!String(row.productName || "").trim() && !String(row.variantName || "").trim()) continue;
+
+                const key = makeVariantKey(row.productName, row.variantName);
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        productName: row.productName,
+                        variantName: row.variantName,
+                        successOrders: new Set(),
+                        returnOrders: new Set()
+                    });
+                }
+
+                groupMap.get(key)[setName].add(row.orderId);
+            }
+        }
+
+        function totalGoodsCost() {
+            return calculateGoodsSummary().reduce((sum, row) => sum + (row.boxes * priceForProductName(row.productName)), 0);
+        }
+
+        function mappedRevenue() {
+            const positive = Array.from(state.settlementOrders.values()).reduce((sum, item) => sum + item.amount, 0);
+            const returns = Array.from(state.returnOrders.values()).reduce((sum, item) => sum + item.amount, 0);
+            return positive + returns;
+        }
+
+        function totalAds() {
+            const fromFile = state.adFromFile.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            const manual = state.manualAds.reduce((sum, item) => sum + Math.abs(parseNumber(item.amount)), 0);
+            return fromFile + manual;
+        }
+
+        function totalExpenses() {
+            return state.expenses.reduce((sum, item) => sum + Math.abs(parseNumber(item.amount)), 0);
+        }
+
+        function priceForProductName(productName) {
+            const product = findConfiguredProduct(productName);
+            return product ? product.price : 0;
+        }
+
+        function findConfiguredProduct(productName) {
+            const normalizedName = normalizeText(productName);
+            if (!normalizedName) return null;
+
+            return state.products
+                .map(product => ({ product, score: productMatchScore(product, normalizedName) }))
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)[0]?.product || null;
+        }
+
+        function productMatchScore(product, normalizedName) {
+            const names = productAliasList(product);
+            let bestScore = 0;
+
+            for (const name of names) {
+                const normalizedAlias = normalizeText(name);
+                if (!normalizedAlias) continue;
+
+                const tokens = normalizedAlias.split(/\s+/).filter(Boolean);
+                const matched = normalizedName.includes(normalizedAlias) ||
+                    tokens.every(token => normalizedName.includes(token));
+
+                if (matched) bestScore = Math.max(bestScore, normalizedAlias.length);
+            }
+
+            return bestScore;
+        }
+
+        function productAliasList(product) {
+            return [product.name, ...(product.aliases || [])].filter(Boolean);
+        }
+
+        function productAliasesText(product) {
+            return (product.aliases || []).join("\n");
+        }
+
+        function parseAliasList(value) {
+            return String(value || "")
+                .split(/\r?\n|,/)
+                .map(item => item.trim())
+                .filter(Boolean);
+        }
+
+        function inferBoxesPerQuantity(variantName, productName) {
+            const variantText = normalizeText(variantName);
+            const productText = normalizeText(productName);
+            if (variantText.includes("combo 2")) return 3;
+            if (variantText.includes("1 hop")) return 1;
+            const match = variantText.match(/(\d+(?:[.,]\d+)?)\s*hop/);
+            if (match) return parseNumber(match[1]);
+            if (productText.includes("combo 2") || productText.includes("mua 2 tang 1")) return 3;
+            return 1;
+        }
+
+        function makeVariantKey(productName, variantName) {
+            return `${productName || ""}|||${variantName || ""}`;
+        }
+
+        function isOrderId(value) {
+            const text = String(value || "").trim();
+            return text !== "" && text !== "-";
+        }
+
+        function extractOrderIdFromText(value) {
+            const match = String(value || "").match(/\b\d{6}[A-Z0-9]{6,}\b/i);
+            return match ? match[0].toUpperCase() : "";
+        }
+
+        function parseMoney(value) {
+            if (typeof value === "number") return value;
+            const raw = String(value ?? "").trim();
+            if (!raw) return 0;
+            const negative = raw.startsWith("-") || raw.endsWith("-") || /^\(.+\)$/.test(raw);
+            const digitsOnly = raw.replace(/\D/g, "");
+            const amount = Number(digitsOnly) || 0;
+            return negative ? -Math.abs(amount) : amount;
+        }
+
+        function parseNumber(value) {
+            if (typeof value === "number") return value;
+            let text = String(value ?? "").trim();
+            if (!text) return 0;
+
+            if (text.includes(",")) {
+                text = text.replace(/\./g, "").replace(",", ".");
+                return Number(text) || 0;
+            }
+
+            if (/^\d+\.\d{1,2}$/.test(text)) return Number(text) || 0;
+            return Number(text.replace(/\./g, "")) || 0;
+        }
+
+        function normalizeText(value) {
+            return String(value || "")
+                .trim()
+                .toLowerCase()
+                .replace(/đ/g, "d")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+        }
+
+        function formatMoney(value) {
+            return `${MONEY_FORMAT.format(Math.round(value || 0))} đ`;
+        }
+
+        function formatQuantity(value) {
+            return MONEY_FORMAT.format(Math.round((value || 0) * 10) / 10);
+        }
+
+        function formatInputNumber(value) {
+            const number = parseNumber(value);
+            return Number.isFinite(number) ? MONEY_FORMAT.format(number) : value;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "").replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[char]));
+        }
+
+        function escapeAttr(value) {
+            return escapeHtml(value);
+        }
+    </script>
+</body>
+</html>
