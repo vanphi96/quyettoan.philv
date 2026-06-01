@@ -209,9 +209,15 @@
             padding: 10px 16px;
         }
         #screenshotBtn:hover { background: #d35400; }
+        #excelExportBtn {
+            background: #188038;
+            padding: 10px 16px;
+        }
+        #excelExportBtn:hover { background: #146c2e; }
         .top-actions {
             display: flex;
             justify-content: flex-end;
+            gap: 10px;
             margin-bottom: 12px;
         }
         .pdf-replacement {
@@ -232,6 +238,7 @@
     <main class="container">
         <div id="reportTitle">BÁO CÁO QUYẾT TOÁN SHOPEE</div>
         <div class="top-actions" data-html2canvas-ignore="true">
+            <button type="button" id="excelExportBtn">XUẤT EXCEL</button>
             <button type="button" id="screenshotBtn">CHỤP ẢNH BÁO CÁO (LONG SCREENSHOT)</button>
         </div>
         <h1>Quyết toán Shopee</h1>
@@ -518,6 +525,7 @@
         document.getElementById("addProductBtn").addEventListener("click", addProduct);
         document.getElementById("addManualAdBtn").addEventListener("click", addManualAd);
         document.getElementById("addExpenseBtn").addEventListener("click", addExpense);
+        document.getElementById("excelExportBtn").addEventListener("click", exportExcelReport);
         document.getElementById("screenshotBtn").addEventListener("click", () => {
             document.getElementById("dateModal").style.display = "flex";
         });
@@ -1106,6 +1114,101 @@
 
         function totalExpenses() {
             return state.expenses.reduce((sum, item) => sum + Math.abs(parseNumber(item.amount)), 0);
+        }
+
+        function exportExcelReport() {
+            if (typeof XLSX === "undefined") return alert("Không tải được thư viện xuất Excel.");
+
+            const workbook = XLSX.utils.book_new();
+            const revenue = mappedRevenue();
+            const goods = totalGoodsCost();
+            const ads = totalAds();
+            const expenses = totalExpenses();
+            const profit = revenue - goods - ads - expenses;
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([
+                { "Hạng mục": "Đơn quyết toán", "Giá trị": state.settlementOrders.size },
+                { "Hạng mục": "Có dữ liệu order", "Giá trị": new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size },
+                { "Hạng mục": "Cần nhập tay", "Giá trị": Math.max(0, state.settlementOrders.size - new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size) },
+                { "Hạng mục": "Doanh thu quyết toán", "Giá trị": revenue },
+                { "Hạng mục": "Tiền hàng", "Giá trị": goods },
+                { "Hạng mục": "Nạp quảng cáo", "Giá trị": ads },
+                { "Hạng mục": "Chi phí khác", "Giá trị": expenses },
+                { "Hạng mục": "Lợi nhuận tạm tính", "Giá trị": profit }
+            ]), "Tong ket");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.mappedRows.map(row => ({
+                "Mã đơn hàng": row.orderId,
+                "Quyết toán": row.amount,
+                "Tên sản phẩm": row.productName,
+                "Loại mặt hàng": row.variantName,
+                "SL": parseNumber(row.quantity),
+                "Nguồn": row.fromOrderFile ? "File order" : "Nhập tay"
+            }))), "Don quyet toan");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.returnRows.map(row => ({
+                "Mã đơn hàng": row.orderId,
+                "Quyết toán âm": row.amount,
+                "Tên sản phẩm": row.productName,
+                "Loại mặt hàng": row.variantName,
+                "SL": parseNumber(row.quantity),
+                "Nguồn": row.fromOrderFile ? "File order" : "Nhập tay"
+            }))), "Don hoan huy");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.variantGroups.map(group => ({
+                "Tên sản phẩm": group.productName,
+                "Tên phân loại": group.variantName,
+                "Số dòng": group.rows,
+                "Tổng SL": group.quantity,
+                "Số hộp/SL": state.variantConfig[group.key]?.boxesPerQuantity || 0
+            }))), "Quy doi");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(calculateGoodsSummary().map(row => {
+                const matchedProduct = findConfiguredProduct(row.productName);
+                const price = matchedProduct ? matchedProduct.price : 0;
+                return {
+                    "Tên sản phẩm": row.productName,
+                    "Loại mặt hàng": row.variantName,
+                    "Mặt hàng tính giá": matchedProduct ? matchedProduct.name : "",
+                    "Số đơn": row.orders,
+                    "Tổng số hộp": row.boxes,
+                    "Giá nhập/hộp": price,
+                    "Thành tiền": row.boxes * price
+                };
+            })), "Tien hang");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(calculateOrderTypeSummary().map(row => ({
+                "Tên sản phẩm": row.productName,
+                "Loại mặt hàng": row.variantName,
+                "Đơn thành công": row.successCount,
+                "Đơn hoàn hủy": row.returnCount,
+                "Tổng đơn": row.successCount + row.returnCount
+            }))), "So luong don");
+
+            const adRows = state.adFromFile.map(item => ({
+                "Nguồn": "File quyết toán",
+                "Ghi chú": item.note || "Nạp tiền quảng cáo Shopee",
+                "Số tiền": Math.abs(item.amount)
+            })).concat(state.manualAds.map(item => ({
+                "Nguồn": "Chuyển khoản",
+                "Ghi chú": item.note,
+                "Số tiền": Math.abs(parseNumber(item.amount))
+            })));
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(adRows), "Quang cao");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.expenses.map(item => ({
+                "Tên chi phí": item.name,
+                "Số tiền": Math.abs(parseNumber(item.amount))
+            }))), "Chi phi");
+
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.products.map(product => ({
+                "Tên mặt hàng": product.name,
+                "Tên nhận diện": productAliasList(product).join("\n"),
+                "Giá nhập/hộp": product.price
+            }))), "Cau hinh");
+
+            const today = new Date().toISOString().split("T")[0];
+            XLSX.writeFile(workbook, `Bao_Cao_Shopee_${today}.xlsx`);
         }
 
         function priceForProductName(productName) {
