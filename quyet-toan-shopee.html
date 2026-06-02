@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -225,6 +225,40 @@
             min-height: 24px;
             font-weight: 600;
         }
+        .date-input-wrap {
+            position: relative;
+        }
+        .date-input-wrap input[type="text"] {
+            min-width: 0;
+            padding-right: 38px;
+        }
+        .date-picker-btn {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1;
+        }
+        .date-picker-btn:hover {
+            background: transparent;
+            color: var(--focus);
+        }
+        .date-native-picker {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            height: 0;
+        }
 
         @media (max-width: 900px) {
             .upload-grid, .stats { grid-template-columns: 1fr; }
@@ -310,6 +344,7 @@
                     <thead>
                         <tr>
                             <th style="width: 150px;">Mã đơn hàng</th>
+                            <th style="width: 120px;">Ngày đặt hàng</th>
                             <th class="number" style="width: 130px;">Quyết toán</th>
                             <th>Tên sản phẩm</th>
                             <th style="width: 190px;">Loại mặt hàng (cột U)</th>
@@ -318,7 +353,7 @@
                         </tr>
                     </thead>
                     <tbody id="mappedOrderBody">
-                        <tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>
+                        <tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -356,12 +391,16 @@
                     <thead>
                         <tr>
                             <th>Tên sản phẩm</th>
+                            <th style="width: 190px;">Loại mặt hàng</th>
                             <th style="width: 180px;">Tên phân loại</th>
+                            <th style="width: 140px;">Từ ngày đặt</th>
+                            <th style="width: 140px;">Đến ngày đặt</th>
                             <th class="number" style="width: 120px;">Số hộp / SL</th>
+                            <th style="width: 110px;" data-html2canvas-ignore="true">Cấu hình</th>
                         </tr>
                     </thead>
                     <tbody id="variantBody">
-                        <tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr>
+                        <tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -484,8 +523,8 @@
     <div id="dateModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; z-index:9999;">
         <div style="background:#fff; padding:25px; border-radius:8px; width:350px;">
             <h3 style="margin-top:0">Chọn thời gian báo cáo</h3>
-            <div style="margin-bottom:15px;"><label>Ngày bắt đầu:</label><br><input type="date" id="startDate"></div>
-            <div style="margin-bottom:15px;"><label>Ngày kết thúc:</label><br><input type="date" id="endDate"></div>
+            <div style="margin-bottom:15px;"><label>Ngày bắt đầu:</label><br><input type="text" id="startDate" placeholder="dd/mm/yyyy" data-date-display="true"></div>
+            <div style="margin-bottom:15px;"><label>Ngày kết thúc:</label><br><input type="text" id="endDate" placeholder="dd/mm/yyyy" data-date-display="true"></div>
             <div style="display:flex; justify-content:flex-end; gap:10px;">
                 <button type="button" onclick="document.getElementById('dateModal').style.display='none'">Hủy</button>
                 <button type="button" id="confirmBtn" style="background:#1a73e8;">BẮT ĐẦU CHỤP</button>
@@ -537,16 +576,16 @@
             const today = new Date();
             const start = new Date();
             start.setDate(today.getDate() - 10);
-            document.getElementById("endDate").value = today.toISOString().split("T")[0];
-            document.getElementById("startDate").value = start.toISOString().split("T")[0];
+            document.getElementById("endDate").value = formatDateDisplay(today);
+            document.getElementById("startDate").value = formatDateDisplay(start);
         }
 
         async function captureReport() {
-            const start = document.getElementById("startDate").value;
-            const end = document.getElementById("endDate").value;
+            const start = parseDateValue(document.getElementById("startDate").value);
+            const end = parseDateValue(document.getElementById("endDate").value);
             if (!start || !end) return alert("Chọn ngày!");
 
-            const dateRange = `${start.split("-").reverse().join("/")} - ${end.split("-").reverse().join("/")}`;
+            const dateRange = `${formatDateDisplay(start)} - ${formatDateDisplay(end)}`;
             document.getElementById("dateModal").style.display = "none";
 
             const reportTitle = document.getElementById("reportTitle");
@@ -564,7 +603,9 @@
                 span.className = "pdf-replacement";
                 span.textContent = element.tagName === "SELECT"
                     ? element.options[element.selectedIndex].text
-                    : (element.type === "number" ? formatInputNumber(element.value) : element.value);
+                    : (element.type === "number"
+                        ? formatInputNumber(element.value)
+                        : (element.dataset.dateDisplay === "true" ? formatDateDisplay(element.value) : element.value));
                 element.parentNode.insertBefore(span, element);
                 element.style.display = "none";
                 replacements.push({ span, element });
@@ -580,7 +621,7 @@
                     windowHeight: captureArea.scrollHeight
                 });
                 const link = document.createElement("a");
-                link.download = `Bao_Cao_Shopee_${start}_${end}.png`;
+                link.download = `Bao_Cao_Shopee_${formatDateFileName(start)}_${formatDateFileName(end)}.png`;
                 link.href = canvas.toDataURL("image/png");
                 link.click();
             } finally {
@@ -665,10 +706,11 @@
                 const orderId = String(row[0] || "").trim(); // Cột A
                 if (!isOrderId(orderId)) continue;
 
+                const orderDate = toDateInputValue(row[2]); // Cột C: ngày đặt hàng
                 const productName = String(row[16] || "").trim(); // Cột Q
                 const variantName = String(row[20] || "").trim(); // Cột U
                 const quantity = parseNumber(row[26]) || 1; // Cột AA
-                const item = { orderId, productName, variantName, quantity, fromOrderFile: true };
+                const item = { orderId, orderDate, productName, variantName, quantity, fromOrderFile: true };
 
                 if (!state.orderItems.has(orderId)) state.orderItems.set(orderId, []);
                 state.orderItems.get(orderId).push(item);
@@ -707,6 +749,8 @@
                 const row = {
                     orderId: settlement.orderId,
                     amount: settlement.amount,
+                    orderDate: item.orderDate || "",
+                    settlementDate: toDateInputValue(settlement.date),
                     productName: item.productName,
                     variantName: item.variantName,
                     quantity: item.quantity,
@@ -723,6 +767,7 @@
             if (!state.manualOrders[orderId]) {
                 state.manualOrders[orderId] = {
                     orderId,
+                    orderDate: "",
                     productName: "",
                     variantName: "",
                     quantity: "",
@@ -743,7 +788,8 @@
                     variantName: row.variantName,
                     rows: 0,
                     quantity: 0,
-                    orders: new Set()
+                    orders: new Set(),
+                    orderDates: []
                 });
             }
 
@@ -751,10 +797,11 @@
             group.rows++;
             group.quantity += parseNumber(row.quantity);
             group.orders.add(row.orderId);
+            if (row.orderDate) group.orderDates.push(row.orderDate);
 
             if (!state.variantConfig[key]) {
                 state.variantConfig[key] = {
-                    boxesPerQuantity: inferBoxesPerQuantity(row.variantName, row.productName)
+                    rules: [defaultVariantRule(row.variantName, row.productName, group.orderDates)]
                 };
             }
         }
@@ -796,17 +843,18 @@
         function renderMappedOrders() {
             const body = document.getElementById("mappedOrderBody");
             if (!state.settlementLoaded) {
-                body.innerHTML = '<tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>';
+                body.innerHTML = '<tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr>';
                 return;
             }
             if (state.mappedRows.length === 0) {
-                body.innerHTML = '<tr><td class="empty" colspan="6">Không có đơn quyết toán hợp lệ</td></tr>';
+                body.innerHTML = '<tr><td class="empty" colspan="7">Không có đơn quyết toán hợp lệ</td></tr>';
                 return;
             }
 
             body.innerHTML = state.mappedRows.map((row, index) => `
                 <tr>
                     <td>${escapeHtml(row.orderId)}</td>
+                    <td>${escapeHtml(formatDateDisplay(row.orderDate))}</td>
                     <td class="number positive">${formatMoney(row.amount)}</td>
                     <td><input value="${escapeAttr(row.productName)}" onchange="updateSettlementRow('order', ${index}, 'productName', this.value)"></td>
                     <td><input value="${escapeAttr(row.variantName)}" onchange="updateSettlementRow('order', ${index}, 'variantName', this.value)"></td>
@@ -842,20 +890,40 @@
         function renderVariantGroups() {
             const body = document.getElementById("variantBody");
             if (state.variantGroups.length === 0) {
-                body.innerHTML = '<tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr>';
+                body.innerHTML = '<tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr>';
                 return;
             }
 
-            body.innerHTML = state.variantGroups.map(group => {
-                const config = state.variantConfig[group.key];
+            body.innerHTML = state.variantGroups.flatMap(group => {
+                const config = normalizeVariantConfig(group.key, group.variantName, group.productName, group.orderDates);
                 const keyArg = encodeURIComponent(group.key);
-                return `
+                return config.rules.map((rule, ruleIndex) => `
                     <tr>
                         <td>${escapeHtml(group.productName || "(Trống)")}</td>
+                        <td>
+                            <select onchange="updateVariantProductType('${keyArg}', this.value)">
+                                ${productTypeOptionsHtml(config.productType)}
+                            </select>
+                        </td>
                         <td>${escapeHtml(group.variantName || "(Trống)")}</td>
-                        <td><input class="number" type="number" min="0" step="0.1" value="${config.boxesPerQuantity}" onchange="updateVariantBoxes('${keyArg}', this.value)"></td>
+                        <td>
+                            <div class="date-input-wrap">
+                                <input value="${escapeAttr(formatDateDisplay(rule.fromDate || ""))}" placeholder="dd/mm/yyyy" data-date-display="true" oninput="formatDateTyping(this)" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'fromDate', this.value)">
+                                <button type="button" class="date-picker-btn" onclick="openVariantDatePicker('${keyArg}', ${ruleIndex}, 'fromDate')">📅</button>
+                                <input type="date" class="date-native-picker" id="${escapeAttr(variantDatePickerId(group.key, ruleIndex, "fromDate"))}" value="${escapeAttr(rule.fromDate || "")}" onchange="applyVariantDatePicker('${keyArg}', ${ruleIndex}, 'fromDate', this.value)">
+                            </div>
+                        </td>
+                        <td>
+                            <div class="date-input-wrap">
+                                <input value="${escapeAttr(formatDateDisplay(rule.toDate || ""))}" placeholder="dd/mm/yyyy" data-date-display="true" oninput="formatDateTyping(this)" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'toDate', this.value)">
+                                <button type="button" class="date-picker-btn" onclick="openVariantDatePicker('${keyArg}', ${ruleIndex}, 'toDate')">📅</button>
+                                <input type="date" class="date-native-picker" id="${escapeAttr(variantDatePickerId(group.key, ruleIndex, "toDate"))}" value="${escapeAttr(rule.toDate || "")}" onchange="applyVariantDatePicker('${keyArg}', ${ruleIndex}, 'toDate', this.value)">
+                            </div>
+                        </td>
+                        <td><input class="number" type="number" min="0" step="0.1" value="${rule.boxesPerQuantity}" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'boxesPerQuantity', this.value)"></td>
+                        <td data-html2canvas-ignore="true"><button type="button" class="btn-add" onclick="addVariantRule('${keyArg}')">+</button> <button type="button" class="btn-delete" onclick="removeVariantRule('${keyArg}', ${ruleIndex})">X</button></td>
                     </tr>
-                `;
+                `);
             }).join("");
         }
 
@@ -864,7 +932,7 @@
             let totalCost = 0;
 
             const html = rows.map(row => {
-                const matchedProduct = findConfiguredProduct(row.productName);
+                const matchedProduct = findProductByName(row.productType);
                 const price = matchedProduct ? matchedProduct.price : 0;
                 const cost = row.boxes * price;
                 totalCost += cost;
@@ -970,7 +1038,16 @@
         }
 
         function updateProductName(index, value) {
-            state.products[index].name = value.trim();
+            const product = state.products[index];
+            const oldName = product.name;
+            const nextName = value.trim();
+            product.name = nextName;
+
+            if (oldName && oldName !== nextName) {
+                Object.values(state.variantConfig).forEach(config => {
+                    if (config.productType === oldName) config.productType = nextName;
+                });
+            }
             renderAll();
         }
 
@@ -986,7 +1063,56 @@
 
         function updateVariantBoxes(key, value) {
             key = decodeURIComponent(key);
-            state.variantConfig[key].boxesPerQuantity = parseNumber(value);
+            normalizeVariantConfig(key).rules[0].boxesPerQuantity = parseNumber(value);
+            renderAll();
+        }
+
+        function updateVariantRule(key, ruleIndex, field, value) {
+            key = decodeURIComponent(key);
+            const config = normalizeVariantConfig(key);
+            const rule = config.rules[ruleIndex];
+            if (!rule) return;
+            rule[field] = field === "boxesPerQuantity"
+                ? parseNumber(value)
+                : parseDateValue(value);
+            renderAll();
+        }
+
+        function updateVariantProductType(key, value) {
+            key = decodeURIComponent(key);
+            const config = normalizeVariantConfig(key);
+            config.productType = value;
+            renderAll();
+        }
+
+        function openVariantDatePicker(key, ruleIndex, field) {
+            key = decodeURIComponent(key);
+            const picker = document.getElementById(variantDatePickerId(key, ruleIndex, field));
+            if (!picker) return;
+            if (typeof picker.showPicker === "function") {
+                picker.showPicker();
+                return;
+            }
+            picker.click();
+        }
+
+        function applyVariantDatePicker(key, ruleIndex, field, value) {
+            updateVariantRule(key, ruleIndex, field, value);
+        }
+
+        function addVariantRule(key) {
+            key = decodeURIComponent(key);
+            const config = normalizeVariantConfig(key);
+            const lastRule = config.rules[config.rules.length - 1] || defaultVariantRule();
+            config.rules.push({ fromDate: "", toDate: "", boxesPerQuantity: lastRule.boxesPerQuantity });
+            renderAll();
+        }
+
+        function removeVariantRule(key, ruleIndex) {
+            key = decodeURIComponent(key);
+            const config = normalizeVariantConfig(key);
+            if (config.rules.length <= 1) return alert("Phải có ít nhất một dòng cấu hình.");
+            config.rules.splice(ruleIndex, 1);
             renderAll();
         }
 
@@ -1050,14 +1176,36 @@
         }
 
         function calculateGoodsSummary() {
-            return state.variantGroups.map(group => {
-                const config = state.variantConfig[group.key];
-                return {
-                    productName: group.productName,
-                    variantName: group.variantName,
-                    orders: group.rows,
-                    boxes: group.quantity * (config ? config.boxesPerQuantity : 0)
-                };
+            const groupMap = new Map();
+            state.mappedRows.concat(state.returnRows).forEach(row => {
+                if (!String(row.productName || "").trim() && !String(row.variantName || "").trim()) return;
+
+                const key = makeVariantKey(row.productName, row.variantName);
+                if (!groupMap.has(key)) {
+                    const config = normalizeVariantConfig(key, row.variantName, row.productName);
+                    groupMap.set(key, {
+                        productName: row.productName,
+                        variantName: row.variantName,
+                        productType: config.productType || "",
+                        orders: new Set(),
+                        boxes: 0
+                    });
+                }
+
+                const group = groupMap.get(key);
+                group.orders.add(row.orderId);
+                group.boxes += parseNumber(row.quantity) * boxesPerQuantityForRow(row);
+            });
+
+            return Array.from(groupMap.values()).map(group => ({
+                productName: group.productName,
+                variantName: group.variantName,
+                productType: group.productType,
+                orders: group.orders.size,
+                boxes: group.boxes
+            })).sort((a, b) => {
+                const productCompare = a.productName.localeCompare(b.productName, "vi");
+                return productCompare || a.variantName.localeCompare(b.variantName, "vi");
             });
         }
 
@@ -1097,7 +1245,7 @@
         }
 
         function totalGoodsCost() {
-            return calculateGoodsSummary().reduce((sum, row) => sum + (row.boxes * priceForProductName(row.productName)), 0);
+            return calculateGoodsSummary().reduce((sum, row) => sum + (row.boxes * priceForConfiguredProduct(row.productType)), 0);
         }
 
         function mappedRevenue() {
@@ -1155,21 +1303,27 @@
                 "Nguồn": row.fromOrderFile ? "File order" : "Nhập tay"
             }))), "Don hoan huy");
 
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.variantGroups.map(group => ({
-                "Tên sản phẩm": group.productName,
-                "Tên phân loại": group.variantName,
-                "Số dòng": group.rows,
-                "Tổng SL": group.quantity,
-                "Số hộp/SL": state.variantConfig[group.key]?.boxesPerQuantity || 0
-            }))), "Quy doi");
+            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.variantGroups.flatMap(group => {
+                const config = normalizeVariantConfig(group.key, group.variantName, group.productName);
+                return config.rules.map(rule => ({
+                    "Tên sản phẩm": group.productName,
+                    "Loại mặt hàng": config.productType || "",
+                    "Tên phân loại": group.variantName,
+                    "Từ ngày đặt": formatDateDisplay(rule.fromDate),
+                    "Đến ngày đặt": formatDateDisplay(rule.toDate),
+                    "Số dòng": group.rows,
+                    "Tổng SL": group.quantity,
+                    "Số hộp/SL": rule.boxesPerQuantity
+                }));
+            })), "Quy doi");
 
             XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(calculateGoodsSummary().map(row => {
-                const matchedProduct = findConfiguredProduct(row.productName);
+                const matchedProduct = findProductByName(row.productType);
                 const price = matchedProduct ? matchedProduct.price : 0;
                 return {
                     "Tên sản phẩm": row.productName,
                     "Loại mặt hàng": row.variantName,
-                    "Mặt hàng tính giá": matchedProduct ? matchedProduct.name : "",
+                    "Mặt hàng tính giá": matchedProduct ? matchedProduct.name : (row.productType || ""),
                     "Số đơn": row.orders,
                     "Tổng số hộp": row.boxes,
                     "Giá nhập/hộp": price,
@@ -1207,13 +1361,19 @@
                 "Giá nhập/hộp": product.price
             }))), "Cau hinh");
 
-            const today = new Date().toISOString().split("T")[0];
-            XLSX.writeFile(workbook, `Bao_Cao_Shopee_${today}.xlsx`);
+            const today = new Date();
+            XLSX.writeFile(workbook, `Bao_Cao_Shopee_${formatDateFileName(today)}.xlsx`);
         }
 
-        function priceForProductName(productName) {
-            const product = findConfiguredProduct(productName);
+        function priceForConfiguredProduct(productType) {
+            const product = findProductByName(productType);
             return product ? product.price : 0;
+        }
+
+        function findProductByName(productType) {
+            const normalizedType = normalizeText(productType);
+            if (!normalizedType) return null;
+            return state.products.find(product => normalizeText(product.name) === normalizedType) || null;
         }
 
         function findConfiguredProduct(productName) {
@@ -1252,6 +1412,28 @@
             return (product.aliases || []).join("\n");
         }
 
+        function inferConfiguredProductName(productName) {
+            return findConfiguredProduct(productName)?.name || "";
+        }
+
+        function variantDatePickerId(key, ruleIndex, field) {
+            const safeKey = String(key || "").replace(/[^a-zA-Z0-9_-]/g, "_");
+            return `variant-date-${safeKey}-${ruleIndex}-${field}`;
+        }
+
+        function productTypeOptionsHtml(selectedValue) {
+            const selected = String(selectedValue || "");
+            const options = ['<option value="">(Chưa chọn)</option>'];
+            const names = state.products.map(product => product.name).filter(Boolean);
+            const uniqueNames = Array.from(new Set(selected && !names.includes(selected) ? [selected, ...names] : names));
+
+            uniqueNames.forEach(name => {
+                options.push(`<option value="${escapeAttr(name)}"${name === selected ? " selected" : ""}>${escapeHtml(name)}</option>`);
+            });
+
+            return options.join("");
+        }
+
         function parseAliasList(value) {
             return String(value || "")
                 .split(/\r?\n|,/)
@@ -1268,6 +1450,173 @@
             if (match) return parseNumber(match[1]);
             if (productText.includes("combo 2") || productText.includes("mua 2 tang 1")) return 3;
             return 1;
+        }
+
+        function defaultVariantRule(variantName = "", productName = "", dates = []) {
+            const range = dateRangeFromValues(dates);
+            return { fromDate: range.fromDate, toDate: range.toDate, boxesPerQuantity: inferBoxesPerQuantity(variantName, productName) };
+        }
+
+        function normalizeVariantConfig(key, variantName = "", productName = "", dates = []) {
+            if (!state.variantConfig[key]) {
+                state.variantConfig[key] = {
+                    productType: inferConfiguredProductName(productName),
+                    rules: [defaultVariantRule(variantName, productName, dates)]
+                };
+            }
+
+            const config = state.variantConfig[key];
+            if (typeof config.productType !== "string") {
+                config.productType = inferConfiguredProductName(productName);
+            }
+            if (!Array.isArray(config.rules)) {
+                const range = dateRangeFromValues(dates);
+                config.rules = [{
+                    fromDate: config.fromDate || range.fromDate,
+                    toDate: config.toDate || range.toDate,
+                    boxesPerQuantity: parseNumber(config.boxesPerQuantity) || inferBoxesPerQuantity(variantName, productName)
+                }];
+            }
+
+            if (config.rules.length === 0) config.rules.push(defaultVariantRule(variantName, productName, dates));
+            const range = dateRangeFromValues(dates);
+            config.rules.forEach(rule => {
+                if (!rule.fromDate) rule.fromDate = range.fromDate;
+                if (!rule.toDate) rule.toDate = range.toDate;
+            });
+            return config;
+        }
+
+        function dateRangeFromValues(values) {
+            const dates = values.map(toDateInputValue).filter(Boolean).sort();
+            return {
+                fromDate: dates[0] || "",
+                toDate: dates[dates.length - 1] || ""
+            };
+        }
+
+        function boxesPerQuantityForRow(row) {
+            const key = makeVariantKey(row.productName, row.variantName);
+            const config = normalizeVariantConfig(key, row.variantName, row.productName);
+            const orderDate = row.orderDate || "";
+            const matchedRule = pickVariantRule(orderDate, config.rules);
+            return parseNumber((matchedRule || config.rules[0]).boxesPerQuantity);
+        }
+
+        function pickVariantRule(orderDate, rules) {
+            if (!Array.isArray(rules) || rules.length === 0) return null;
+
+            const matches = rules
+                .map((rule, index) => ({ rule, index }))
+                .filter(item => dateInRange(orderDate, item.rule.fromDate, item.rule.toDate));
+
+            if (matches.length === 0) return rules[0] || null;
+
+            matches.sort((a, b) => compareVariantRulePriority(b.rule, b.index, a.rule, a.index));
+            return matches[0].rule;
+        }
+
+        function compareVariantRulePriority(leftRule, leftIndex, rightRule, rightIndex) {
+            const leftBounds = variantRuleBoundsCount(leftRule);
+            const rightBounds = variantRuleBoundsCount(rightRule);
+            if (leftBounds !== rightBounds) return leftBounds - rightBounds;
+
+            const leftSpan = variantRuleSpan(leftRule);
+            const rightSpan = variantRuleSpan(rightRule);
+            if (leftSpan !== rightSpan) return rightSpan - leftSpan;
+
+            return leftIndex - rightIndex;
+        }
+
+        function variantRuleBoundsCount(rule) {
+            let count = 0;
+            if (rule.fromDate) count++;
+            if (rule.toDate) count++;
+            return count;
+        }
+
+        function variantRuleSpan(rule) {
+            const fromTime = rule.fromDate ? Date.parse(rule.fromDate) : Number.NEGATIVE_INFINITY;
+            const toTime = rule.toDate ? Date.parse(rule.toDate) : Number.POSITIVE_INFINITY;
+            if (!Number.isFinite(fromTime) || !Number.isFinite(toTime)) return Number.POSITIVE_INFINITY;
+            return Math.max(0, toTime - fromTime);
+        }
+
+        function dateInRange(date, fromDate, toDate) {
+            if (!fromDate && !toDate) return true;
+            if (!date) return false;
+            if (fromDate && date < fromDate) return false;
+            if (toDate && date > toDate) return false;
+            return true;
+        }
+
+        function parseDateValue(value) {
+            if (value instanceof Date && !Number.isNaN(value.getTime())) {
+                return value.toISOString().split("T")[0];
+            }
+
+            if (typeof value === "number" && Number.isFinite(value)) {
+                return excelSerialToIsoDate(value);
+            }
+
+            const text = String(value || "").trim();
+            if (!text) return "";
+
+            if (/^\d+(?:[.,]\d+)?$/.test(text)) {
+                return excelSerialToIsoDate(Number(text.replace(",", ".")));
+            }
+
+            let match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+            if (match) {
+                return `${match[3]}-${String(match[2]).padStart(2, "0")}-${String(match[1]).padStart(2, "0")}`;
+            }
+
+            match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/);
+            if (match) {
+                return `${match[1]}-${String(match[2]).padStart(2, "0")}-${String(match[3]).padStart(2, "0")}`;
+            }
+
+            return "";
+        }
+
+        function excelSerialToIsoDate(value) {
+            const serial = Number(value);
+            if (!Number.isFinite(serial)) return "";
+
+            const wholeDays = Math.floor(serial);
+            if (wholeDays <= 0) return "";
+
+            const utcDays = wholeDays - 25569;
+            const date = new Date(utcDays * 86400 * 1000);
+            if (Number.isNaN(date.getTime())) return "";
+
+            return date.toISOString().split("T")[0];
+        }
+
+        function formatDateTyping(input) {
+            const digits = String(input.value || "").replace(/\D/g, "").slice(0, 8);
+            let formatted = digits;
+            if (digits.length > 4) {
+                formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+            } else if (digits.length > 2) {
+                formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+            }
+            input.value = formatted;
+        }
+
+        function formatDateDisplay(value) {
+            const isoDate = parseDateValue(value);
+            if (!isoDate) return "";
+            const [year, month, day] = isoDate.split("-");
+            return `${day}/${month}/${year}`;
+        }
+
+        function formatDateFileName(value) {
+            return formatDateDisplay(value).replace(/\//g, "-");
+        }
+
+        function toDateInputValue(value) {
+            return parseDateValue(value);
         }
 
         function makeVariantKey(productName, variantName) {
