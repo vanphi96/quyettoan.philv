@@ -188,7 +188,17 @@
         .empty { color: var(--muted); text-align: center; padding: 22px; }
         .muted { color: var(--muted); }
         .total-row { background: #edf7ef; font-weight: 700; }
-        .scroll { overflow-x: auto; }
+        .scroll {
+            overflow: auto;
+            max-height: 520px;
+        }
+        .scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            white-space: normal;
+            box-shadow: inset 0 -1px 0 var(--line);
+        }
         #reportTitle {
             display: none;
             text-align: center;
@@ -1269,6 +1279,65 @@
             return state.expenses.reduce((sum, item) => sum + Math.abs(parseNumber(item.amount)), 0);
         }
 
+        function buildExcelSheet(rows, options = {}) {
+            const headers = options.headers || Array.from(rows.reduce((set, row) => {
+                Object.keys(row || {}).forEach(key => set.add(key));
+                return set;
+            }, new Set()));
+            const dataRows = rows.length ? rows : [headers.reduce((obj, key) => ({ ...obj, [key]: "" }), {})];
+            const worksheet = XLSX.utils.json_to_sheet(dataRows, { header: headers });
+            const range = XLSX.utils.decode_range(worksheet["!ref"] || `A1:${XLSX.utils.encode_cell({ r: 0, c: Math.max(headers.length - 1, 0) })}`);
+            const currencyColumns = new Set(options.currencyColumns || []);
+            const integerColumns = new Set(options.integerColumns || []);
+            const decimalColumns = new Set(options.decimalColumns || []);
+            const wrapColumns = new Set(options.wrapColumns || []);
+
+            worksheet["!cols"] = (options.columns || headers.map(header => ({ wch: Math.max(12, String(header).length + 2) }))).map(col => ({ ...col }));
+            worksheet["!autofilter"] = { ref: XLSX.utils.encode_range(range) };
+            worksheet["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", activePane: "bottomLeft", state: "frozen" };
+            worksheet["!rows"] = [{ hpt: 24 }];
+
+            headers.forEach((header, index) => {
+                const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
+                if (!worksheet[cellRef]) return;
+                worksheet[cellRef].s = {
+                    font: { bold: true },
+                    alignment: { vertical: "center", horizontal: "center", wrapText: true }
+                };
+            });
+
+            for (let rowIndex = 1; rowIndex <= range.e.r; rowIndex++) {
+                headers.forEach((header, colIndex) => {
+                    const cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
+                    const cell = worksheet[cellRef];
+                    if (!cell) return;
+                    if (currencyColumns.has(header) && typeof cell.v === "number") {
+                        cell.t = "n";
+                        cell.z = "#,##0";
+                    } else if (integerColumns.has(header) && typeof cell.v === "number") {
+                        cell.t = "n";
+                        cell.z = "#,##0";
+                    } else if (decimalColumns.has(header) && typeof cell.v === "number") {
+                        cell.t = "n";
+                        cell.z = "#,##0.0";
+                    }
+
+                    if (wrapColumns.has(header) || typeof cell.v === "string") {
+                        cell.s = {
+                            ...(cell.s || {}),
+                            alignment: {
+                                vertical: "top",
+                                wrapText: true,
+                                horizontal: (currencyColumns.has(header) || integerColumns.has(header) || decimalColumns.has(header)) ? "right" : "left"
+                            }
+                        };
+                    }
+                });
+            }
+
+            return worksheet;
+        }
+
         function exportExcelReport() {
             if (typeof XLSX === "undefined") return alert("Không tải được thư viện xuất Excel.");
 
@@ -1278,37 +1347,23 @@
             const ads = totalAds();
             const expenses = totalExpenses();
             const profit = revenue - goods - ads - expenses;
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([
-                { "Hạng mục": "Đơn quyết toán", "Giá trị": state.settlementOrders.size },
-                { "Hạng mục": "Có dữ liệu order", "Giá trị": new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size },
-                { "Hạng mục": "Cần nhập tay", "Giá trị": Math.max(0, state.settlementOrders.size - new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size) },
-                { "Hạng mục": "Doanh thu quyết toán", "Giá trị": revenue },
-                { "Hạng mục": "Tiền hàng", "Giá trị": goods },
-                { "Hạng mục": "Nạp quảng cáo", "Giá trị": ads },
-                { "Hạng mục": "Chi phí khác", "Giá trị": expenses },
-                { "Hạng mục": "Lợi nhuận tạm tính", "Giá trị": profit }
-            ]), "Tong ket");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.mappedRows.map(row => ({
+            const mappedRows = state.mappedRows.map(row => ({
                 "Mã đơn hàng": row.orderId,
                 "Quyết toán": row.amount,
                 "Tên sản phẩm": row.productName,
                 "Loại mặt hàng": row.variantName,
                 "SL": parseNumber(row.quantity),
                 "Nguồn": row.fromOrderFile ? "File order" : "Nhập tay"
-            }))), "Don quyet toan");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.returnRows.map(row => ({
+            }));
+            const returnRows = state.returnRows.map(row => ({
                 "Mã đơn hàng": row.orderId,
                 "Quyết toán âm": row.amount,
                 "Tên sản phẩm": row.productName,
                 "Loại mặt hàng": row.variantName,
                 "SL": parseNumber(row.quantity),
                 "Nguồn": row.fromOrderFile ? "File order" : "Nhập tay"
-            }))), "Don hoan huy");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.variantGroups.flatMap(group => {
+            }));
+            const variantRows = state.variantGroups.flatMap(group => {
                 const config = normalizeVariantConfig(group.key, group.variantName, group.productName);
                 return config.rules.map(rule => ({
                     "Tên sản phẩm": group.productName,
@@ -1320,9 +1375,8 @@
                     "Tổng SL": group.quantity,
                     "Số hộp/SL": rule.boxesPerQuantity
                 }));
-            })), "Quy doi");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(calculateGoodsSummary().map(row => {
+            });
+            const goodsRows = calculateGoodsSummary().map(row => {
                 const matchedProduct = findProductByName(row.productType);
                 const price = matchedProduct ? matchedProduct.price : 0;
                 return {
@@ -1334,16 +1388,14 @@
                     "Giá nhập/hộp": price,
                     "Thành tiền": row.boxes * price
                 };
-            })), "Tien hang");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(calculateOrderTypeSummary().map(row => ({
+            });
+            const orderTypeRows = calculateOrderTypeSummary().map(row => ({
                 "Tên sản phẩm": row.productName,
                 "Loại mặt hàng": row.variantName,
                 "Đơn thành công": row.successCount,
                 "Đơn hoàn hủy": row.returnCount,
                 "Tổng đơn": row.successCount + row.returnCount
-            }))), "So luong don");
-
+            }));
             const adRows = state.adFromFile.map(item => ({
                 "Ngày nạp": formatDateDisplay(item.date || ""),
                 "Nguồn": "File quyết toán",
@@ -1355,18 +1407,81 @@
                 "Ghi chú": item.note,
                 "Số tiền": Math.abs(parseNumber(item.amount))
             })));
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(adRows), "Quang cao");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.expenses.map(item => ({
+            const expenseRows = state.expenses.map(item => ({
                 "Tên chi phí": item.name,
                 "Số tiền": Math.abs(parseNumber(item.amount))
-            }))), "Chi phi");
-
-            XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(state.products.map(product => ({
+            }));
+            const configRows = state.products.map(product => ({
                 "Tên mặt hàng": product.name,
                 "Tên nhận diện": productAliasList(product).join("\n"),
                 "Giá nhập/hộp": product.price
-            }))), "Cau hinh");
+            }));
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet([
+                { "Hạng mục": "Đơn quyết toán", "Giá trị": state.settlementOrders.size },
+                { "Hạng mục": "Có dữ liệu order", "Giá trị": new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size },
+                { "Hạng mục": "Cần nhập tay", "Giá trị": Math.max(0, state.settlementOrders.size - new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId)).size) },
+                { "Hạng mục": "Doanh thu quyết toán", "Giá trị": revenue },
+                { "Hạng mục": "Tiền hàng", "Giá trị": goods },
+                { "Hạng mục": "Nạp quảng cáo", "Giá trị": ads },
+                { "Hạng mục": "Chi phí khác", "Giá trị": expenses },
+                { "Hạng mục": "Lợi nhuận tạm tính", "Giá trị": profit }
+            ], {
+                columns: [{ wch: 28 }, { wch: 18 }],
+                currencyColumns: ["Giá trị"]
+            }), "Tong ket");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(mappedRows, {
+                columns: [{ wch: 18 }, { wch: 16 }, { wch: 40 }, { wch: 24 }, { wch: 8 }, { wch: 14 }],
+                currencyColumns: ["Quyết toán"],
+                integerColumns: ["SL"],
+                wrapColumns: ["Tên sản phẩm", "Loại mặt hàng"]
+            }), "Don quyet toan");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(returnRows, {
+                columns: [{ wch: 18 }, { wch: 16 }, { wch: 40 }, { wch: 24 }, { wch: 8 }, { wch: 14 }],
+                currencyColumns: ["Quyết toán âm"],
+                integerColumns: ["SL"],
+                wrapColumns: ["Tên sản phẩm", "Loại mặt hàng"]
+            }), "Don hoan huy");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(variantRows, {
+                columns: [{ wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 12 }],
+                integerColumns: ["Số dòng", "Tổng SL"],
+                decimalColumns: ["Số hộp/SL"],
+                wrapColumns: ["Tên sản phẩm", "Loại mặt hàng", "Tên phân loại"]
+            }), "Quy doi");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(goodsRows, {
+                columns: [{ wch: 34 }, { wch: 24 }, { wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 16 }, { wch: 16 }],
+                integerColumns: ["Số đơn"],
+                decimalColumns: ["Tổng số hộp"],
+                currencyColumns: ["Giá nhập/hộp", "Thành tiền"],
+                wrapColumns: ["Tên sản phẩm", "Loại mặt hàng", "Mặt hàng tính giá"]
+            }), "Tien hang");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(orderTypeRows, {
+                columns: [{ wch: 34 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }],
+                integerColumns: ["Đơn thành công", "Đơn hoàn hủy", "Tổng đơn"],
+                wrapColumns: ["Tên sản phẩm", "Loại mặt hàng"]
+            }), "So luong don");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(adRows, {
+                columns: [{ wch: 14 }, { wch: 18 }, { wch: 42 }, { wch: 16 }],
+                currencyColumns: ["Số tiền"],
+                wrapColumns: ["Ghi chú"]
+            }), "Quang cao");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(expenseRows, {
+                columns: [{ wch: 28 }, { wch: 16 }],
+                currencyColumns: ["Số tiền"]
+            }), "Chi phi");
+
+            XLSX.utils.book_append_sheet(workbook, buildExcelSheet(configRows, {
+                columns: [{ wch: 24 }, { wch: 40 }, { wch: 16 }],
+                currencyColumns: ["Giá nhập/hộp"],
+                wrapColumns: ["Tên nhận diện"]
+            }), "Cau hinh");
 
             const today = new Date();
             XLSX.writeFile(workbook, `Bao_Cao_Shopee_${formatDateFileName(today)}.xlsx`);

@@ -1239,30 +1239,79 @@
         return Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
     }
 
+    function buildExcelSheet(rows, options = {}) {
+        const headers = options.headers || Array.from(rows.reduce((set, row) => {
+            Object.keys(row || {}).forEach(key => set.add(key));
+            return set;
+        }, new Set()));
+        const dataRows = rows.length ? rows : [headers.reduce((obj, key) => ({ ...obj, [key]: '' }), {})];
+        const worksheet = XLSX.utils.json_to_sheet(dataRows, { header: headers });
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || `A1:${XLSX.utils.encode_cell({ r: 0, c: Math.max(headers.length - 1, 0) })}`);
+        const currencyColumns = new Set(options.currencyColumns || []);
+        const integerColumns = new Set(options.integerColumns || []);
+        const decimalColumns = new Set(options.decimalColumns || []);
+        const wrapColumns = new Set(options.wrapColumns || []);
+
+        worksheet['!cols'] = (options.columns || headers.map(header => ({ wch: Math.max(12, String(header).length + 2) }))).map(col => ({ ...col }));
+        worksheet['!autofilter'] = { ref: XLSX.utils.encode_range(range) };
+        worksheet['!freeze'] = { xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft', state: 'frozen' };
+        worksheet['!rows'] = [{ hpt: 24 }];
+
+        headers.forEach((header, index) => {
+            const cellRef = XLSX.utils.encode_cell({ r: 0, c: index });
+            if (!worksheet[cellRef]) return;
+            worksheet[cellRef].s = {
+                font: { bold: true },
+                alignment: { vertical: 'center', horizontal: 'center', wrapText: true }
+            };
+        });
+
+        for (let rowIndex = 1; rowIndex <= range.e.r; rowIndex++) {
+            headers.forEach((header, colIndex) => {
+                const cellRef = XLSX.utils.encode_cell({ r: rowIndex, c: colIndex });
+                const cell = worksheet[cellRef];
+                if (!cell) return;
+                if (currencyColumns.has(header) && typeof cell.v === 'number') {
+                    cell.t = 'n';
+                    cell.z = '#,##0';
+                } else if (integerColumns.has(header) && typeof cell.v === 'number') {
+                    cell.t = 'n';
+                    cell.z = '#,##0';
+                } else if (decimalColumns.has(header) && typeof cell.v === 'number') {
+                    cell.t = 'n';
+                    cell.z = '#,##0.0';
+                }
+
+                if (wrapColumns.has(header) || typeof cell.v === 'string') {
+                    cell.s = {
+                        ...(cell.s || {}),
+                        alignment: {
+                            vertical: 'top',
+                            wrapText: true,
+                            horizontal: (currencyColumns.has(header) || integerColumns.has(header) || decimalColumns.has(header)) ? 'right' : 'left'
+                        }
+                    };
+                }
+            });
+        }
+
+        return worksheet;
+    }
+
     function exportExcelReport() {
         if (typeof XLSX === 'undefined') return alert('Khong tai duoc thu vien xuat Excel.');
 
         const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
         const workbook = XLSX.utils.book_new();
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet([
-            { 'Hang muc': 'Doanh thu quyet toan', 'Gia tri': totalF },
-            { 'Hang muc': 'Tien hang', 'Gia tri': totalGoods },
-            { 'Hang muc': 'Chi phi van hanh', 'Gia tri': expTotal },
-            { 'Hang muc': 'Loi nhuan rong', 'Gia tri': totalF - expTotal - totalGoods },
-            { 'Hang muc': 'Tong so don quyet toan', 'Gia tri': totalOrderCount }
-        ]), 'Tong ket');
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => ({
+        const settlementSuccessRows = Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => ({
             'ID don': order.id,
             'Ngay dat hang': formatDateDisplay(item.orderDate || ''),
             'Quyet toan': order.amount,
             'Ten san pham': item.productName || '',
             'Phan loai': item.variantName || '',
             'SL': item.quantity || 1
-        })))), 'Don thanh cong');
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(returnOrders.flatMap(order => (order.items || []).map(item => ({
+        })));
+        const returnRows = returnOrders.flatMap(order => (order.items || []).map(item => ({
             'ID don': order.id,
             'Ngay dat hang': formatDateDisplay(item.orderDate || ''),
             'Tong quyet toan': order.amount,
@@ -1271,9 +1320,8 @@
             'Ten san pham': item.productName || '',
             'Phan loai': item.variantName || '',
             'SL': item.quantity || 1
-        })))), 'Hoan huy');
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(settlementItemRows().reduce((rows, row) => {
+        })));
+        const variantRows = settlementItemRows().reduce((rows, row) => {
             const key = makeVariantKey(row.productName, row.variantName);
             const config = normalizeVariantConfig(key, row.variantName, row.productName);
             config.rules.forEach(rule => {
@@ -1287,26 +1335,71 @@
                 });
             });
             return rows;
-        }, [])), 'Quy doi');
-
+        }, []);
         const productTotals = calculateTikTokProductTotals();
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(products.map(product => ({
+        const goodsRows = products.map(product => ({
             'Ten mat hang': product.name,
             'Tong so hop': productTotals[product.name] || 0,
             'Gia nhap': product.price,
             'Thanh tien': (productTotals[product.name] || 0) * product.price
-        }))), 'Tong hop hang');
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(expenses.map(item => ({
+        }));
+        const expenseRows = expenses.map(item => ({
             'Ten chi phi': item.name,
             'So tien': item.amount
-        }))), 'Chi phi');
-
-        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(products.map(product => ({
+        }));
+        const configRows = products.map(product => ({
             'Ten mat hang': product.name,
             'Ten nhan dien': productAliasList(product).join('\n'),
             'Gia nhap/hop': product.price
-        }))), 'Cau hinh');
+        }));
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet([
+            { 'Hang muc': 'Doanh thu quyet toan', 'Gia tri': totalF },
+            { 'Hang muc': 'Tien hang', 'Gia tri': totalGoods },
+            { 'Hang muc': 'Chi phi van hanh', 'Gia tri': expTotal },
+            { 'Hang muc': 'Loi nhuan rong', 'Gia tri': totalF - expTotal - totalGoods },
+            { 'Hang muc': 'Tong so don quyet toan', 'Gia tri': totalOrderCount }
+        ], {
+            columns: [{ wch: 28 }, { wch: 18 }],
+            currencyColumns: ['Gia tri']
+        }), 'Tong ket');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(settlementSuccessRows, {
+            columns: [{ wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 42 }, { wch: 24 }, { wch: 8 }],
+            currencyColumns: ['Quyet toan'],
+            integerColumns: ['SL'],
+            wrapColumns: ['Ten san pham', 'Phan loai']
+        }), 'Don thanh cong');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(returnRows, {
+            columns: [{ wch: 20 }, { wch: 14 }, { wch: 16 }, { wch: 24 }, { wch: 28 }, { wch: 42 }, { wch: 24 }, { wch: 8 }],
+            currencyColumns: ['Tong quyet toan'],
+            integerColumns: ['SL'],
+            wrapColumns: ['Cac dong quyet toan', 'Loai giao dich', 'Ten san pham', 'Phan loai']
+        }), 'Hoan huy');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(variantRows, {
+            columns: [{ wch: 38 }, { wch: 22 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 12 }],
+            decimalColumns: ['So hop/SL'],
+            wrapColumns: ['Ten san pham', 'Loai mat hang', 'Ten phan loai']
+        }), 'Quy doi');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(goodsRows, {
+            columns: [{ wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 16 }],
+            decimalColumns: ['Tong so hop'],
+            currencyColumns: ['Gia nhap', 'Thanh tien']
+        }), 'Tong hop hang');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(expenseRows, {
+            columns: [{ wch: 28 }, { wch: 16 }],
+            currencyColumns: ['So tien']
+        }), 'Chi phi');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(configRows, {
+            columns: [{ wch: 24 }, { wch: 40 }, { wch: 16 }],
+            currencyColumns: ['Gia nhap/hop'],
+            wrapColumns: ['Ten nhan dien']
+        }), 'Cau hinh');
 
         const today = new Date().toISOString().split('T')[0];
         XLSX.writeFile(workbook, `Bao_Cao_TikTok_${today}.xlsx`);
