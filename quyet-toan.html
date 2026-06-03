@@ -111,6 +111,29 @@
             background: var(--panel);
             margin-bottom: 14px;
         }
+        .table-shell {
+            border: 1px solid var(--line);
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+            background: var(--panel);
+            margin-bottom: 14px;
+        }
+        .table-shell > table {
+            margin-bottom: 0;
+            border: 0;
+            border-radius: 0;
+        }
+        .table-shell.scroll-y {
+            max-height: 520px;
+            overflow: auto;
+        }
+        .table-shell.scroll-y thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            white-space: normal;
+            box-shadow: inset 0 -1px 0 var(--line);
+        }
         #productConfigMount > div[data-html2canvas-ignore="true"] {
             display: flex !important;
             justify-content: flex-end !important;
@@ -194,6 +217,40 @@
         #gmvHistoryTable { display: none; }
         #captureArea { background: var(--bg); padding: 1px 0 20px; }
         .pdf-replacement { display: inline-block; min-height: 24px; font-weight: 600; }
+        .date-input-wrap {
+            position: relative;
+        }
+        .date-input-wrap input[type="text"] {
+            min-width: 0;
+            padding-right: 38px;
+        }
+        .date-picker-btn {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            min-width: 26px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            font-size: 14px;
+            font-weight: 400;
+            line-height: 1;
+        }
+        .date-picker-btn:hover {
+            background: transparent;
+            color: var(--focus);
+        }
+        .date-native-picker {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+            width: 0;
+            height: 0;
+        }
         @media (max-width: 900px) {
             .upload-grid, .stats { grid-template-columns: 1fr; }
             h1 { font-size: 23px; }
@@ -276,23 +333,23 @@
         <h2 class="section-title">1. Danh sách đơn hàng từ file quyết toán</h2>
         <table>
             <thead>
-                <tr><th style="width: 150px;">Mã đơn hàng</th><th class="number" style="width: 130px;">Quyết toán</th><th>Tên sản phẩm</th><th style="width: 190px;">Loại mặt hàng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">Xóa</th></tr>
+                <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n &#226;m</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
             </thead>
-            <tbody id="filterBody"><tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr></tbody>
+            <tbody id="filterBody"><tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr></tbody>
         </table>
 
         <h2 class="section-title">2. Danh sách đơn hàng hoàn hủy</h2>
         <table>
             <thead>
-                <tr><th style="width: 150px;">Mã đơn hàng</th><th class="number" style="width: 130px;">Quyết toán âm</th><th>Tên sản phẩm</th><th style="width: 190px;">Loại mặt hàng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">Xóa</th></tr>
+                <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n &#226;m</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
             </thead>
-            <tbody id="returnBody"><tr><td class="empty" colspan="6">Chưa có dữ liệu Excel</td></tr></tbody>
+            <tbody id="returnBody"><tr><td class="empty" colspan="7">Chưa có dữ liệu Excel</td></tr></tbody>
         </table>
 
         <h2 class="section-title">3. Quy đổi loại đơn sang số hộp</h2>
         <table>
-            <thead><tr><th>Tên sản phẩm</th><th style="width: 180px;">Tên phân loại</th><th class="number" style="width: 120px;">Số hộp / SL</th></tr></thead>
-            <tbody id="variantBody"><tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr></tbody>
+            <thead><tr><th>Tên sản phẩm</th><th style="width: 190px;">Loại mặt hàng</th><th style="width: 180px;">Tên phân loại</th><th style="width: 140px;">Từ ngày đặt</th><th style="width: 140px;">Đến ngày đặt</th><th class="number" style="width: 120px;">Số hộp / SL</th><th style="width: 110px;" data-html2canvas-ignore="true">Cấu hình</th></tr></thead>
+            <tbody id="variantBody"><tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr></tbody>
         </table>
 
         <h2 class="section-title">4. Tổng hợp tiền hàng</h2>
@@ -357,10 +414,23 @@
         start.setDate(today.getDate() - 10);
         document.getElementById('endDate').value = today.toISOString().split('T')[0];
         document.getElementById('startDate').value = start.toISOString().split('T')[0];
+        setupScrollableTables();
         renderProductConfig();
         renderExpenses();
         moveProductConfigBelowUpload();
     };
+
+    function setupScrollableTables() {
+        ['filterBody', 'returnBody', 'variantBody', 'summaryBody', 'expenseBody'].forEach(bodyId => {
+            const tableBody = document.getElementById(bodyId);
+            const table = tableBody?.closest('table');
+            if (!table || table.parentElement?.classList.contains('table-shell')) return;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'table-shell scroll-y';
+            table.parentNode.insertBefore(wrapper, table);
+            wrapper.appendChild(table);
+        });
+    }
 
     function moveProductConfigBelowUpload() {
         const mount = document.getElementById('productConfigMount');
@@ -461,16 +531,22 @@
     }
 
     function rowsForUploadedWorkbook(workbook, inputId) {
+        const headerMatchedSheet = findSheetByExpectedHeaders(workbook, inputId);
         const preferredSheet = inputId === 'settlementFile'
             ? findSheetByName(workbook, 'Chi tiết đơn hàng')
             : findSheetByName(workbook, 'OrderSKUList');
-        const sheet = preferredSheet || findSheetByExpectedHeaders(workbook, inputId) || workbook.Sheets[workbook.SheetNames[0]];
+        const sheet = headerMatchedSheet || preferredSheet || workbook.Sheets[workbook.SheetNames[0]];
         return XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ""});
     }
 
     function findSheetByName(workbook, expectedName) {
         const expected = normalizeText(expectedName);
-        const sheetName = workbook.SheetNames.find(name => normalizeText(name) === expected);
+        const sheetName = workbook.SheetNames.find(name => {
+            const normalizedName = normalizeText(name);
+            return normalizedName === expected ||
+                normalizedName.includes(expected) ||
+                expected.includes(normalizedName);
+        });
         return sheetName ? workbook.Sheets[sheetName] : null;
     }
 
@@ -500,11 +576,14 @@
         const orderIds = new Set();
         const headerIndex = findHeaderIndex(rows, ['ID đơn hàng/điều chỉnh', 'Loại giao dịch', 'Tổng số tiền quyết toán']);
         const startIndex = headerIndex >= 0 ? headerIndex + 1 : 1;
+        const headerRow = rows[headerIndex] || rows[0] || [];
+        const orderDateIndex = findColumnIndex(headerRow, ['Thời gian tạo đơn hàng', 'Ngày đặt hàng', 'Order Created Time', 'Created Time', 'Order Date', 'Create Time'], 2);
 
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i]; if (!row) continue;
             const transactionType = String(row[1] || '').trim(); // Cot B: Loai giao dich
             const pPay = parseMoney(row[5]); // Cot F: Tong so tien quyet toan
+            const orderDate = toDateInputValue(row[orderDateIndex]);
             if (isGmvPaymentRow(row)) {
                 gmvHistory.push({note: transactionType, amount: pPay});
                 continue;
@@ -513,11 +592,12 @@
             if (!orderId || orderId.toLowerCase().includes('id ')) continue;
             orderIds.add(orderId);
             totalF += pPay;
-            if (!settlementMap.has(orderId)) settlementMap.set(orderId, {id: orderId, pays: [], amount: 0, note: ''});
+            if (!settlementMap.has(orderId)) settlementMap.set(orderId, {id: orderId, pays: [], amount: 0, note: '', orderDate: ''});
             const settlement = settlementMap.get(orderId);
             settlement.amount += pPay;
             settlement.pays.push(pPay);
             settlement.note = settlement.note ? `${settlement.note}; ${transactionType}` : transactionType;
+            if (!settlement.orderDate && orderDate) settlement.orderDate = orderDate;
         }
         for (const settlement of settlementMap.values()) {
             attachOrderInfo(settlement);
@@ -534,6 +614,11 @@
         orderItems = new Map();
         const headerIndex = findHeaderIndex(rows, ['Order ID', 'Product Name', 'Variation']);
         const startIndex = headerIndex >= 0 ? headerIndex + 1 : 1;
+        const headerRow = rows[headerIndex] || rows[0] || [];
+        const orderDateIndex = findColumnIndex(headerRow, ['Ngày đặt hàng', 'Order Created Time', 'Created Time', 'Order Date', 'Create Time'], 2);
+        const productNameIndex = findColumnIndex(headerRow, ['Product Name', 'Tên sản phẩm'], 7);
+        const variantNameIndex = findColumnIndex(headerRow, ['Variation', 'Phân loại hàng', 'SKU Variation'], 8);
+        const quantityIndex = findColumnIndex(headerRow, ['Quantity', 'Số lượng', 'Qty'], 9);
 
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i]; if (!row) continue;
@@ -542,9 +627,10 @@
 
             const item = {
                 id: orderId,
-                productName: String(row[7] || '').trim(), // Cot H
-                variantName: String(row[8] || '').trim(), // Cot I
-                quantity: parseNumberText(row[9] || 1) || 1 // Cot J
+                orderDate: toDateInputValue(row[orderDateIndex]),
+                productName: String(row[productNameIndex] || '').trim(),
+                variantName: String(row[variantNameIndex] || '').trim(),
+                quantity: parseNumberText(row[quantityIndex] || 1) || 1
             };
 
             if (!orderItems.has(orderId)) orderItems.set(orderId, []);
@@ -558,13 +644,27 @@
 
     function attachOrderInfo(settlement) {
         const items = orderItems.get(settlement.id) || [];
-        settlement.items = items.length ? items : [{
+        settlement.items = items.length ? items.map(item => ({
+            ...item,
+            orderDate: item.orderDate || settlement.orderDate || ''
+        })) : [{
             id: settlement.id,
+            orderDate: settlement.orderDate || '',
             productName: '',
             variantName: '',
             quantity: 1
         }];
         return settlement;
+    }
+
+    function findColumnIndex(headerRow, candidates, fallbackIndex) {
+        const normalizedHeaderRow = (headerRow || []).map(normalizeTextSafe);
+        for (const candidate of candidates) {
+            const normalizedCandidate = normalizeTextSafe(candidate);
+            const index = normalizedHeaderRow.findIndex(text => text.includes(normalizedCandidate));
+            if (index >= 0) return index;
+        }
+        return fallbackIndex;
     }
 
     function parseMoney(value) {
@@ -641,44 +741,50 @@
     }
 
     function normalizeText(value) {
-        return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+        return String(value || '')
+            .toLowerCase()
+            .replace(/[đð]/g, 'd')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, ' ')
+            .trim();
     }
 
     function normalizeTextSafe(value) {
-        return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Ä‘/g, 'd');
+        return normalizeText(value);
     }
 
     function renderMappedOrderTable() {
         const rows = Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => {
-            const selected = inferProductName(item.productName);
             return `
-            <tr class="order-row" data-order-id="${escapeHtml(order.id)}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
+            <tr class="order-row" data-order-id="${escapeHtml(order.id)}" data-order-date="${escapeHtml(item.orderDate || '')}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
                 <td><small>${escapeHtml(order.id)}</small></td>
+                <td>${escapeHtml(formatDateDisplay(item.orderDate || ''))}</td>
                 <td class="number positive">${order.amount.toLocaleString()}</td>
-                <td>${escapeHtml(item.productName || '(chua map file don hang)')}</td>
+                <td>${escapeHtml(item.productName || '(chưa map file đơn hàng)')}</td>
                 <td>${escapeHtml(item.variantName || '')}</td>
                 <td style="color:blue; font-weight:bold;">${item.quantity || 1} SL</td>
                 <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeSettlementOrder('${encodeURIComponent(order.id)}')">X</button></td>
             </tr>`;
         })).join('');
-        document.getElementById('filterBody').innerHTML = rows || '<tr><td class="empty" colspan="6">Không có đơn hàng phù hợp</td></tr>';
+        document.getElementById('filterBody').innerHTML = rows || '<tr><td class="empty" colspan="7">Không có đơn hàng phù hợp</td></tr>';
         updateSummaryTable();
     }
 
     function renderMappedReturnTable() {
         const rows = returnOrders.flatMap(order => (order.items || []).map(item => {
-            const selected = inferProductName(item.productName);
             return `
-            <tr class="return-order-row" data-order-id="${escapeHtml(order.id)}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
+            <tr class="return-order-row" data-order-id="${escapeHtml(order.id)}" data-order-date="${escapeHtml(item.orderDate || '')}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
                 <td><small>${escapeHtml(order.id)}</small></td>
+                <td>${escapeHtml(formatDateDisplay(item.orderDate || ''))}</td>
                 <td class="number negative">${order.pays.map(v => v.toLocaleString()).join('<br>')}</td>
-                <td>${escapeHtml(item.productName || '(chua map file don hang)')}</td>
+                <td>${escapeHtml(item.productName || '(chưa map file đơn hàng)')}</td>
                 <td>${escapeHtml(item.variantName || '')}</td>
                 <td style="color:blue; font-weight:bold;">${item.quantity || 1} SL</td>
                 <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeReturnOrder('${encodeURIComponent(order.id)}')">X</button></td>
             </tr>`;
         })).join('');
-        document.getElementById('returnBody').innerHTML = rows || '<tr><td class="empty" colspan="6">Không có đơn hàng hoàn hủy</td></tr>';
+        document.getElementById('returnBody').innerHTML = rows || '<tr><td class="empty" colspan="7">Không có đơn hàng hoàn hủy</td></tr>';
         updateSummaryTable();
     }
 
@@ -734,24 +840,6 @@
     }
 
     function updateSummaryTable() {
-        let grand = 0; const res = {}; products.forEach(p => res[p.name] = 0);
-        document.querySelectorAll('.order-row, .return-order-row').forEach(row => {
-            const select = row.querySelector('.product-select');
-            const name = select ? select.value : inferProductName(row.cells[2]?.innerText || '');
-            const input = row.querySelector('.qty-per-order');
-            const boxes = input
-                ? (parseInt(input.dataset.orderCount) || 0) * (parseInt(input.value) || 0)
-                : (parseInt(row.cells[4]?.innerText || row.cells[3]?.innerText) || 0);
-            if (name && res.hasOwnProperty(name)) res[name] += boxes;
-        });
-        document.getElementById('summaryBody').innerHTML = products.map(p => {
-            const cost = res[p.name] * p.price; grand += cost;
-            return `<tr class="${res[p.name]>0?'total-row':''}"><td>${p.name}</td><td>${res[p.name]} hộp</td><td>${cost.toLocaleString()} đ</td></tr>`;
-        }).join('') + `<tr class="total-row"><td>TỔNG VỐN HÀNG</td><td></td><td>${grand.toLocaleString()} đ</td></tr>`;
-        totalGoods = grand; updateFinancials();
-    }
-
-    function updateSummaryTable() {
         const rows = settlementItemRows();
         renderVariantTable(rows);
 
@@ -761,15 +849,17 @@
             if (!row.productName && !row.variantName) return;
             const key = makeVariantKey(row.productName, row.variantName);
             if (!groupMap.has(key)) {
+                const config = normalizeVariantConfig(key, row.variantName, row.productName);
                 groupMap.set(key, {
                     productName: row.productName,
                     variantName: row.variantName,
-                    quantity: 0,
+                    productType: config.productType || '',
+                    boxes: 0,
                     orders: new Set()
                 });
             }
             const group = groupMap.get(key);
-            group.quantity += row.quantity;
+            group.boxes += row.quantity * boxesPerQuantityForRow(row);
             group.orders.add(row.orderId);
         });
 
@@ -779,17 +869,16 @@
         });
 
         const html = summaryRows.map(row => {
-            const product = findConfiguredProduct(row.productName);
+            const product = findProductByName(row.productType);
             const price = product ? product.price : 0;
-            const boxes = row.quantity * boxesPerQuantity(row.productName, row.variantName);
-            const cost = boxes * price;
+            const cost = row.boxes * price;
             grand += cost;
             return `<tr>
                 <td>${escapeHtml(row.productName || '(Trống)')}</td>
                 <td>${escapeHtml(row.variantName || '(Trống)')}</td>
-                <td>${escapeHtml(product ? product.name : '(Chưa khớp)')}</td>
+                <td>${escapeHtml(product ? product.name : (row.productType || '(Chưa khớp)'))}</td>
                 <td class="number">${row.orders.size.toLocaleString()}</td>
-                <td class="number">${formatQuantity(boxes)}</td>
+                <td class="number">${formatQuantity(row.boxes)}</td>
                 <td class="number">${price.toLocaleString()} đ</td>
                 <td class="number">${cost.toLocaleString()} đ</td>
             </tr>`;
@@ -804,19 +893,24 @@
     function settlementItemRows() {
         return Array.from(document.querySelectorAll('.order-row, .return-order-row')).map(row => ({
             orderId: row.dataset.orderId || row.cells[0]?.innerText.trim() || '',
-            productName: row.dataset.productName || row.cells[2]?.innerText.trim() || '',
-            variantName: row.dataset.variantName || row.cells[3]?.innerText.trim() || '',
-            quantity: parseNumberText(row.dataset.quantity || row.cells[4]?.innerText || 0)
+            orderDate: row.dataset.orderDate || '',
+            productName: row.dataset.productName || row.cells[3]?.innerText.trim() || '',
+            variantName: row.dataset.variantName || row.cells[4]?.innerText.trim() || '',
+            quantity: parseNumberText(row.dataset.quantity || row.cells[5]?.innerText || 0)
         }));
     }
 
     function renderVariantTable(rows) {
+        const globalDates = (rows || []).map(row => row.orderDate || '');
         const groupMap = new Map();
         rows.forEach(row => {
             if (!row.productName && !row.variantName) return;
             const key = makeVariantKey(row.productName, row.variantName);
-            if (!groupMap.has(key)) groupMap.set(key, { key, productName: row.productName, variantName: row.variantName });
-            if (!variantConfig[key]) variantConfig[key] = { boxesPerQuantity: inferBoxesPerQuantity(row.variantName, row.productName) };
+            if (!groupMap.has(key)) {
+                groupMap.set(key, { key, productName: row.productName, variantName: row.variantName, orderDates: [] });
+            }
+            if (row.orderDate) groupMap.get(key).orderDates.push(row.orderDate);
+            normalizeVariantConfig(key, row.variantName, row.productName, globalDates);
         });
 
         const groups = Array.from(groupMap.values()).sort((a, b) => {
@@ -824,19 +918,74 @@
             return productCompare || a.variantName.localeCompare(b.variantName, 'vi');
         });
 
-        document.getElementById('variantBody').innerHTML = groups.map(group => {
+        document.getElementById('variantBody').innerHTML = groups.flatMap(group => {
             const keyArg = encodeURIComponent(group.key);
-            return `<tr>
+            const config = normalizeVariantConfig(
+                group.key,
+                group.variantName,
+                group.productName,
+                group.orderDates.length ? group.orderDates : globalDates
+            );
+            return config.rules.map((rule, ruleIndex) => `
+            <tr>
                 <td>${escapeHtml(group.productName || '(Trống)')}</td>
+                <td><select onchange="updateVariantProductType('${keyArg}', this.value)">${productTypeOptions(config.productType)}</select></td>
                 <td>${escapeHtml(group.variantName || '(Trống)')}</td>
-                <td><input class="number" type="number" min="0" step="0.1" value="${variantConfig[group.key].boxesPerQuantity}" onchange="updateVariantBoxes('${keyArg}', this.value)"></td>
-            </tr>`;
-        }).join('') || '<tr><td class="empty" colspan="3">Chưa có đơn hàng</td></tr>';
+                <td>
+                    <div class="date-input-wrap">
+                        <input type="text" value="${escapeHtml(formatDateDisplay(rule.fromDate || ''))}" placeholder="dd/mm/yyyy" oninput="formatDateTyping(this)" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'fromDate', this.value)">
+                        <button type="button" class="date-picker-btn" aria-label="Chọn ngày bắt đầu" title="Chọn ngày bắt đầu" onclick="openVariantDatePicker('${keyArg}', ${ruleIndex}, 'fromDate')">&#128197;</button>
+                        <input type="date" class="date-native-picker" id="${escapeHtml(variantDatePickerId(group.key, ruleIndex, 'fromDate'))}" value="${escapeHtml(rule.fromDate || '')}" onchange="applyVariantDatePicker('${keyArg}', ${ruleIndex}, 'fromDate', this.value)">
+                    </div>
+                </td>
+                <td>
+                    <div class="date-input-wrap">
+                        <input type="text" value="${escapeHtml(formatDateDisplay(rule.toDate || ''))}" placeholder="dd/mm/yyyy" oninput="formatDateTyping(this)" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'toDate', this.value)">
+                        <button type="button" class="date-picker-btn" aria-label="Chọn ngày kết thúc" title="Chọn ngày kết thúc" onclick="openVariantDatePicker('${keyArg}', ${ruleIndex}, 'toDate')">&#128197;</button>
+                        <input type="date" class="date-native-picker" id="${escapeHtml(variantDatePickerId(group.key, ruleIndex, 'toDate'))}" value="${escapeHtml(rule.toDate || '')}" onchange="applyVariantDatePicker('${keyArg}', ${ruleIndex}, 'toDate', this.value)">
+                    </div>
+                </td>
+                <td><input class="number" type="number" min="0" step="0.1" value="${rule.boxesPerQuantity}" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'boxesPerQuantity', this.value)"></td>
+                <td data-html2canvas-ignore="true"><button type="button" class="btn-add" onclick="addVariantRule('${keyArg}')">+</button> <button type="button" class="btn-delete" onclick="removeVariantRule('${keyArg}', ${ruleIndex})">X</button></td>
+            </tr>`);
+        }).join('') || '<tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr>';
     }
 
     function updateVariantBoxes(key, value) {
         key = decodeURIComponent(key);
-        variantConfig[key] = { boxesPerQuantity: parseNumberText(value) };
+        normalizeVariantConfig(key).rules[0].boxesPerQuantity = parseNumberText(value);
+        updateSummaryTable();
+    }
+
+    function updateVariantRule(key, ruleIndex, field, value) {
+        key = decodeURIComponent(key);
+        const config = normalizeVariantConfig(key);
+        const rule = config.rules[ruleIndex];
+        if (!rule) return;
+        rule[field] = field === 'boxesPerQuantity' ? parseNumberText(value) : parseDateValue(value);
+        updateSummaryTable();
+    }
+
+    function updateVariantProductType(key, value) {
+        key = decodeURIComponent(key);
+        const config = normalizeVariantConfig(key);
+        config.productType = value;
+        updateSummaryTable();
+    }
+
+    function addVariantRule(key) {
+        key = decodeURIComponent(key);
+        const config = normalizeVariantConfig(key);
+        const lastRule = config.rules[config.rules.length - 1] || defaultVariantRule();
+        config.rules.push({ fromDate: '', toDate: '', boxesPerQuantity: lastRule.boxesPerQuantity });
+        updateSummaryTable();
+    }
+
+    function removeVariantRule(key, ruleIndex) {
+        key = decodeURIComponent(key);
+        const config = normalizeVariantConfig(key);
+        if (config.rules.length <= 1) return alert('Phải có ít nhất một dòng cấu hình.');
+        config.rules.splice(ruleIndex, 1);
         updateSummaryTable();
     }
 
@@ -846,7 +995,14 @@
 
     function boxesPerQuantity(productName, variantName) {
         const key = makeVariantKey(productName, variantName);
-        return variantConfig[key]?.boxesPerQuantity ?? inferBoxesPerQuantity(variantName, productName);
+        return normalizeVariantConfig(key, variantName, productName).rules[0]?.boxesPerQuantity ?? inferBoxesPerQuantity(variantName, productName);
+    }
+
+    function boxesPerQuantityForRow(row) {
+        const key = makeVariantKey(row.productName, row.variantName);
+        const config = normalizeVariantConfig(key, row.variantName, row.productName);
+        const matchedRule = pickVariantRule(row.orderDate || '', config.rules);
+        return parseNumberText((matchedRule || config.rules[0]).boxesPerQuantity);
     }
 
     function inferBoxesPerQuantity(variantName, productName) {
@@ -865,8 +1021,170 @@
         return products.find(product => product.name === name) || null;
     }
 
+    function findProductByName(name) {
+        return products.find(product => product.name === name) || null;
+    }
     function formatQuantity(value) {
         return (Math.round((value || 0) * 10) / 10).toLocaleString();
+    }
+
+    function inferConfiguredProductName(productName) {
+        return findConfiguredProduct(productName)?.name || '';
+    }
+
+    function productTypeOptions(selectedName) {
+        const options = ['<option value="">(Chưa chọn)</option>'];
+        products.forEach(product => {
+            options.push(`<option value="${escapeHtml(product.name)}"${product.name === selectedName ? ' selected' : ''}>${escapeHtml(product.name)}</option>`);
+        });
+        return options.join('');
+    }
+
+    function variantDatePickerId(key, ruleIndex, field) {
+        const safeKey = String(key || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        return `variant-date-${safeKey}-${ruleIndex}-${field}`;
+    }
+
+    function openVariantDatePicker(key, ruleIndex, field) {
+        key = decodeURIComponent(key);
+        const picker = document.getElementById(variantDatePickerId(key, ruleIndex, field));
+        if (!picker) return;
+        if (typeof picker.showPicker === 'function') {
+            picker.showPicker();
+            return;
+        }
+        picker.click();
+    }
+
+    function applyVariantDatePicker(key, ruleIndex, field, value) {
+        updateVariantRule(key, ruleIndex, field, value);
+    }
+
+    function defaultVariantRule(variantName = '', productName = '', dates = []) {
+        const range = dateRangeFromValues(dates);
+        return { fromDate: range.fromDate, toDate: range.toDate, boxesPerQuantity: inferBoxesPerQuantity(variantName, productName) };
+    }
+
+    function normalizeVariantConfig(key, variantName = '', productName = '', dates = []) {
+        if (!variantConfig[key]) {
+            variantConfig[key] = {
+                productType: inferConfiguredProductName(productName),
+                rules: [defaultVariantRule(variantName, productName, dates)]
+            };
+        }
+
+        const config = variantConfig[key];
+        if (typeof config.productType !== 'string') config.productType = inferConfiguredProductName(productName);
+        if (!Array.isArray(config.rules)) {
+            const range = dateRangeFromValues(dates);
+            config.rules = [{
+                fromDate: config.fromDate || range.fromDate,
+                toDate: config.toDate || range.toDate,
+                boxesPerQuantity: parseNumberText(config.boxesPerQuantity) || inferBoxesPerQuantity(variantName, productName)
+            }];
+        }
+
+        if (config.rules.length === 0) config.rules.push(defaultVariantRule(variantName, productName, dates));
+        const range = dateRangeFromValues(dates);
+        config.rules.forEach(rule => {
+            if (!rule.fromDate) rule.fromDate = range.fromDate;
+            if (!rule.toDate) rule.toDate = range.toDate;
+        });
+        return config;
+    }
+
+    function dateRangeFromValues(values) {
+        const dates = values.map(toDateInputValue).filter(Boolean).sort();
+        return { fromDate: dates[0] || '', toDate: dates[dates.length - 1] || '' };
+    }
+
+    function settlementDateRange(rows) {
+        return dateRangeFromValues((rows || []).map(row => row.orderDate || ''));
+    }
+
+    function pickVariantRule(orderDate, rules) {
+        if (!Array.isArray(rules) || rules.length === 0) return null;
+        const matches = rules
+            .map((rule, index) => ({ rule, index }))
+            .filter(item => dateInRange(orderDate, item.rule.fromDate, item.rule.toDate));
+        if (matches.length === 0) return rules[0] || null;
+        matches.sort((a, b) => compareVariantRulePriority(b.rule, b.index, a.rule, a.index));
+        return matches[0].rule;
+    }
+
+    function compareVariantRulePriority(leftRule, leftIndex, rightRule, rightIndex) {
+        const leftBounds = variantRuleBoundsCount(leftRule);
+        const rightBounds = variantRuleBoundsCount(rightRule);
+        if (leftBounds !== rightBounds) return leftBounds - rightBounds;
+        const leftSpan = variantRuleSpan(leftRule);
+        const rightSpan = variantRuleSpan(rightRule);
+        if (leftSpan !== rightSpan) return rightSpan - leftSpan;
+        return leftIndex - rightIndex;
+    }
+
+    function variantRuleBoundsCount(rule) {
+        let count = 0;
+        if (rule.fromDate) count++;
+        if (rule.toDate) count++;
+        return count;
+    }
+
+    function variantRuleSpan(rule) {
+        const fromTime = rule.fromDate ? Date.parse(rule.fromDate) : Number.NEGATIVE_INFINITY;
+        const toTime = rule.toDate ? Date.parse(rule.toDate) : Number.POSITIVE_INFINITY;
+        if (!Number.isFinite(fromTime) || !Number.isFinite(toTime)) return Number.POSITIVE_INFINITY;
+        return Math.max(0, toTime - fromTime);
+    }
+
+    function dateInRange(date, fromDate, toDate) {
+        if (!fromDate && !toDate) return true;
+        if (!date) return false;
+        if (fromDate && date < fromDate) return false;
+        if (toDate && date > toDate) return false;
+        return true;
+    }
+
+    function parseDateValue(value) {
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().split('T')[0];
+        if (typeof value === 'number' && Number.isFinite(value)) return excelSerialToIsoDate(value);
+        const text = String(value || '').trim();
+        if (!text) return '';
+        if (/^\d+(?:[.,]\d+)?$/.test(text)) return excelSerialToIsoDate(Number(text.replace(',', '.')));
+        let match = text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (match) return `${match[3]}-${String(match[2]).padStart(2, '0')}-${String(match[1]).padStart(2, '0')}`;
+        match = text.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/);
+        if (match) return `${match[1]}-${String(match[2]).padStart(2, '0')}-${String(match[3]).padStart(2, '0')}`;
+        return '';
+    }
+
+    function excelSerialToIsoDate(value) {
+        const serial = Number(value);
+        if (!Number.isFinite(serial)) return '';
+        const wholeDays = Math.floor(serial);
+        if (wholeDays <= 0) return '';
+        const utcDays = wholeDays - 25569;
+        const date = new Date(utcDays * 86400 * 1000);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toISOString().split('T')[0];
+    }
+
+    function formatDateTyping(input) {
+        const digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
+        let formatted = digits;
+        if (digits.length > 4) formatted = `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+        else if (digits.length > 2) formatted = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        input.value = formatted;
+    }
+
+    function formatDateDisplay(value) {
+        const isoDate = parseDateValue(value);
+        if (!isoDate) return '';
+        const [year, month, day] = isoDate.split('-');
+        return `${day}/${month}/${year}`;
+    }
+
+    function toDateInputValue(value) {
+        return parseDateValue(value);
     }
 
     function renderExpenses() {
@@ -909,9 +1227,10 @@
         const result = {};
         products.forEach(product => result[product.name] = 0);
         settlementItemRows().forEach(row => {
-            const product = findConfiguredProduct(row.productName);
+            const config = normalizeVariantConfig(makeVariantKey(row.productName, row.variantName), row.variantName, row.productName);
+            const product = findProductByName(config.productType) || findConfiguredProduct(row.productName);
             if (!product || !Object.prototype.hasOwnProperty.call(result, product.name)) return;
-            result[product.name] += row.quantity * boxesPerQuantity(row.productName, row.variantName);
+            result[product.name] += row.quantity * boxesPerQuantityForRow(row);
         });
         return result;
     }
@@ -936,6 +1255,7 @@
 
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => ({
             'ID don': order.id,
+            'Ngay dat hang': formatDateDisplay(item.orderDate || ''),
             'Quyet toan': order.amount,
             'Ten san pham': item.productName || '',
             'Phan loai': item.variantName || '',
@@ -944,6 +1264,7 @@
 
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(returnOrders.flatMap(order => (order.items || []).map(item => ({
             'ID don': order.id,
+            'Ngay dat hang': formatDateDisplay(item.orderDate || ''),
             'Tong quyet toan': order.amount,
             'Cac dong quyet toan': order.pays.join('; '),
             'Loai giao dich': order.note || '',
@@ -951,6 +1272,22 @@
             'Phan loai': item.variantName || '',
             'SL': item.quantity || 1
         })))), 'Hoan huy');
+
+        XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(settlementItemRows().reduce((rows, row) => {
+            const key = makeVariantKey(row.productName, row.variantName);
+            const config = normalizeVariantConfig(key, row.variantName, row.productName);
+            config.rules.forEach(rule => {
+                rows.push({
+                    'Ten san pham': row.productName,
+                    'Loai mat hang': config.productType || '',
+                    'Ten phan loai': row.variantName,
+                    'Tu ngay dat': formatDateDisplay(rule.fromDate),
+                    'Den ngay dat': formatDateDisplay(rule.toDate),
+                    'So hop/SL': rule.boxesPerQuantity
+                });
+            });
+            return rows;
+        }, [])), 'Quy doi');
 
         const productTotals = calculateTikTokProductTotals();
         XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(products.map(product => ({
@@ -981,3 +1318,6 @@
 </script>
 </body>
 </html>
+
+
+
