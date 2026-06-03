@@ -39,7 +39,7 @@
             margin-bottom: 15px !important;
         }
         .upload-grid, .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
-        .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
         .container > #excelHeader + div[data-html2canvas-ignore="true"] {
             display: grid !important;
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -133,6 +133,13 @@
             z-index: 2;
             white-space: normal;
             box-shadow: inset 0 -1px 0 var(--line);
+        }
+        .table-shell.scroll-y.keep-footer tfoot td {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: #edf7ef;
+            box-shadow: inset 0 1px 0 var(--line);
         }
         #productConfigMount > div[data-html2canvas-ignore="true"] {
             display: flex !important;
@@ -315,6 +322,10 @@
                 <div class="value" id="statGoods">0 đ</div>
             </div>
             <div class="stat-card">
+                <div class="label">Chi phí vận hành</div>
+                <div class="value" id="statCosts">0 đ</div>
+            </div>
+            <div class="stat-card">
                 <div class="label">Lợi nhuận ròng</div>
                 <div class="value" id="statProfit">0 đ</div>
             </div>
@@ -356,6 +367,7 @@
         <table>
             <thead><tr><th>Tên sản phẩm</th><th>Loại mặt hàng</th><th>Mặt hàng tính giá</th><th class="number">Số đơn</th><th class="number">Tổng số hộp</th><th class="number">Giá nhập / hộp</th><th class="number">Thành tiền</th></tr></thead>
             <tbody id="summaryBody"></tbody>
+            <tfoot id="summaryFoot"></tfoot>
         </table>
 
         <h2 class="section-title">5. Chi phí vận hành</h2>
@@ -427,6 +439,7 @@
             if (!table || table.parentElement?.classList.contains('table-shell')) return;
             const wrapper = document.createElement('div');
             wrapper.className = 'table-shell scroll-y';
+            if (table.querySelector('tfoot')) wrapper.classList.add('keep-footer');
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
@@ -680,8 +693,8 @@
     }
 
     function renderExcelStats() {
-        document.getElementById('excelStats').style.display = 'block';
-        document.getElementById('excelStats').textContent = `Doanh thu: ${totalF.toLocaleString()} đ | Tổng số đơn: ${totalOrderCount.toLocaleString()} đơn`;
+        document.getElementById('excelStats').style.display = 'none';
+        document.getElementById('excelStats').textContent = '';
 
         const title = document.getElementById('gmvHistoryTitle');
         const table = document.getElementById('gmvHistoryTable');
@@ -884,8 +897,8 @@
             </tr>`;
         }).join('');
 
-        document.getElementById('summaryBody').innerHTML = (html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>') +
-            `<tr class="total-row"><td colspan="6">Tổng tiền hàng</td><td class="number">${grand.toLocaleString()} đ</td></tr>`;
+        document.getElementById('summaryBody').innerHTML = html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>';
+        document.getElementById('summaryFoot').innerHTML = `<tr class="total-row"><td colspan="6">Tổng tiền hàng</td><td class="number">${grand.toLocaleString()} đ</td></tr>`;
         totalGoods = grand;
         updateFinancials();
     }
@@ -1213,6 +1226,7 @@
         updateStatValue('statOrderCount', totalOrderCount.toLocaleString());
         updateStatValue('statRevenue', totalF.toLocaleString() + ' đ');
         updateStatValue('statGoods', totalGoods.toLocaleString() + ' đ');
+        updateStatValue('statCosts', expTotal.toLocaleString() + ' đ');
         updateStatValue('statProfit', profit.toLocaleString() + ' đ');
         document.getElementById('statProfit')?.classList.toggle('negative', profit < 0);
         document.getElementById('statProfit')?.classList.toggle('positive', profit >= 0);

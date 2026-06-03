@@ -199,6 +199,20 @@
             white-space: normal;
             box-shadow: inset 0 -1px 0 var(--line);
         }
+        .scroll.keep-footer tfoot td {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            background: #edf7ef;
+            box-shadow: inset 0 1px 0 var(--line);
+        }
+        .table-total-bar {
+            border-top: 1px solid var(--line);
+            background: #edf7ef;
+        }
+        .table-total-bar table {
+            margin: 0;
+        }
         #reportTitle {
             display: none;
             text-align: center;
@@ -304,24 +318,24 @@
 
         <div class="stats">
             <div class="stat-card">
-                <div class="label">Đơn quyết toán</div>
+                <div class="label">Tổng đơn</div>
                 <div class="value" id="settlementOrderCount">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Có dữ liệu order</div>
-                <div class="value" id="mappedOrderCount">0</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Cần nhập tay</div>
-                <div class="value" id="unmappedOrderCount">0</div>
             </div>
             <div class="stat-card">
                 <div class="label">Doanh thu quyết toán</div>
                 <div class="value" id="revenueValue">0 đ</div>
             </div>
             <div class="stat-card">
-                <div class="label">Nạp quảng cáo</div>
-                <div class="value" id="adValue">0 đ</div>
+                <div class="label">Tiền hàng</div>
+                <div class="value" id="goodsValue">0 đ</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Chi phí vận hành</div>
+                <div class="value" id="operatingCostValue">0 đ</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Lợi nhuận ròng</div>
+                <div class="value" id="profitValue">0 đ</div>
             </div>
         </div>
 
@@ -330,7 +344,7 @@
                 <h2 class="section-title">1. Cấu hình mặt hàng</h2>
                 <button type="button" id="addProductBtn" data-html2canvas-ignore="true">+ Thêm mặt hàng</button>
             </div>
-            <div class="scroll">
+            <div class="scroll keep-footer">
                 <table>
                     <thead>
                         <tr>
@@ -349,7 +363,7 @@
             <div class="section-head">
                 <h2 class="section-title">2. Danh sách đơn hàng từ file quyết toán</h2>
             </div>
-            <div class="scroll">
+            <div class="scroll keep-footer">
                 <table>
                     <thead>
                         <tr>
@@ -396,7 +410,7 @@
             <div class="section-head">
                 <h2 class="section-title">3. Quy đổi loại đơn sang số hộp</h2>
             </div>
-            <div class="scroll">
+            <div class="scroll keep-footer">
                 <table>
                     <thead>
                         <tr>
@@ -434,6 +448,11 @@
                         </tr>
                     </thead>
                     <tbody id="goodsSummaryBody"></tbody>
+                </table>
+            </div>
+            <div class="table-total-bar">
+                <table>
+                    <tfoot id="goodsSummaryFoot"></tfoot>
                 </table>
             </div>
         </section>
@@ -842,13 +861,16 @@
         }
 
         function renderStats() {
-            const orderFileIds = new Set(state.mappedRows.filter(row => row.fromOrderFile).map(row => row.orderId));
             const revenue = mappedRevenue();
+            const goods = totalGoodsCost();
+            const operatingCost = totalAds() + totalExpenses();
+            const profit = revenue - goods - operatingCost;
             document.getElementById("settlementOrderCount").textContent = MONEY_FORMAT.format(state.settlementOrders.size);
-            document.getElementById("mappedOrderCount").textContent = MONEY_FORMAT.format(orderFileIds.size);
-            document.getElementById("unmappedOrderCount").textContent = MONEY_FORMAT.format(Math.max(0, state.settlementOrders.size - orderFileIds.size));
             document.getElementById("revenueValue").textContent = formatMoney(revenue);
-            document.getElementById("adValue").textContent = formatMoney(totalAds());
+            document.getElementById("goodsValue").textContent = formatMoney(goods);
+            document.getElementById("operatingCostValue").textContent = formatMoney(operatingCost);
+            document.getElementById("profitValue").textContent = formatMoney(profit);
+            document.getElementById("profitValue").className = `value ${profit >= 0 ? "positive" : "negative"}`;
         }
 
         function renderMappedOrders() {
@@ -941,6 +963,7 @@
         function renderGoodsSummary() {
             const rows = calculateGoodsSummary();
             let totalCost = 0;
+            const foot = document.getElementById("goodsSummaryFoot");
 
             const html = rows.map(row => {
                 const matchedProduct = findProductByName(row.productType);
@@ -960,7 +983,8 @@
                 `;
             }).join("");
 
-            document.getElementById("goodsSummaryBody").innerHTML = (html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>') + `
+            document.getElementById("goodsSummaryBody").innerHTML = html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>';
+            foot.innerHTML = `
                 <tr class="total-row">
                     <td colspan="6">Tổng tiền hàng</td>
                     <td class="number">${formatMoney(totalCost)}</td>
