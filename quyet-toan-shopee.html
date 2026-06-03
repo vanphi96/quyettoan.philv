@@ -459,6 +459,7 @@
                 <table>
                     <thead>
                         <tr>
+                            <th style="width: 120px;">Ngày nạp</th>
                             <th>Nguồn</th>
                             <th>Ghi chú</th>
                             <th class="number">Số tiền</th>
@@ -468,7 +469,7 @@
                     <tbody id="adBody"></tbody>
                     <tfoot>
                         <tr class="total-row">
-                            <td colspan="2">Tổng nạp quảng cáo</td>
+                            <td colspan="3">Tổng nạp quảng cáo</td>
                             <td class="number" id="adTotalCell">0 đ</td>
                             <td></td>
                         </tr>
@@ -689,7 +690,7 @@
                 }
 
                 if (normalizeText(note).startsWith(AD_PAYMENT_PREFIX)) {
-                    state.adFromFile.push({ note, amount });
+                    state.adFromFile.push({ date: toDateInputValue(date), note, amount });
                 }
             }
 
@@ -980,6 +981,7 @@
             const body = document.getElementById("adBody");
             const fileRows = state.adFromFile.map(item => `
                 <tr>
+                    <td>${escapeHtml(formatDateDisplay(item.date || ""))}</td>
                     <td>File quyết toán</td>
                     <td>${escapeHtml(item.note || "Nạp tiền quảng cáo Shopee")}</td>
                     <td class="number negative">${formatMoney(Math.abs(item.amount))}</td>
@@ -989,6 +991,7 @@
 
             const manualRows = state.manualAds.map((item, index) => `
                 <tr>
+                    <td><input type="text" value="${escapeAttr(formatDateDisplay(item.date || ""))}" placeholder="dd/mm/yyyy" data-date-display="true" oninput="formatDateTyping(this)" onchange="updateManualAd(${index}, 'date', this.value)"></td>
                     <td>Chuyển khoản</td>
                     <td><input value="${escapeAttr(item.note)}" onchange="updateManualAd(${index}, 'note', this.value)"></td>
                     <td><input class="number" type="number" value="${item.amount}" onchange="updateManualAd(${index}, 'amount', this.value)"></td>
@@ -996,7 +999,7 @@
                 </tr>
             `);
 
-            body.innerHTML = fileRows.concat(manualRows).join("") || '<tr><td class="empty" colspan="4">Chưa có khoản nạp quảng cáo</td></tr>';
+            body.innerHTML = fileRows.concat(manualRows).join("") || '<tr><td class="empty" colspan="5">Chưa có khoản nạp quảng cáo</td></tr>';
             document.getElementById("adTotalCell").textContent = formatMoney(totalAds());
         }
 
@@ -1146,12 +1149,14 @@
         }
 
         function addManualAd() {
-            state.manualAds.push({ note: "Nạp quảng cáo bằng chuyển khoản", amount: 0 });
+            state.manualAds.push({ date: "", note: "Nạp quảng cáo bằng chuyển khoản", amount: 0 });
             renderAll();
         }
 
         function updateManualAd(index, field, value) {
-            state.manualAds[index][field] = field === "amount" ? parseNumber(value) : value;
+            state.manualAds[index][field] = field === "amount"
+                ? parseNumber(value)
+                : (field === "date" ? parseDateValue(value) : value);
             renderAll();
         }
 
@@ -1340,10 +1345,12 @@
             }))), "So luong don");
 
             const adRows = state.adFromFile.map(item => ({
+                "Ngày nạp": formatDateDisplay(item.date || ""),
                 "Nguồn": "File quyết toán",
                 "Ghi chú": item.note || "Nạp tiền quảng cáo Shopee",
                 "Số tiền": Math.abs(item.amount)
             })).concat(state.manualAds.map(item => ({
+                "Ngày nạp": formatDateDisplay(item.date || ""),
                 "Nguồn": "Chuyển khoản",
                 "Ghi chú": item.note,
                 "Số tiền": Math.abs(parseNumber(item.amount))
