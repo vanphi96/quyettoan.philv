@@ -8,27 +8,275 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 20px auto; text-align: center; background: #f0f2f5; }
-        .page-top { margin-bottom: 16px; text-align: left; }
-        .back-home { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border: 1px solid #d7dce3; border-radius: 999px; background: #fff; color: #1f2937; text-decoration: none; font-size: 14px; font-weight: 600; }
-        .back-home:hover { background: #f8fbff; }
-        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        #drop-zone { border: 2px dashed #007bff; padding: 30px; cursor: pointer; margin-bottom: 20px; border-radius: 8px; background: #f8fbff; }
-        
-        .controls { display: none; background: #fff; padding: 20px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 20px; }
-        input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
-        
-        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: 0.2s; margin: 5px; }
-        .btn-download-all { background: #28a745; color: white; }
-        .btn-download-custom { background: #fd7e14; color: white; }
-        button:hover { opacity: 0.8; }
-
-        #output-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 20px; }
-        .page-item { border: 1px solid #eee; padding: 10px; background: #fafafa; border-radius: 5px; }
-        canvas { width: 100%; height: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .page-label { margin-top: 8px; font-size: 14px; color: #555; }
-        
-        .loading { color: #007bff; font-weight: bold; display: none; margin: 10px 0; }
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            text-align: center;
+            background: #f0f2f5;
+        }
+        .page-top {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border: 1px solid #d7dce3;
+            border-radius: 999px;
+            background: #fff;
+            color: #1f2937;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .back-home:hover {
+            background: #f8fbff;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        #drop-zone {
+            border: 2px dashed #007bff;
+            padding: 30px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            background: #f8fbff;
+        }
+        .controls {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 200px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            margin: 5px;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+        .btn-download-all {
+            background: #28a745;
+            color: white;
+        }
+        .btn-download-custom {
+            background: #fd7e14;
+            color: white;
+        }
+        #output-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .page-item {
+            position: relative;
+            border: 1px solid #eee;
+            padding: 10px;
+            background: #fafafa;
+            border-radius: 5px;
+        }
+        .page-download {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            z-index: 2;
+            margin: 0;
+            padding: 7px 10px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.82);
+            color: #fff;
+            font-size: 12px;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+            cursor: zoom-in;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .page-label {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+        .loading {
+            color: #007bff;
+            font-weight: bold;
+            display: none;
+            margin: 10px 0;
+        }
+        .preview-modal {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: rgba(15, 23, 42, 0.82);
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.22s ease, visibility 0.22s ease;
+        }
+        .preview-modal.open {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+        .preview-dialog {
+            position: relative;
+            width: min(1100px, 100%);
+            height: min(88vh, 900px);
+            border-radius: 18px;
+            overflow: hidden;
+            background: #0f172a;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+            opacity: 0;
+            transform: translateY(18px) scale(0.985);
+            transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+        .preview-modal.open .preview-dialog {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .preview-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.95);
+            color: #fff;
+        }
+        .preview-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .preview-hint {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+        }
+        .preview-close {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+        }
+        .preview-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .preview-download {
+            padding: 8px 12px;
+            background: #2563eb;
+            color: #fff;
+        }
+        .preview-stage {
+            position: relative;
+            height: calc(100% - 64px);
+            background:
+                radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 30%),
+                linear-gradient(180deg, #111827 0%, #020617 100%);
+        }
+        .preview-viewport {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: auto;
+            padding: 28px 80px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            transform-origin: center center;
+            opacity: 1;
+            transition: transform 0.12s ease-out, opacity 0.18s ease;
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.45);
+            border-radius: 10px;
+        }
+        .preview-image.switching {
+            opacity: 0;
+        }
+        .preview-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            min-width: 48px;
+            min-height: 48px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.14);
+            color: #fff;
+            font-size: 24px;
+            line-height: 1;
+        }
+        .preview-prev {
+            left: 18px;
+        }
+        .preview-next {
+            right: 18px;
+        }
+        .preview-meta {
+            position: absolute;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.7);
+            color: #fff;
+            font-size: 13px;
+        }
+        @media (max-width: 700px) {
+            .preview-modal {
+                padding: 10px;
+            }
+            .preview-dialog {
+                height: min(92vh, 900px);
+            }
+            .preview-viewport {
+                padding: 20px 56px;
+            }
+            .preview-nav {
+                min-width: 42px;
+                min-height: 42px;
+                font-size: 20px;
+            }
+            .preview-prev {
+                left: 10px;
+            }
+            .preview-next {
+                right: 10px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -38,10 +286,10 @@
 </div>
 <div class="container">
     <h2>Chuyển đổi PDF sang Ảnh (ZIP)</h2>
-    
+
     <div id="drop-zone">Kéo thả PDF hoặc click để chọn file</div>
     <input type="file" id="file-input" accept="application/pdf" style="display: none;">
-    
+
     <div id="loading-msg" class="loading">Đang xử lý dữ liệu...</div>
 
     <div id="controls" class="controls">
@@ -56,64 +304,233 @@
     <div id="output-container"></div>
 </div>
 
+<div id="preview-modal" class="preview-modal" aria-hidden="true">
+    <div class="preview-dialog">
+        <div class="preview-topbar">
+            <div>
+                <div id="preview-title" class="preview-title">Trang 1</div>
+                <div class="preview-hint">Lăn chuột để zoom in/out</div>
+            </div>
+            <div class="preview-actions">
+                <button type="button" id="preview-download" class="preview-download">Tải ảnh</button>
+                <button type="button" id="preview-close" class="preview-close">Đóng</button>
+            </div>
+        </div>
+        <div class="preview-stage">
+            <button type="button" id="preview-prev" class="preview-nav preview-prev" aria-label="Trang trước">‹</button>
+            <div id="preview-viewport" class="preview-viewport">
+                <img id="preview-image" class="preview-image" alt="PDF preview">
+            </div>
+            <button type="button" id="preview-next" class="preview-nav preview-next" aria-label="Trang sau">›</button>
+            <div id="preview-meta" class="preview-meta">1 / 1 • 100%</div>
+        </div>
+    </div>
+</div>
+
 <script>
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdfjsLib = window["pdfjs-dist/build/pdf"];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
     let pdfDoc = null;
-    let pageCanvases = {}; // Lưu trữ canvas của từng trang
+    let pageCanvases = {};
+    let previewPages = [];
+    let activePreviewIndex = 0;
+    let previewZoom = 1;
+    let previewCloseTimer = null;
 
-    const fileInput = document.getElementById('file-input');
-    const dropZone = document.getElementById('drop-zone');
-    const controls = document.getElementById('controls');
-    const outputContainer = document.getElementById('output-container');
-    const loadingMsg = document.getElementById('loading-msg');
+    const minPreviewZoom = 0.5;
+    const maxPreviewZoom = 4;
+
+    const fileInput = document.getElementById("file-input");
+    const dropZone = document.getElementById("drop-zone");
+    const controls = document.getElementById("controls");
+    const outputContainer = document.getElementById("output-container");
+    const loadingMsg = document.getElementById("loading-msg");
+    const previewModal = document.getElementById("preview-modal");
+    const previewImage = document.getElementById("preview-image");
+    const previewTitle = document.getElementById("preview-title");
+    const previewMeta = document.getElementById("preview-meta");
+    const previewViewport = document.getElementById("preview-viewport");
+    const previewPrevBtn = document.getElementById("preview-prev");
+    const previewNextBtn = document.getElementById("preview-next");
+    const previewCloseBtn = document.getElementById("preview-close");
+    const previewDownloadBtn = document.getElementById("preview-download");
 
     dropZone.onclick = () => fileInput.click();
-    fileInput.onchange = (e) => handleFile(e.target.files[0]);
+    fileInput.onchange = (event) => handleFile(event.target.files[0]);
+    previewPrevBtn.onclick = () => changePreviewPage(-1);
+    previewNextBtn.onclick = () => changePreviewPage(1);
+    previewCloseBtn.onclick = closePreviewModal;
+    previewDownloadBtn.onclick = () => {
+        const currentPage = previewPages[activePreviewIndex];
+        if (currentPage) downloadPageImage(currentPage.pageNum);
+    };
+
+    previewModal.onclick = (event) => {
+        if (event.target === previewModal) closePreviewModal();
+    };
+
+    previewViewport.addEventListener("wheel", handlePreviewZoom, { passive: false });
+    document.addEventListener("keydown", handlePreviewKeyboard);
 
     async function handleFile(file) {
-        if (!file || file.type !== 'application/pdf') return;
-        
-        outputContainer.innerHTML = '';
+        if (!file || file.type !== "application/pdf") return;
+
+        outputContainer.innerHTML = "";
         pageCanvases = {};
-        controls.style.display = 'none';
-        loadingMsg.style.display = 'block';
+        previewPages = [];
+        closePreviewModal();
+        controls.style.display = "none";
+        loadingMsg.style.display = "block";
 
         const arrayBuffer = await file.arrayBuffer();
         pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
-        
+
         for (let i = 1; i <= pdfDoc.numPages; i++) {
             await renderPage(i);
         }
 
-        loadingMsg.style.display = 'none';
-        controls.style.display = 'block';
+        loadingMsg.style.display = "none";
+        controls.style.display = "block";
     }
 
     async function renderPage(pageNum) {
         const page = await pdfDoc.getPage(pageNum);
         const viewport = page.getViewport({ scale: 1.5 });
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
         canvas.height = viewport.height;
         canvas.width = viewport.width;
 
-        await page.render({ canvasContext: context, viewport: viewport }).promise;
+        await page.render({ canvasContext: context, viewport }).promise;
 
-        // Lưu canvas vào object để dùng khi nén ZIP
         pageCanvases[pageNum] = canvas;
 
-        const div = document.createElement('div');
-        div.className = 'page-item';
-        const label = document.createElement('div');
-        label.className = 'page-label';
+        const div = document.createElement("div");
+        div.className = "page-item";
+        const downloadBtn = document.createElement("button");
+        downloadBtn.type = "button";
+        downloadBtn.className = "page-download";
+        downloadBtn.textContent = "Tải ảnh";
+        downloadBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            downloadPageImage(pageNum);
+        });
+        canvas.addEventListener("click", () => openPreviewModal(pageNum));
+
+        const label = document.createElement("div");
+        label.className = "page-label";
         label.innerText = `Trang ${pageNum}`;
-        
+
+        previewPages.push({
+            pageNum,
+            src: canvas.toDataURL("image/png")
+        });
+
+        div.appendChild(downloadBtn);
         div.appendChild(canvas);
         div.appendChild(label);
         outputContainer.appendChild(div);
+    }
+
+    function openPreviewModal(pageNum) {
+        const pageIndex = previewPages.findIndex((page) => page.pageNum === pageNum);
+        if (pageIndex === -1) return;
+
+        if (previewCloseTimer) {
+            clearTimeout(previewCloseTimer);
+            previewCloseTimer = null;
+        }
+        activePreviewIndex = pageIndex;
+        previewModal.classList.add("open");
+        previewModal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        renderPreviewPage(true);
+    }
+
+    function closePreviewModal() {
+        previewModal.classList.remove("open");
+        previewModal.setAttribute("aria-hidden", "true");
+        previewCloseTimer = window.setTimeout(() => {
+            document.body.style.overflow = "";
+            previewCloseTimer = null;
+        }, 220);
+    }
+
+    function changePreviewPage(direction) {
+        if (!previewPages.length) return;
+        activePreviewIndex = (activePreviewIndex + direction + previewPages.length) % previewPages.length;
+        renderPreviewPage(true);
+    }
+
+    function renderPreviewPage(resetZoom) {
+        const currentPage = previewPages[activePreviewIndex];
+        if (!currentPage) return;
+
+        if (resetZoom) {
+            previewZoom = 1;
+            previewViewport.scrollTop = 0;
+            previewViewport.scrollLeft = 0;
+        }
+
+        previewImage.classList.add("switching");
+        previewImage.src = currentPage.src;
+        previewTitle.textContent = `Trang ${currentPage.pageNum}`;
+        previewPrevBtn.disabled = previewPages.length <= 1;
+        previewNextBtn.disabled = previewPages.length <= 1;
+        updatePreviewZoom();
+    }
+
+    previewImage.addEventListener("load", () => {
+        previewImage.classList.remove("switching");
+    });
+
+    function updatePreviewZoom() {
+        previewImage.style.transform = `scale(${previewZoom})`;
+        const currentPage = previewPages[activePreviewIndex];
+        const currentPageNum = currentPage ? currentPage.pageNum : 0;
+        previewMeta.textContent = `${currentPageNum} / ${previewPages.length} • ${Math.round(previewZoom * 100)}%`;
+    }
+
+    function handlePreviewZoom(event) {
+        if (!previewModal.classList.contains("open")) return;
+
+        event.preventDefault();
+        const zoomStep = event.deltaY < 0 ? 0.1 : -0.1;
+        const nextZoom = Math.min(maxPreviewZoom, Math.max(minPreviewZoom, Number((previewZoom + zoomStep).toFixed(2))));
+        if (nextZoom === previewZoom) return;
+
+        previewZoom = nextZoom;
+        updatePreviewZoom();
+    }
+
+    function handlePreviewKeyboard(event) {
+        if (!previewModal.classList.contains("open")) return;
+
+        if (event.key === "Escape") {
+            closePreviewModal();
+            return;
+        }
+
+        if (event.key === "ArrowLeft") {
+            changePreviewPage(-1);
+            return;
+        }
+
+        if (event.key === "ArrowRight") {
+            changePreviewPage(1);
+        }
+    }
+
+    function downloadPageImage(pageNum) {
+        const canvas = pageCanvases[pageNum];
+        if (!canvas) return;
+
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = `page-${pageNum}.png`;
+        link.click();
     }
 
     async function downloadZip(mode) {
@@ -121,10 +538,10 @@
         const imgFolder = zip.folder("images");
         let pagesToExport = [];
 
-        if (mode === 'all') {
+        if (mode === "all") {
             pagesToExport = Object.keys(pageCanvases);
         } else {
-            const input = document.getElementById('custom-pages').value;
+            const input = document.getElementById("custom-pages").value;
             pagesToExport = parsePageSelection(input, pdfDoc.numPages);
         }
 
@@ -134,41 +551,44 @@
         }
 
         loadingMsg.innerText = "Đang tạo file ZIP...";
-        loadingMsg.style.display = 'block';
+        loadingMsg.style.display = "block";
 
-        pagesToExport.forEach(num => {
+        pagesToExport.forEach((num) => {
             const canvas = pageCanvases[num];
-            const dataUrl = canvas.toDataURL('image/png').split(',')[1];
-            imgFolder.file(`page-${num}.png`, dataUrl, {base64: true});
+            const dataUrl = canvas.toDataURL("image/png").split(",")[1];
+            imgFolder.file(`page-${num}.png`, dataUrl, { base64: true });
         });
 
-        const content = await zip.generateAsync({type: "blob"});
-        const link = document.createElement('a');
+        const content = await zip.generateAsync({ type: "blob" });
+        const link = document.createElement("a");
         link.href = URL.createObjectURL(content);
         link.download = "pdf_pages.zip";
         link.click();
-        
-        loadingMsg.style.display = 'none';
+
+        loadingMsg.style.display = "none";
         loadingMsg.innerText = "Đang xử lý dữ liệu...";
     }
 
-    // Hàm xử lý chuỗi nhập trang (ví dụ: "1, 3, 5-7")
     function parsePageSelection(input, maxPages) {
         const pages = new Set();
-        const parts = input.split(',');
-        
-        parts.forEach(part => {
-            part = part.trim();
-            if (part.includes('-')) {
-                const [start, end] = part.split('-').map(Number);
+        const parts = input.split(",");
+
+        parts.forEach((part) => {
+            const cleanPart = part.trim();
+            if (!cleanPart) return;
+
+            if (cleanPart.includes("-")) {
+                const [start, end] = cleanPart.split("-").map(Number);
                 for (let i = start; i <= end; i++) {
                     if (i > 0 && i <= maxPages) pages.add(i);
                 }
-            } else {
-                const num = Number(part);
-                if (num > 0 && num <= maxPages) pages.add(num);
+                return;
             }
+
+            const num = Number(cleanPart);
+            if (num > 0 && num <= maxPages) pages.add(num);
         });
+
         return Array.from(pages).sort((a, b) => a - b);
     }
 </script>
