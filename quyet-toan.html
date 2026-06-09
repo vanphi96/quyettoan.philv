@@ -352,7 +352,7 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">2. Danh sách đơn hàng từ file quyết toán</h2>
+                <h2 class="section-title" id="mappedOrderTitle">2. Danh sách đơn hàng từ file quyết toán (0)</h2>
             </div>
             <div class="scroll">
                 <table>
@@ -366,7 +366,7 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">2.1. Đơn hoàn hủy</h2>
+                <h2 class="section-title" id="returnOrderTitle">2.1. Đơn hoàn hủy (0)</h2>
             </div>
             <div class="scroll">
                 <table>
@@ -979,7 +979,9 @@
     }
 
     function renderMappedOrderTable() {
-        const rows = settlementRowEntries('order').map((entry, index) => {
+        const entries = settlementRowEntries('order');
+        document.getElementById('mappedOrderTitle').textContent = `2. Danh sách đơn hàng từ file quyết toán (${entries.length})`;
+        const rows = entries.map((entry, index) => {
             const order = entry.order;
             const item = entry.item;
             return `
@@ -998,7 +1000,9 @@
     }
 
     function renderMappedReturnTable() {
-        const rows = settlementRowEntries('return').map((entry, index) => {
+        const entries = settlementRowEntries('return');
+        document.getElementById('returnOrderTitle').textContent = `2.1. Đơn hoàn hủy (${entries.length})`;
+        const rows = entries.map((entry, index) => {
             const order = entry.order;
             const item = entry.item;
             return `
@@ -1528,8 +1532,6 @@
 
     function removeAdItem(type, index) {
         if (type === 'file') {
-            const removedItem = gmvHistory[index];
-            if (removedItem) totalF += Math.abs(parseNumberText(removedItem.amount));
             gmvHistory.splice(index, 1);
         } else {
             manualAds.splice(index, 1);

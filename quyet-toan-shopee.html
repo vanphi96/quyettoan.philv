@@ -86,6 +86,41 @@
         .upload-box:hover { background: #fff0ea; }
         .upload-box strong { display: block; color: var(--brand-dark); margin-bottom: 6px; }
         .file-name { color: var(--muted); font-size: 13px; }
+        .order-file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 18px;
+        }
+        .order-file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 10px;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: #fff;
+        }
+        .order-file-item-name {
+            color: var(--text);
+            font-size: 13px;
+            text-align: left;
+            word-break: break-word;
+        }
+        .order-file-remove {
+            width: 30px;
+            height: 30px;
+            border: 0;
+            border-radius: 999px;
+            background: #c62828;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .order-file-remove:hover { background: #9f1f1f; }
 
         .stats {
             display: grid;
@@ -318,7 +353,7 @@
             <button type="button" id="screenshotBtn">CHỤP ẢNH BÁO CÁO (LONG SCREENSHOT)</button>
         </div>
         <h1>Quyết toán Shopee</h1>
-        <div class="subtitle">Tải 2 file Excel, map theo mã đơn hàng, tính tiền hàng, quảng cáo, chi phí khác và lợi nhuận.</div>
+        <div class="subtitle">Tải file quyết toán và một hoặc nhiều file order, map theo mã đơn hàng, tính tiền hàng, quảng cáo, chi phí khác và lợi nhuận.</div>
         <div id="exportOnlyText"></div>
 
         <div class="upload-grid" data-html2canvas-ignore="true">
@@ -329,10 +364,11 @@
             </label>
             <label class="upload-box" for="orderFile">
                 <strong>File 2: lịch sử order</strong>
-                <span class="file-name" id="orderFileName">Order.all từ Shopee</span>
-                <input type="file" id="orderFile" accept=".xlsx,.xls" hidden>
+                <span class="file-name" id="orderFileName">Có thể tải nhiều file Order.all từ Shopee</span>
+                <input type="file" id="orderFile" accept=".xlsx,.xls" hidden multiple>
             </label>
         </div>
+        <div class="order-file-list" id="orderFileList" data-html2canvas-ignore="true"></div>
 
         <div class="stats">
             <div class="stat-card">
@@ -379,7 +415,7 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">2. Danh sách đơn hàng từ file quyết toán</h2>
+                <h2 class="section-title" id="mappedOrderTitle">2. Danh sách đơn hàng từ file quyết toán (0)</h2>
             </div>
             <div class="scroll keep-footer">
                 <table>
@@ -403,7 +439,7 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">2.1. Đơn hoàn hủy</h2>
+                <h2 class="section-title" id="returnOrderTitle">2.1. Đơn hoàn hủy (0)</h2>
             </div>
             <div class="scroll">
                 <table>
@@ -592,7 +628,7 @@
             settlementOrders: new Map(),
             returnOrders: new Map(),
             adFromFile: [],
-            restoredRevenueAds: [],
+            orderFiles: [],
             orderItems: new Map(),
             mappedRows: [],
             returnRows: [],
@@ -685,36 +721,55 @@
             }
         }
 
-        function loadExcel(event, type) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function loadExcel(event, type) {
+            const files = Array.from(event.target.files || []);
+            if (files.length === 0) return;
 
-            const fileNameId = type === "settlement" ? "settlementFileName" : "orderFileName";
-            document.getElementById(fileNameId).textContent = file.name;
+            try {
+                if (type === "settlement") {
+                    const rows = await readRowsFromFile(files[0]);
+                    document.getElementById("settlementFileName").textContent = files[0].name;
+                    processSettlementRows(rows);
+                }
 
-            const reader = new FileReader();
-            reader.onload = loadEvent => {
-                const workbook = XLSX.read(new Uint8Array(loadEvent.target.result), {
-                    type: "array",
-                    cellDates: true
-                });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
-
-                if (type === "settlement") processSettlementRows(rows);
-                if (type === "order") processOrderRows(rows);
+                if (type === "order") {
+                    await appendOrderFiles(files);
+                }
 
                 buildMappedRows();
                 renderAll();
-            };
-            reader.readAsArrayBuffer(file);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || "Không đọc được file Excel.");
+            } finally {
+                event.target.value = "";
+            }
+        }
+
+        function readRowsFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = loadEvent => {
+                    try {
+                        const workbook = XLSX.read(new Uint8Array(loadEvent.target.result), {
+                            type: "array",
+                            cellDates: true
+                        });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        resolve(XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" }));
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error(`Không đọc được file ${file.name}`));
+                reader.readAsArrayBuffer(file);
+            });
         }
 
         function processSettlementRows(rows) {
             state.settlementOrders = new Map();
             state.returnOrders = new Map();
             state.adFromFile = [];
-            state.restoredRevenueAds = [];
 
             for (let index = SETTLEMENT_START_ROW - 1; index < rows.length; index++) {
                 const row = rows[index];
@@ -748,12 +803,10 @@
             state.settlementLoaded = true;
         }
 
-        function processOrderRows(rows) {
-            state.orderItems = new Map();
-
+        function parseOrderRows(rows) {
+            const orderItems = new Map();
             if (!rows || rows.length === 0) {
-                state.orderLoaded = true;
-                return;
+                return orderItems;
             }
 
             const headerRowIndex = findHeaderRowIndex(rows, [
@@ -781,11 +834,75 @@
                 const quantity = parseNumber(row[quantityIndex]) || 1;
                 const item = { orderId, orderDate, productName, variantName, quantity, fromOrderFile: true };
 
-                if (!state.orderItems.has(orderId)) state.orderItems.set(orderId, []);
-                state.orderItems.get(orderId).push(item);
+                if (!orderItems.has(orderId)) orderItems.set(orderId, []);
+                orderItems.get(orderId).push(item);
+            }
+            return orderItems;
+        }
+
+        async function appendOrderFiles(files) {
+            for (const file of files) {
+                const duplicate = state.orderFiles.some(item =>
+                    item.name === file.name &&
+                    item.size === file.size &&
+                    item.lastModified === file.lastModified
+                );
+                if (duplicate) continue;
+
+                const rows = await readRowsFromFile(file);
+                state.orderFiles.push({
+                    id: `${file.name}-${file.size}-${file.lastModified}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    name: file.name,
+                    size: file.size,
+                    lastModified: file.lastModified,
+                    orderItems: parseOrderRows(rows)
+                });
+            }
+            state.orderLoaded = state.orderFiles.length > 0;
+            rebuildOrderItemsFromFiles();
+            updateOrderFileName();
+        }
+
+        function rebuildOrderItemsFromFiles() {
+            state.orderItems = new Map();
+            state.orderFiles.forEach(file => {
+                file.orderItems.forEach((items, orderId) => {
+                    if (state.orderItems.has(orderId)) return;
+                    state.orderItems.set(orderId, items.map(item => ({ ...item })));
+                });
+            });
+        }
+
+        function updateOrderFileName() {
+            const count = state.orderFiles.length;
+            document.getElementById("orderFileName").textContent = count > 0
+                ? `Đã tải ${count} file order`
+                : "Có thể tải nhiều file Order.all từ Shopee";
+        }
+
+        function renderOrderFileList() {
+            const list = document.getElementById("orderFileList");
+            if (state.orderFiles.length === 0) {
+                list.innerHTML = "";
+                return;
             }
 
-            state.orderLoaded = true;
+            list.innerHTML = state.orderFiles.map(file => `
+                <div class="order-file-item">
+                    <div class="order-file-item-name">${escapeHtml(file.name)}</div>
+                    <button type="button" class="order-file-remove" onclick="removeOrderFile('${encodeURIComponent(file.id)}')">×</button>
+                </div>
+            `).join("");
+        }
+
+        function removeOrderFile(fileId) {
+            fileId = decodeURIComponent(fileId);
+            state.orderFiles = state.orderFiles.filter(file => file.id !== fileId);
+            state.orderLoaded = state.orderFiles.length > 0;
+            rebuildOrderItemsFromFiles();
+            updateOrderFileName();
+            buildMappedRows();
+            renderAll();
         }
 
         function buildMappedRows() {
@@ -878,6 +995,7 @@
         function renderAll() {
             renderProducts();
             renderStats();
+            renderOrderFileList();
             renderMappedOrders();
             renderReturnOrders();
             renderVariantGroups();
@@ -904,7 +1022,7 @@
             const goods = totalGoodsCost();
             const operatingCost = totalAds() + totalExpenses();
             const profit = revenue - goods - operatingCost;
-            document.getElementById("settlementOrderCount").textContent = MONEY_FORMAT.format(state.settlementOrders.size);
+            document.getElementById("settlementOrderCount").textContent = MONEY_FORMAT.format(state.settlementOrders.size + state.returnOrders.size);
             document.getElementById("revenueValue").textContent = formatMoney(revenue);
             document.getElementById("goodsValue").textContent = formatMoney(goods);
             document.getElementById("operatingCostValue").textContent = formatMoney(operatingCost);
@@ -914,6 +1032,7 @@
 
         function renderMappedOrders() {
             const body = document.getElementById("mappedOrderBody");
+            document.getElementById("mappedOrderTitle").textContent = `2. Danh sách đơn hàng từ file quyết toán (${state.mappedRows.length})`;
             if (!state.settlementLoaded) {
                 body.innerHTML = '<tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr>';
                 return;
@@ -938,6 +1057,7 @@
 
         function renderReturnOrders() {
             const body = document.getElementById("returnOrderBody");
+            document.getElementById("returnOrderTitle").textContent = `2.1. Đơn hoàn hủy (${state.returnRows.length})`;
             if (!state.settlementLoaded) {
                 body.innerHTML = '<tr><td class="empty" colspan="6">Chưa tải file quyết toán</td></tr>';
                 return;
@@ -1277,10 +1397,7 @@
         }
 
         function removeFileAd(index) {
-            const removedItems = state.adFromFile.splice(index, 1);
-            if (removedItems.length > 0) {
-                state.restoredRevenueAds.push(removedItems[0]);
-            }
+            state.adFromFile.splice(index, 1);
             renderAll();
         }
 
@@ -1392,8 +1509,7 @@
         function mappedRevenue() {
             const positive = Array.from(state.settlementOrders.values()).reduce((sum, item) => sum + item.amount, 0);
             const returns = Array.from(state.returnOrders.values()).reduce((sum, item) => sum + item.amount, 0);
-            const restoredAds = state.restoredRevenueAds.reduce((sum, item) => sum + Math.abs(item.amount), 0);
-            return positive + returns + restoredAds;
+            return positive + returns;
         }
 
         function totalAds() {
