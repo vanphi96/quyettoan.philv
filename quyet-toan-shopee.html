@@ -30,6 +30,23 @@
             color: var(--text);
         }
 
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .back-home:hover { background: #fff7f4; }
+
         .container {
             max-width: 1280px;
             margin: 22px auto;
@@ -294,6 +311,7 @@
 <body>
     <div id="captureArea">
     <main class="container">
+        <a href="index.html" class="back-home">← Về home</a>
         <div id="reportTitle">BÁO CÁO QUYẾT TOÁN SHOPEE</div>
         <div class="top-actions" data-html2canvas-ignore="true">
             <button type="button" id="excelExportBtn">XUẤT EXCEL</button>
@@ -461,7 +479,7 @@
             <div class="section-head">
                 <h2 class="section-title">4.1. Thống kê số lượng đơn theo mặt hàng</h2>
             </div>
-            <div class="scroll">
+            <div class="scroll keep-footer">
                 <table>
                     <thead>
                         <tr>
@@ -475,6 +493,7 @@
                     <tbody id="orderTypeSummaryBody">
                         <tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr>
                     </tbody>
+                    <tfoot id="orderTypeSummaryFoot"></tfoot>
                 </table>
             </div>
         </section>
@@ -573,6 +592,7 @@
             settlementOrders: new Map(),
             returnOrders: new Map(),
             adFromFile: [],
+            restoredRevenueAds: [],
             orderItems: new Map(),
             mappedRows: [],
             returnRows: [],
@@ -582,7 +602,8 @@
             products: [
                 { name: "Trà ba kích", aliases: ["Trà ba kích", "Ba Kích", "Ngọc Cẩu"], price: 22000 },
                 { name: "Trà cà gai leo", aliases: ["Trà cà gai leo", "Cà Gai Leo"], price: 21000 },
-                { name: "Dây thìa canh", aliases: ["Dây thìa canh", "Thìa Canh"], price: 21000 }
+                { name: "Dây thìa canh", aliases: ["Dây thìa canh", "Thìa Canh"], price: 21000 },
+                { name: "Kim tiền thảo râu mèo", aliases: ["Kim tiền thảo râu mèo"], price: 22000 }
             ],
             manualAds: [],
             expenses: [{ name: "Chi phí vật tư", amount: 0 }]
@@ -693,6 +714,7 @@
             state.settlementOrders = new Map();
             state.returnOrders = new Map();
             state.adFromFile = [];
+            state.restoredRevenueAds = [];
 
             for (let index = SETTLEMENT_START_ROW - 1; index < rows.length; index++) {
                 const row = rows[index];
@@ -729,17 +751,34 @@
         function processOrderRows(rows) {
             state.orderItems = new Map();
 
-            for (let index = 1; index < rows.length; index++) {
+            if (!rows || rows.length === 0) {
+                state.orderLoaded = true;
+                return;
+            }
+
+            const headerRowIndex = findHeaderRowIndex(rows, [
+                "Mã đơn hàng",
+                "Ngày đặt hàng",
+                "Tên sản phẩm"
+            ]);
+            const headerRow = rows[headerRowIndex] || [];
+            const orderIdIndex = findColumnIndex(headerRow, ["Mã đơn hàng", "Order ID"], 0);
+            const orderDateIndex = findColumnIndex(headerRow, ["Ngày đặt hàng", "Order Created Time", "Created Time"], 2);
+            const productNameIndex = findColumnIndex(headerRow, ["Tên sản phẩm", "Product Name"], 15);
+            const variantNameIndex = findColumnIndex(headerRow, ["Tên phân loại hàng", "Phân loại hàng", "Model Name", "Variation"], 19);
+            const quantityIndex = findColumnIndex(headerRow, ["Số lượng", "Quantity"], 25);
+
+            for (let index = headerRowIndex + 1; index < rows.length; index++) {
                 const row = rows[index];
                 if (!row || row.every(cell => String(cell).trim() === "")) continue;
 
-                const orderId = String(row[0] || "").trim(); // Cột A
+                const orderId = String(row[orderIdIndex] || "").trim();
                 if (!isOrderId(orderId)) continue;
 
-                const orderDate = toDateInputValue(row[2]); // Cột C: ngày đặt hàng
-                const productName = String(row[16] || "").trim(); // Cột Q
-                const variantName = String(row[20] || "").trim(); // Cột U
-                const quantity = parseNumber(row[26]) || 1; // Cột AA
+                const orderDate = toDateInputValue(row[orderDateIndex]);
+                const productName = String(row[productNameIndex] || "").trim();
+                const variantName = String(row[variantNameIndex] || "").trim();
+                const quantity = parseNumber(row[quantityIndex]) || 1;
                 const item = { orderId, orderDate, productName, variantName, quantity, fromOrderFile: true };
 
                 if (!state.orderItems.has(orderId)) state.orderItems.set(orderId, []);
@@ -854,7 +893,7 @@
                 <tr>
                     <td><input value="${escapeAttr(product.name)}" onchange="updateProductName(${index}, this.value)"></td>
                     <td><textarea onchange="updateProductAliases(${index}, this.value)" placeholder="Mỗi dòng một tên sản phẩm">${escapeHtml(productAliasesText(product))}</textarea></td>
-                    <td><input class="number" type="number" value="${product.price}" onchange="updateProductPrice(${index}, this.value)"></td>
+                    <td><input class="number" type="text" inputmode="numeric" value="${escapeAttr(formatInputNumber(product.price))}" onfocus="prepareNumberInput(this)" onblur="updateProductPriceAmount(${index}, this)"></td>
                     <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeProduct(${index})">Xóa</button></td>
                 </tr>
             `).join("");
@@ -953,7 +992,7 @@
                                 <input type="date" class="date-native-picker" id="${escapeAttr(variantDatePickerId(group.key, ruleIndex, "toDate"))}" value="${escapeAttr(rule.toDate || "")}" onchange="applyVariantDatePicker('${keyArg}', ${ruleIndex}, 'toDate', this.value)">
                             </div>
                         </td>
-                        <td><input class="number" type="number" min="0" step="0.1" value="${rule.boxesPerQuantity}" onchange="updateVariantRule('${keyArg}', ${ruleIndex}, 'boxesPerQuantity', this.value)"></td>
+                        <td><input class="number" type="text" inputmode="decimal" value="${escapeAttr(formatInputNumber(rule.boxesPerQuantity))}" onfocus="prepareNumberInput(this)" onblur="updateVariantBoxesAmount('${keyArg}', ${ruleIndex}, this)"></td>
                         <td data-html2canvas-ignore="true"><button type="button" class="btn-add" onclick="addVariantRule('${keyArg}')">+</button> <button type="button" class="btn-delete" onclick="removeVariantRule('${keyArg}', ${ruleIndex})">X</button></td>
                     </tr>
                 `);
@@ -995,11 +1034,15 @@
         function renderOrderTypeSummary() {
             const rows = calculateOrderTypeSummary();
             const body = document.getElementById("orderTypeSummaryBody");
+            const foot = document.getElementById("orderTypeSummaryFoot");
             if (rows.length === 0) {
                 body.innerHTML = '<tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr>';
+                foot.innerHTML = '';
                 return;
             }
 
+            const totalSuccess = rows.reduce((sum, row) => sum + row.successCount, 0);
+            const totalReturn = rows.reduce((sum, row) => sum + row.returnCount, 0);
             body.innerHTML = rows.map(row => `
                 <tr>
                     <td>${escapeHtml(row.productName || "(Trống)")}</td>
@@ -1009,17 +1052,25 @@
                     <td class="number">${MONEY_FORMAT.format(row.successCount + row.returnCount)}</td>
                 </tr>
             `).join("");
+            foot.innerHTML = `
+                <tr class="total-row">
+                    <td colspan="2">Tổng</td>
+                    <td class="number">${MONEY_FORMAT.format(totalSuccess)}</td>
+                    <td class="number">${MONEY_FORMAT.format(totalReturn)}</td>
+                    <td class="number">${MONEY_FORMAT.format(totalSuccess + totalReturn)}</td>
+                </tr>
+            `;
         }
 
         function renderAds() {
             const body = document.getElementById("adBody");
-            const fileRows = state.adFromFile.map(item => `
+            const fileRows = state.adFromFile.map((item, index) => `
                 <tr>
                     <td>${escapeHtml(formatDateDisplay(item.date || ""))}</td>
                     <td>File quyết toán</td>
                     <td>${escapeHtml(item.note || "Nạp tiền quảng cáo Shopee")}</td>
                     <td class="number negative">${formatMoney(Math.abs(item.amount))}</td>
-                    <td></td>
+                    <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeFileAd(${index})">Xóa</button></td>
                 </tr>
             `);
 
@@ -1028,7 +1079,7 @@
                     <td><input type="text" value="${escapeAttr(formatDateDisplay(item.date || ""))}" placeholder="dd/mm/yyyy" data-date-display="true" oninput="formatDateTyping(this)" onchange="updateManualAd(${index}, 'date', this.value)"></td>
                     <td>Chuyển khoản</td>
                     <td><input value="${escapeAttr(item.note)}" onchange="updateManualAd(${index}, 'note', this.value)"></td>
-                    <td><input class="number" type="number" value="${item.amount}" onchange="updateManualAd(${index}, 'amount', this.value)"></td>
+                    <td><input class="number" type="text" inputmode="numeric" value="${escapeAttr(formatInputNumber(item.amount))}" onfocus="prepareNumberInput(this)" onblur="updateManualAdAmount(${index}, this)"></td>
                     <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeManualAd(${index})">Xóa</button></td>
                 </tr>
             `);
@@ -1041,7 +1092,7 @@
             document.getElementById("expenseBody").innerHTML = state.expenses.map((expense, index) => `
                 <tr>
                     <td><input value="${escapeAttr(expense.name)}" onchange="updateExpense(${index}, 'name', this.value)"></td>
-                    <td><input class="number" type="number" value="${expense.amount}" onchange="updateExpense(${index}, 'amount', this.value)"></td>
+                    <td><input class="number" type="text" inputmode="numeric" value="${escapeAttr(formatInputNumber(expense.amount))}" onfocus="prepareNumberInput(this)" onblur="updateExpenseAmount(${index}, this)"></td>
                     <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeExpense(${index})">Xóa</button></td>
                 </tr>
             `).join("");
@@ -1098,6 +1149,13 @@
             renderAll();
         }
 
+        function updateProductPriceAmount(index, input) {
+            const amount = parseNumber(input.value);
+            state.products[index].price = amount;
+            input.value = formatInputNumber(amount);
+            renderAll();
+        }
+
         function updateVariantBoxes(key, value) {
             key = decodeURIComponent(key);
             normalizeVariantConfig(key).rules[0].boxesPerQuantity = parseNumber(value);
@@ -1112,6 +1170,18 @@
             rule[field] = field === "boxesPerQuantity"
                 ? parseNumber(value)
                 : parseDateValue(value);
+            renderAll();
+        }
+
+        function updateVariantBoxesAmount(key, ruleIndex, input) {
+            key = decodeURIComponent(key);
+            const config = normalizeVariantConfig(key);
+            const rule = config.rules[ruleIndex];
+            if (!rule) return;
+
+            const amount = parseNumber(input.value);
+            rule.boxesPerQuantity = amount;
+            input.value = formatInputNumber(amount);
             renderAll();
         }
 
@@ -1194,8 +1264,23 @@
             renderAll();
         }
 
+        function updateManualAdAmount(index, input) {
+            const amount = parseNumber(input.value);
+            state.manualAds[index].amount = amount;
+            input.value = formatInputNumber(amount);
+            renderAll();
+        }
+
         function removeManualAd(index) {
             state.manualAds.splice(index, 1);
+            renderAll();
+        }
+
+        function removeFileAd(index) {
+            const removedItems = state.adFromFile.splice(index, 1);
+            if (removedItems.length > 0) {
+                state.restoredRevenueAds.push(removedItems[0]);
+            }
             renderAll();
         }
 
@@ -1209,9 +1294,26 @@
             renderAll();
         }
 
+        function updateExpenseAmount(index, input) {
+            const amount = parseNumber(input.value);
+            state.expenses[index].amount = amount;
+            input.value = formatInputNumber(amount);
+            renderAll();
+        }
+
         function removeExpense(index) {
             state.expenses.splice(index, 1);
             renderAll();
+        }
+
+        function prepareNumberInput(input) {
+            const rawValue = String(input.value ?? "").trim();
+            if (!rawValue) {
+                input.value = "";
+                return;
+            }
+            input.value = String(parseNumber(rawValue));
+            if (input.value === "0") input.select();
         }
 
         function calculateGoodsSummary() {
@@ -1290,7 +1392,8 @@
         function mappedRevenue() {
             const positive = Array.from(state.settlementOrders.values()).reduce((sum, item) => sum + item.amount, 0);
             const returns = Array.from(state.returnOrders.values()).reduce((sum, item) => sum + item.amount, 0);
-            return positive + returns;
+            const restoredAds = state.restoredRevenueAds.reduce((sum, item) => sum + Math.abs(item.amount), 0);
+            return positive + returns + restoredAds;
         }
 
         function totalAds() {
@@ -1763,6 +1866,27 @@
 
         function toDateInputValue(value) {
             return parseDateValue(value);
+        }
+
+        function findHeaderRowIndex(rows, requiredColumns) {
+            const required = requiredColumns.map(normalizeText);
+            for (let index = 0; index < Math.min(rows.length, 10); index++) {
+                const row = rows[index] || [];
+                const normalizedRow = row.map(normalizeText);
+                if (required.every(column => normalizedRow.includes(column))) {
+                    return index;
+                }
+            }
+            return 0;
+        }
+
+        function findColumnIndex(headerRow, columnNames, fallbackIndex) {
+            const normalizedHeader = (headerRow || []).map(normalizeText);
+            for (const columnName of columnNames) {
+                const index = normalizedHeader.indexOf(normalizeText(columnName));
+                if (index !== -1) return index;
+            }
+            return fallbackIndex;
         }
 
         function makeVariantKey(productName, variantName) {

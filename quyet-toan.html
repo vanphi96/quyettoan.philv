@@ -6,6 +6,7 @@
     <title>Quản Lý Đơn Hàng TikTok - Screenshot</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root {
@@ -28,6 +29,21 @@
             background: var(--bg);
             color: var(--text);
         }
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .back-home:hover { background: #f8fafc; }
         .container { max-width: 1280px; margin: 22px auto; padding: 0 16px 32px; }
         h1 { margin: 0 0 6px; color: var(--brand); font-size: 28px; line-height: 1.2; }
         .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
@@ -84,8 +100,7 @@
             background: #fafbfc;
         }
         .container > .section-title + table,
-        .container > .section-title + div + table,
-        #gmvHistoryTable {
+        .container > .section-title + div + table {
             border: 1px solid var(--line);
             border-radius: 0 0 8px 8px;
             overflow: hidden;
@@ -220,8 +235,6 @@
             font-weight: 700;
             color: var(--text);
         }
-        #gmvHistoryTitle { display: none; margin: 0 0 10px; font-weight: 700; color: var(--brand); }
-        #gmvHistoryTable { display: none; }
         #captureArea { background: var(--bg); padding: 1px 0 20px; }
         .pdf-replacement { display: inline-block; min-height: 24px; font-weight: 600; }
         .date-input-wrap {
@@ -269,6 +282,7 @@
 
 <div id="captureArea">
     <div class="container">
+        <a href="index.html" class="back-home">← Về home</a>
         <div id="reportTitle">BÁO CÁO QUYẾT TOÁN TIKTOK</div>
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-bottom:15px;" data-html2canvas-ignore="true">
@@ -278,24 +292,7 @@
 
         <h1>Quyết toán TikTok</h1>
         <div class="subtitle">Tải file quyết toán và file danh sách đơn hàng, tự map theo ID đơn, gom các dòng hoàn hủy cùng một đơn trước khi tính tiền hàng.</div>
-
-        <h2 class="section-title" id="productConfigTitle" style="display:none;">1. Cấu hình mặt hàng</h2>
-        <div style="display:flex; justify-content:flex-end; margin-bottom: 5px;" data-html2canvas-ignore="true">
-            <button class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
-        </div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 28%;">Tên mặt hàng</th>
-                    <th style="width: 42%;">Tên sản phẩm dùng để nhận diện</th>
-                    <th style="width: 18%;">Giá nhập / hộp</th>
-                    <th style="width: 12%;" data-html2canvas-ignore="true">Xóa</th>
-                </tr>
-            </thead>
-            <tbody id="productBody"></tbody>
-        </table>
-
-        <h2 class="section-title" id="excelHeader">1. Tải File Excel TikTok</h2>
+        <h2 class="section-title" id="excelHeader">Tải file Excel TikTok</h2>
         <div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;" data-html2canvas-ignore="true">
             <div class="file-input-box" onclick="document.getElementById('settlementFile').click()">
                 <input type="file" id="settlementFile" accept=".xlsx, .xls" style="display:none" />
@@ -332,64 +329,135 @@
         </div>
         <div id="exportOnlyText" style="display:none; font-weight:bold; color:#1a73e8; margin-top:10px;"></div>
         <div id="excelStats" style="display:none; margin-top:12px; font-weight:bold; color:#2c3e50;"></div>
-        <div id="gmvHistoryTitle" style="display:none; margin-top:14px; font-weight:bold; color:#1a73e8;">Lịch sử nạp GMV</div>
-        <table id="gmvHistoryTable" style="display:none;">
-            <thead><tr><th>Ghi chú (B)</th><th>Số tiền (F)</th></tr></thead>
-            <tbody id="gmvHistoryBody"></tbody>
-        </table>
 
-        <h2 class="section-title">Cấu hình mặt hàng</h2>
-        <div id="productConfigMount"></div>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">1. Cấu hình mặt hàng</h2>
+                <button class="btn-add" onclick="addProduct()" data-html2canvas-ignore="true">+ Thêm sản phẩm</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 28%;">Tên mặt hàng</th>
+                            <th style="width: 42%;">Tên sản phẩm dùng để nhận diện</th>
+                            <th style="width: 18%;">Giá nhập / hộp</th>
+                            <th style="width: 12%;" data-html2canvas-ignore="true">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productBody"></tbody>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">1. Danh sách đơn hàng từ file quyết toán</h2>
-        <table>
-            <thead>
-                <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n &#226;m</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
-            </thead>
-            <tbody id="filterBody"><tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr></tbody>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">2. Danh sách đơn hàng từ file quyết toán</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
+                    </thead>
+                    <tbody id="filterBody"><tr><td class="empty" colspan="7">Chưa tải file quyết toán</td></tr></tbody>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">2. Danh sách đơn hàng hoàn hủy</h2>
-        <table>
-            <thead>
-                <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n &#226;m</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
-            </thead>
-            <tbody id="returnBody"><tr><td class="empty" colspan="7">Chưa có dữ liệu Excel</td></tr></tbody>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">2.1. Đơn hoàn hủy</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr><th style="width: 150px;">M&#227; &#273;&#417;n h&#224;ng</th><th style="width: 120px;">Ng&#224;y &#273;&#7863;t h&#224;ng</th><th class="number" style="width: 130px;">Quy&#7871;t to&#225;n &#226;m</th><th>T&#234;n s&#7843;n ph&#7849;m</th><th style="width: 190px;">Lo&#7841;i m&#7863;t h&#224;ng</th><th class="number" style="width: 80px;">SL</th><th style="width: 72px;" data-html2canvas-ignore="true">X&#243;a</th></tr>
+                    </thead>
+                    <tbody id="returnBody"><tr><td class="empty" colspan="7">Chưa có dữ liệu Excel</td></tr></tbody>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">3. Quy đổi loại đơn sang số hộp</h2>
-        <table>
-            <thead><tr><th>Tên sản phẩm</th><th style="width: 190px;">Loại mặt hàng</th><th style="width: 180px;">Tên phân loại</th><th style="width: 140px;">Từ ngày đặt</th><th style="width: 140px;">Đến ngày đặt</th><th class="number" style="width: 120px;">Số hộp / SL</th><th style="width: 110px;" data-html2canvas-ignore="true">Cấu hình</th></tr></thead>
-            <tbody id="variantBody"><tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr></tbody>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">3. Quy đổi loại đơn sang số hộp</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead><tr><th>Tên sản phẩm</th><th style="width: 190px;">Loại mặt hàng</th><th style="width: 180px;">Tên phân loại</th><th style="width: 140px;">Từ ngày đặt</th><th style="width: 140px;">Đến ngày đặt</th><th class="number" style="width: 120px;">Số hộp / SL</th><th style="width: 110px;" data-html2canvas-ignore="true">Cấu hình</th></tr></thead>
+                    <tbody id="variantBody"><tr><td class="empty" colspan="7">Chưa có đơn hàng</td></tr></tbody>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">4. Tổng hợp tiền hàng</h2>
-        <table>
-            <thead><tr><th>Tên sản phẩm</th><th>Loại mặt hàng</th><th>Mặt hàng tính giá</th><th class="number">Số đơn</th><th class="number">Tổng số hộp</th><th class="number">Giá nhập / hộp</th><th class="number">Thành tiền</th></tr></thead>
-            <tbody id="summaryBody"></tbody>
-            <tfoot id="summaryFoot"></tfoot>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">4. Tổng hợp tiền hàng</h2>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead><tr><th>Tên sản phẩm</th><th>Loại mặt hàng</th><th>Mặt hàng tính giá</th><th class="number">Số đơn</th><th class="number">Tổng số hộp</th><th class="number">Giá nhập / hộp</th><th class="number">Thành tiền</th></tr></thead>
+                    <tbody id="summaryBody"></tbody>
+                    <tfoot id="summaryFoot"></tfoot>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">5. Chi phí vận hành</h2>
-        <div style="display:flex; justify-content:flex-end; margin: 10px 0;" data-html2canvas-ignore="true">
-            <button class="btn-add" id="addExpenseBtn">+ Thêm chi phí</button>
-        </div>
-        <table>
-            <thead><tr><th>Tên chi phí</th><th>Số tiền (VNĐ)</th><th data-html2canvas-ignore="true">Xóa</th></tr></thead>
-            <tbody id="expenseBody"></tbody>
-            <tfoot><tr class="total-row"><td>Tổng chi phí khác</td><td id="expenseTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">4.1. Thống kê số lượng đơn theo mặt hàng</h2>
+            </div>
+            <div class="scroll keep-footer">
+                <table>
+                    <thead><tr><th>Tên sản phẩm</th><th>Loại mặt hàng</th><th class="number">Đơn thành công</th><th class="number">Đơn hoàn hủy</th><th class="number">Tổng đơn</th></tr></thead>
+                    <tbody id="orderTypeSummaryBody"><tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr></tbody>
+                    <tfoot id="orderTypeSummaryFoot"></tfoot>
+                </table>
+            </div>
+        </section>
 
-        <h2 class="section-title">6. Tổng kết Lợi nhuận</h2>
-        <table>
-            <thead><tr><th>Hạng mục</th><th>Số tiền (VNĐ)</th></tr></thead>
-            <tbody>
-                <tr><td>Tiền hàng (Giá nhập)</td><td id="totalGoodsValue">0 đ</td></tr>
-                <tr><td>Chi phí vận hành</td><td id="costsValue">0 đ</td></tr>
-                <tr><td>Doanh thu quyết toán</td><td id="revenueValue" style="color:#2e7d32; font-weight:bold;">0 đ</td></tr>
-                <tr class="total-row" style="font-size: 1.2rem;"><td>LỢI NHUẬN RÒNG</td><td id="profitValue">0 đ</td></tr>
-            </tbody>
-        </table>
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">5. Nạp tiền quảng cáo</h2>
+                <button class="btn-add" id="addManualAdBtn" data-html2canvas-ignore="true">+ Thêm chuyển khoản</button>
+            </div>
+            <div class="scroll keep-footer">
+                <table>
+                    <thead><tr><th style="width: 120px;">Ngày nạp</th><th>Nguồn</th><th>Ghi chú</th><th class="number">Số tiền</th><th style="width: 86px;" data-html2canvas-ignore="true">Xóa</th></tr></thead>
+                    <tbody id="adBody"></tbody>
+                    <tfoot><tr class="total-row"><td colspan="3">Tổng nạp quảng cáo</td><td class="number" id="adTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">6. Chi phí khác</h2>
+                <button class="btn-add" id="addExpenseBtn" data-html2canvas-ignore="true">+ Thêm chi phí</button>
+            </div>
+            <div class="scroll keep-footer">
+                <table>
+                    <thead><tr><th>Tên chi phí</th><th class="number">Số tiền</th><th style="width: 86px;" data-html2canvas-ignore="true">Xóa</th></tr></thead>
+                    <tbody id="expenseBody"></tbody>
+                    <tfoot><tr class="total-row"><td>Tổng chi phí khác</td><td class="number" id="expenseTotal">0 đ</td><td data-html2canvas-ignore="true"></td></tr></tfoot>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">7. Tổng kết</h2>
+            </div>
+            <table>
+                <tbody>
+                    <tr><td>Doanh thu quyết toán</td><td class="number positive" id="revenueValue">0 đ</td></tr>
+                    <tr><td>Tiền hàng (Giá nhập)</td><td class="number negative" id="totalGoodsValue">0 đ</td></tr>
+                    <tr><td>Nạp tiền quảng cáo</td><td class="number negative" id="adsValue">0 đ</td></tr>
+                    <tr><td>Chi phí khác</td><td class="number negative" id="costsValue">0 đ</td></tr>
+                    <tr class="total-row"><td>Lợi nhuận tạm tính</td><td class="number" id="profitValue">0 đ</td></tr>
+                </tbody>
+            </table>
+        </section>
     </div>
 </div>
 
@@ -409,16 +477,18 @@
     let products = [
         {name: "Trà ba kích", aliases: ["Trà ba kích", "Ba Kích", "Ngọc Cẩu"], price: 22000},
         {name: "Dây thìa canh", aliases: ["Dây thìa canh", "Thìa Canh"], price: 21000},
-        {name: "Cà gai leo", aliases: ["Cà gai leo"], price: 21000}
+        {name: "Cà gai leo", aliases: ["Cà gai leo"], price: 21000},
+        {name: "Kim tiền thảo râu mèo", aliases: ["Kim tiền thảo râu mèo"], price: 22000}
     ];
     let filteredMap = new Map();
     let returnOrders = [];
     let orderItems = new Map();
     let gmvHistory = [];
+    let manualAds = [];
     let totalOrderCount = 0;
     let totalF = 0, totalGoods = 0;
     let variantConfig = {};
-    let expenses = [{name: 'Quảng cáo', amount: 0}, {name: 'Vật tư', amount: 0}];
+    let expenses = [{name: 'Vật tư', amount: 0}];
 
     window.onload = () => {
         const today = new Date();
@@ -428,12 +498,12 @@
         document.getElementById('startDate').value = start.toISOString().split('T')[0];
         setupScrollableTables();
         renderProductConfig();
+        renderAds();
         renderExpenses();
-        moveProductConfigBelowUpload();
     };
 
     function setupScrollableTables() {
-        ['filterBody', 'returnBody', 'variantBody', 'summaryBody', 'expenseBody'].forEach(bodyId => {
+        ['filterBody', 'returnBody', 'variantBody', 'summaryBody', 'orderTypeSummaryBody', 'adBody', 'expenseBody'].forEach(bodyId => {
             const tableBody = document.getElementById(bodyId);
             const table = tableBody?.closest('table');
             if (!table || table.parentElement?.classList.contains('table-shell')) return;
@@ -443,17 +513,6 @@
             table.parentNode.insertBefore(wrapper, table);
             wrapper.appendChild(table);
         });
-    }
-
-    function moveProductConfigBelowUpload() {
-        const mount = document.getElementById('productConfigMount');
-        const productBody = document.getElementById('productBody');
-        if (!mount || !productBody) return;
-
-        const table = productBody.closest('table');
-        const addButtonBox = document.querySelector('button[onclick="addProduct()"]')?.parentElement;
-        if (addButtonBox && addButtonBox.parentElement !== mount) mount.appendChild(addButtonBox);
-        if (table && table.parentElement !== mount) mount.appendChild(table);
     }
 
     // --- QUẢN LÝ SẢN PHẨM (BẢNG 1) ---
@@ -475,7 +534,7 @@
             <tr>
                 <td><input type="text" value="${escapeHtml(p.name)}" placeholder="Ten mat hang..." onchange="products[${i}].name=this.value; updateAll();"></td>
                 <td><textarea placeholder="Moi dong mot ten nhan dien" onchange="products[${i}].aliases=parseAliasList(this.value); updateAll();">${escapeHtml((p.aliases || []).join('\n'))}</textarea></td>
-                <td><input type="number" value="${p.price}" onchange="products[${i}].price=Number(this.value); updateSummaryTable();"></td>
+                <td><input type="text" data-money-input="true" inputmode="numeric" value="${escapeHtml(formatInputNumber(p.price))}" onfocus="prepareNumberInput(this)" onblur="updateProductPriceAmount(${i}, this)"></td>
                 <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="removeProduct(${i})">✕</button></td>
             </tr>`).join('');
     }
@@ -501,7 +560,11 @@
             if(el.closest('[data-html2canvas-ignore]')) return;
             const span = document.createElement('span');
             span.className = "pdf-replacement";
-            span.textContent = el.tagName === 'SELECT' ? el.options[el.selectedIndex].text : (el.type === 'number' ? Number(el.value).toLocaleString() : el.value);
+            span.textContent = el.tagName === 'SELECT'
+                ? el.options[el.selectedIndex].text
+                : ((el.type === 'number' || el.dataset.moneyInput === 'true')
+                    ? formatInputNumber(el.value)
+                    : el.value);
             el.parentNode.insertBefore(span, el);
             el.style.display = 'none';
             replacements.push({span, el});
@@ -535,12 +598,36 @@
         if (e.target.id === 'orderFile') document.getElementById('orderFileName').textContent = file.name;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
-            const workbook = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
-            const rows = rowsForUploadedWorkbook(workbook, e.target.id);
-            callback(rows);
+        reader.onload = async (evt) => {
+            try {
+                const buffer = evt.target.result;
+                const rows = await readUploadedWorkbookRows(buffer, e.target.id);
+                callback(rows);
+            } catch (error) {
+                console.error(error);
+                alert(error.message || 'Không đọc được file Excel.');
+            }
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    async function readUploadedWorkbookRows(arrayBuffer, inputId) {
+        try {
+            const workbook = XLSX.read(new Uint8Array(arrayBuffer), {type: 'array'});
+            const rows = rowsForUploadedWorkbook(workbook, inputId);
+            if (rowsHaveExpectedHeaders(rows, inputId) && rowsLookComplete(rows, inputId)) return rows;
+        } catch (error) {
+            console.warn('SheetJS read failed, trying fallback parser', error);
+        }
+
+        try {
+            const rows = await readWorkbookRowsWithZipFallback(arrayBuffer, inputId);
+            if (rowsHaveExpectedHeaders(rows, inputId) && rowsLookComplete(rows, inputId)) return rows;
+        } catch (error) {
+            console.error('Fallback XLSX parser failed', error);
+        }
+
+        throw new Error('Không đọc được file Excel TikTok. Hãy thử lưu lại file bằng Excel rồi tải lại.');
     }
 
     function rowsForUploadedWorkbook(workbook, inputId) {
@@ -583,10 +670,153 @@
         });
     }
 
+    function expectedHeadersForInput(inputId) {
+        return inputId === 'settlementFile'
+            ? ['ID đơn hàng/điều chỉnh', 'Loại giao dịch', 'Tổng số tiền quyết toán']
+            : ['Order ID', 'Product Name', 'Variation'];
+    }
+
+    function preferredSheetNameForInput(inputId) {
+        return inputId === 'settlementFile' ? 'Chi tiết đơn hàng' : 'OrderSKUList';
+    }
+
+    function rowsHaveExpectedHeaders(rows, inputId) {
+        return findHeaderIndex(rows || [], expectedHeadersForInput(inputId)) >= 0;
+    }
+
+    function rowsLookComplete(rows, inputId) {
+        const headerIndex = findHeaderIndex(rows || [], expectedHeadersForInput(inputId));
+        if (headerIndex < 0) return false;
+
+        const headerRow = rows[headerIndex] || [];
+        const dataRowCount = Math.max(0, (rows || []).length - headerIndex - 1);
+
+        if (inputId === 'settlementFile') {
+            return headerRow.length >= 60 && dataRowCount >= 2;
+        }
+
+        return headerRow.length >= 5 && dataRowCount >= 1;
+    }
+
+    async function readWorkbookRowsWithZipFallback(arrayBuffer, inputId) {
+        const zip = await JSZip.loadAsync(arrayBuffer);
+        const parser = new DOMParser();
+        const workbookXml = await zip.file('xl/workbook.xml')?.async('string');
+        const relsXml = await zip.file('xl/_rels/workbook.xml.rels')?.async('string');
+        if (!workbookXml || !relsXml) throw new Error('Workbook XML not found');
+
+        const workbookDoc = parser.parseFromString(workbookXml, 'application/xml');
+        const relsDoc = parser.parseFromString(relsXml, 'application/xml');
+        const sharedStrings = await readSharedStrings(zip, parser);
+        const relationships = readWorkbookRelationships(relsDoc);
+        const sheets = readWorkbookSheets(workbookDoc);
+        const expectedHeaders = expectedHeadersForInput(inputId);
+        const preferredSheetName = preferredSheetNameForInput(inputId);
+
+        let preferredRows = [];
+        let fallbackRows = [];
+
+        for (const sheet of sheets) {
+            const target = resolveWorkbookTarget(relationships[sheet.relId] || '');
+            if (!target) continue;
+            const sheetFile = zip.file(target);
+            if (!sheetFile) continue;
+
+            const sheetXml = await sheetFile.async('string');
+            const rows = parseSheetXmlRows(sheetXml, parser, sharedStrings);
+            if (!fallbackRows.length) fallbackRows = rows;
+            if (normalizeText(sheet.name) === normalizeText(preferredSheetName)) preferredRows = rows;
+            if (rowsHaveExpectedHeaders(rows, inputId)) return rows;
+        }
+
+        return preferredRows.length ? preferredRows : fallbackRows;
+    }
+
+    async function readSharedStrings(zip, parser) {
+        const sharedFile = zip.file('xl/sharedStrings.xml');
+        if (!sharedFile) return [];
+        const sharedDoc = parser.parseFromString(await sharedFile.async('string'), 'application/xml');
+        const namespace = sharedDoc.documentElement.namespaceURI;
+        return Array.from(sharedDoc.getElementsByTagNameNS(namespace, 'si')).map(item =>
+            Array.from(item.getElementsByTagNameNS(namespace, 't')).map(textNode => textNode.textContent || '').join('')
+        );
+    }
+
+    function readWorkbookRelationships(relsDoc) {
+        const relationships = {};
+        const namespace = relsDoc.documentElement.namespaceURI;
+        Array.from(relsDoc.getElementsByTagNameNS(namespace, 'Relationship')).forEach(rel => {
+            relationships[rel.getAttribute('Id')] = rel.getAttribute('Target') || '';
+        });
+        return relationships;
+    }
+
+    function readWorkbookSheets(workbookDoc) {
+        const namespace = workbookDoc.documentElement.namespaceURI;
+        const relNamespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+        return Array.from(workbookDoc.getElementsByTagNameNS(namespace, 'sheet')).map(sheet => ({
+            name: sheet.getAttribute('name') || '',
+            relId: sheet.getAttributeNS(relNamespace, 'id') || sheet.getAttribute('r:id') || ''
+        }));
+    }
+
+    function resolveWorkbookTarget(target) {
+        const cleanTarget = String(target || '').trim().replace(/^\/+/, '');
+        if (!cleanTarget) return '';
+        return cleanTarget.startsWith('xl/') ? cleanTarget : `xl/${cleanTarget}`;
+    }
+
+    function parseSheetXmlRows(sheetXml, parser, sharedStrings) {
+        const sheetDoc = parser.parseFromString(sheetXml, 'application/xml');
+        const namespace = sheetDoc.documentElement.namespaceURI;
+        const rowNodes = Array.from(sheetDoc.getElementsByTagNameNS(namespace, 'row'));
+        const rowMap = new Map();
+
+        rowNodes.forEach(rowNode => {
+            const rowNumber = Math.max(1, Number(rowNode.getAttribute('r')) || 1) - 1;
+            const cells = Array.from(rowNode.getElementsByTagNameNS(namespace, 'c'));
+            if (!rowMap.has(rowNumber)) rowMap.set(rowNumber, []);
+            const rowValues = rowMap.get(rowNumber);
+            cells.forEach(cell => {
+                const ref = cell.getAttribute('r') || '';
+                const columnIndex = cellReferenceToColumnIndex(ref);
+                rowValues[columnIndex] = readSheetCellValue(cell, namespace, sharedStrings);
+            });
+        });
+
+        return Array.from(rowMap.entries())
+            .sort((left, right) => left[0] - right[0])
+            .map(([, rowValues]) => rowValues.map(value => value ?? ''));
+    }
+
+    function readSheetCellValue(cell, namespace, sharedStrings) {
+        const type = cell.getAttribute('t') || '';
+        const valueNode = cell.getElementsByTagNameNS(namespace, 'v')[0];
+
+        if (type === 's' && valueNode) {
+            return sharedStrings[Number(valueNode.textContent) || 0] || '';
+        }
+
+        if (type === 'inlineStr') {
+            return Array.from(cell.getElementsByTagNameNS(namespace, 't')).map(node => node.textContent || '').join('');
+        }
+
+        if (valueNode) return valueNode.textContent || '';
+        return '';
+    }
+
+    function cellReferenceToColumnIndex(reference) {
+        const letters = String(reference || '').match(/[A-Z]+/i)?.[0] || '';
+        let index = 0;
+        for (const letter of letters.toUpperCase()) {
+            index = (index * 26) + (letter.charCodeAt(0) - 64);
+        }
+        return Math.max(0, index - 1);
+    }
+
     function processExcel(rows) {
         filteredMap = new Map(); returnOrders = []; gmvHistory = []; totalOrderCount = 0; totalF = 0;
         const settlementMap = new Map();
-        const orderIds = new Set();
         const headerIndex = findHeaderIndex(rows, ['ID đơn hàng/điều chỉnh', 'Loại giao dịch', 'Tổng số tiền quyết toán']);
         const startIndex = headerIndex >= 0 ? headerIndex + 1 : 1;
         const headerRow = rows[headerIndex] || rows[0] || [];
@@ -598,12 +828,11 @@
             const pPay = parseMoney(row[5]); // Cot F: Tong so tien quyet toan
             const orderDate = toDateInputValue(row[orderDateIndex]);
             if (isGmvPaymentRow(row)) {
-                gmvHistory.push({note: transactionType, amount: pPay});
+                gmvHistory.push({date: orderDate, note: transactionType, amount: pPay});
                 continue;
             }
             const orderId = String(row[0] || '').trim(); // Cot A: ID don hang
             if (!orderId || orderId.toLowerCase().includes('id ')) continue;
-            orderIds.add(orderId);
             totalF += pPay;
             if (!settlementMap.has(orderId)) settlementMap.set(orderId, {id: orderId, pays: [], amount: 0, note: '', orderDate: ''});
             const settlement = settlementMap.get(orderId);
@@ -615,11 +844,11 @@
         for (const settlement of settlementMap.values()) {
             attachOrderInfo(settlement);
             if (settlement.amount > 0) filteredMap.set(settlement.id, settlement);
-            else returnOrders.push(settlement);
+            else if (settlement.amount < 0) returnOrders.push(settlement);
         }
-        totalOrderCount = orderIds.size;
+        totalOrderCount = filteredMap.size + returnOrders.length;
         document.getElementById('excelHeader').textContent = '1. Excel TikTok';
-        renderExcelStats();
+        renderAds();
         renderOrderTables();
     }
 
@@ -695,24 +924,6 @@
     function renderExcelStats() {
         document.getElementById('excelStats').style.display = 'none';
         document.getElementById('excelStats').textContent = '';
-
-        const title = document.getElementById('gmvHistoryTitle');
-        const table = document.getElementById('gmvHistoryTable');
-        const body = document.getElementById('gmvHistoryBody');
-        if (gmvHistory.length === 0) {
-            title.style.display = 'none';
-            table.style.display = 'none';
-            body.innerHTML = '';
-            return;
-        }
-
-        title.style.display = 'block';
-        table.style.display = 'table';
-        body.innerHTML = gmvHistory.map(item => `
-            <tr>
-                <td>${escapeHtml(item.note)}</td>
-                <td style="font-weight:bold; color:#1a73e8;">${item.amount.toLocaleString()} đ</td>
-            </tr>`).join('');
     }
 
     function escapeHtml(value) {
@@ -768,37 +979,64 @@
     }
 
     function renderMappedOrderTable() {
-        const rows = Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => {
+        const rows = settlementRowEntries('order').map((entry, index) => {
+            const order = entry.order;
+            const item = entry.item;
             return `
             <tr class="order-row" data-order-id="${escapeHtml(order.id)}" data-order-date="${escapeHtml(item.orderDate || '')}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
                 <td><small>${escapeHtml(order.id)}</small></td>
                 <td>${escapeHtml(formatDateDisplay(item.orderDate || ''))}</td>
                 <td class="number positive">${order.amount.toLocaleString()}</td>
-                <td>${escapeHtml(item.productName || '(chưa map file đơn hàng)')}</td>
-                <td>${escapeHtml(item.variantName || '')}</td>
-                <td style="color:blue; font-weight:bold;">${item.quantity || 1} SL</td>
+                <td><input value="${escapeHtml(item.productName || '')}" onchange="updateSettlementRow('order', ${index}, 'productName', this.value)"></td>
+                <td><input value="${escapeHtml(item.variantName || '')}" onchange="updateSettlementRow('order', ${index}, 'variantName', this.value)"></td>
+                <td><input class="number" type="number" min="0" step="1" value="${item.quantity || 1}" onchange="updateSettlementRow('order', ${index}, 'quantity', this.value)"></td>
                 <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeSettlementOrder('${encodeURIComponent(order.id)}')">X</button></td>
             </tr>`;
-        })).join('');
+        }).join('');
         document.getElementById('filterBody').innerHTML = rows || '<tr><td class="empty" colspan="7">Không có đơn hàng phù hợp</td></tr>';
         updateSummaryTable();
     }
 
     function renderMappedReturnTable() {
-        const rows = returnOrders.flatMap(order => (order.items || []).map(item => {
+        const rows = settlementRowEntries('return').map((entry, index) => {
+            const order = entry.order;
+            const item = entry.item;
             return `
             <tr class="return-order-row" data-order-id="${escapeHtml(order.id)}" data-order-date="${escapeHtml(item.orderDate || '')}" data-product-name="${escapeHtml(item.productName || '')}" data-variant-name="${escapeHtml(item.variantName || '')}" data-quantity="${item.quantity || 1}">
                 <td><small>${escapeHtml(order.id)}</small></td>
                 <td>${escapeHtml(formatDateDisplay(item.orderDate || ''))}</td>
                 <td class="number negative">${order.pays.map(v => v.toLocaleString()).join('<br>')}</td>
-                <td>${escapeHtml(item.productName || '(chưa map file đơn hàng)')}</td>
-                <td>${escapeHtml(item.variantName || '')}</td>
-                <td style="color:blue; font-weight:bold;">${item.quantity || 1} SL</td>
+                <td><input value="${escapeHtml(item.productName || '')}" onchange="updateSettlementRow('return', ${index}, 'productName', this.value)"></td>
+                <td><input value="${escapeHtml(item.variantName || '')}" onchange="updateSettlementRow('return', ${index}, 'variantName', this.value)"></td>
+                <td><input class="number" type="number" min="0" step="1" value="${item.quantity || 1}" onchange="updateSettlementRow('return', ${index}, 'quantity', this.value)"></td>
                 <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeReturnOrder('${encodeURIComponent(order.id)}')">X</button></td>
             </tr>`;
-        })).join('');
+        }).join('');
         document.getElementById('returnBody').innerHTML = rows || '<tr><td class="empty" colspan="7">Không có đơn hàng hoàn hủy</td></tr>';
         updateSummaryTable();
+    }
+
+    function settlementRowEntries(rowType) {
+        const source = rowType === 'return' ? returnOrders : Array.from(filteredMap.values());
+        return source.flatMap(order => (order.items || []).map((item, itemIndex) => ({
+            order,
+            item,
+            itemIndex
+        })));
+    }
+
+    function updateSettlementRow(rowType, index, field, value) {
+        const entry = settlementRowEntries(rowType)[index];
+        if (!entry) return;
+
+        if (field === 'quantity') {
+            entry.item.quantity = parseNumberText(value) || 0;
+        } else {
+            entry.item[field] = String(value || '').trim();
+        }
+
+        if (rowType === 'return') renderMappedReturnTable();
+        else renderMappedOrderTable();
     }
 
     function removeSettlementOrder(orderId) {
@@ -808,7 +1046,7 @@
         totalF = Array.from(filteredMap.values()).reduce((sum, order) => sum + order.amount, 0) +
             returnOrders.reduce((sum, order) => sum + order.amount, 0);
         renderMappedOrderTable();
-        renderExcelStats();
+        renderAds();
     }
 
     function removeReturnOrder(orderId) {
@@ -820,7 +1058,7 @@
             totalF = Array.from(filteredMap.values()).reduce((sum, order) => sum + order.amount, 0) +
                 returnOrders.reduce((sum, order) => sum + order.amount, 0);
             renderMappedReturnTable();
-            renderExcelStats();
+            renderAds();
         }
     }
 
@@ -900,6 +1138,7 @@
         document.getElementById('summaryBody').innerHTML = html || '<tr><td class="empty" colspan="7">Chưa có dữ liệu tính tiền hàng</td></tr>';
         document.getElementById('summaryFoot').innerHTML = `<tr class="total-row"><td colspan="6">Tổng tiền hàng</td><td class="number">${grand.toLocaleString()} đ</td></tr>`;
         totalGoods = grand;
+        renderOrderTypeSummary(rows);
         updateFinancials();
     }
 
@@ -909,8 +1148,63 @@
             orderDate: row.dataset.orderDate || '',
             productName: row.dataset.productName || row.cells[3]?.innerText.trim() || '',
             variantName: row.dataset.variantName || row.cells[4]?.innerText.trim() || '',
-            quantity: parseNumberText(row.dataset.quantity || row.cells[5]?.innerText || 0)
+            quantity: parseNumberText(row.dataset.quantity || row.cells[5]?.innerText || 0),
+            rowType: row.classList.contains('return-order-row') ? 'return' : 'success'
         }));
+    }
+
+    function renderOrderTypeSummary(rows) {
+        const body = document.getElementById('orderTypeSummaryBody');
+        const foot = document.getElementById('orderTypeSummaryFoot');
+        const summaryRows = calculateOrderTypeSummary(rows);
+        if (summaryRows.length === 0) {
+            body.innerHTML = '<tr><td class="empty" colspan="5">Chưa có dữ liệu</td></tr>';
+            foot.innerHTML = '';
+            return;
+        }
+
+        const totalSuccess = summaryRows.reduce((sum, row) => sum + row.successCount, 0);
+        const totalReturn = summaryRows.reduce((sum, row) => sum + row.returnCount, 0);
+        body.innerHTML = summaryRows.map(row => `
+            <tr>
+                <td>${escapeHtml(row.productName || '(Trống)')}</td>
+                <td>${escapeHtml(row.variantName || '(Trống)')}</td>
+                <td class="number">${row.successCount.toLocaleString()}</td>
+                <td class="number">${row.returnCount.toLocaleString()}</td>
+                <td class="number">${(row.successCount + row.returnCount).toLocaleString()}</td>
+            </tr>
+        `).join('');
+        foot.innerHTML = `<tr class="total-row"><td colspan="2">Tổng</td><td class="number">${totalSuccess.toLocaleString()}</td><td class="number">${totalReturn.toLocaleString()}</td><td class="number">${(totalSuccess + totalReturn).toLocaleString()}</td></tr>`;
+    }
+
+    function calculateOrderTypeSummary(rows = settlementItemRows()) {
+        const groupMap = new Map();
+        rows.forEach(row => {
+            if (!row.productName && !row.variantName) return;
+            const key = makeVariantKey(row.productName, row.variantName);
+            if (!groupMap.has(key)) {
+                groupMap.set(key, {
+                    productName: row.productName,
+                    variantName: row.variantName,
+                    successOrders: new Set(),
+                    returnOrders: new Set()
+                });
+            }
+
+            const group = groupMap.get(key);
+            if (row.rowType === 'return') group.returnOrders.add(row.orderId);
+            else group.successOrders.add(row.orderId);
+        });
+
+        return Array.from(groupMap.values()).map(group => ({
+            productName: group.productName,
+            variantName: group.variantName,
+            successCount: group.successOrders.size,
+            returnCount: group.returnOrders.size
+        })).sort((a, b) => {
+            const productCompare = a.productName.localeCompare(b.productName, 'vi');
+            return productCompare || a.variantName.localeCompare(b.variantName, 'vi');
+        });
     }
 
     function renderVariantTable(rows) {
@@ -1200,36 +1494,102 @@
         return parseDateValue(value);
     }
 
+    function renderAds() {
+        const body = document.getElementById('adBody');
+        const fileRows = gmvHistory.map((item, index) => `
+            <tr>
+                <td>${escapeHtml(formatDateDisplay(item.date || ''))}</td>
+                <td>File quyết toán</td>
+                <td>${escapeHtml(item.note || 'GMV thanh toán')}</td>
+                <td class="number negative">${formatMoney(Math.abs(item.amount))}</td>
+                <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeAdItem('file', ${index})">Xóa</button></td>
+            </tr>
+        `);
+        const manualRows = manualAds.map((item, i) => `
+            <tr>
+                <td><input type="text" value="${escapeHtml(formatDateDisplay(item.date || ''))}" placeholder="dd/mm/yyyy" oninput="formatDateTyping(this)" onchange="manualAds[${i}].date=parseDateValue(this.value)"></td>
+                <td>Chuyển khoản</td>
+                <td><input type="text" value="${escapeHtml(item.note || '')}" onchange="manualAds[${i}].note=this.value"></td>
+                <td><input type="text" data-money-input="true" inputmode="numeric" value="${escapeHtml(formatInputNumber(item.amount))}" onfocus="prepareNumberInput(this)" onblur="updateManualAdAmount(${i}, this)"></td>
+                <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeAdItem('manual', ${i})">Xóa</button></td>
+            </tr>
+        `);
+
+        body.innerHTML = fileRows.concat(manualRows).join('') || '<tr><td class="empty" colspan="5">Chưa có khoản nạp quảng cáo</td></tr>';
+        document.getElementById('adTotal').textContent = totalAds().toLocaleString() + ' đ';
+        updateFinancials();
+    }
+
+    function updateManualAdAmount(index, input) {
+        manualAds[index].amount = parseNumberText(input.value);
+        input.value = formatInputNumber(manualAds[index].amount);
+        renderAds();
+    }
+
+    function removeAdItem(type, index) {
+        if (type === 'file') {
+            const removedItem = gmvHistory[index];
+            if (removedItem) totalF += Math.abs(parseNumberText(removedItem.amount));
+            gmvHistory.splice(index, 1);
+        } else {
+            manualAds.splice(index, 1);
+        }
+        renderAds();
+    }
+
     function renderExpenses() {
         document.getElementById('expenseBody').innerHTML = expenses.map((e, i) => `
             <tr>
                 <td><input type="text" value="${e.name}" onchange="expenses[${i}].name=this.value"></td>
-                <td><input type="number" value="${e.amount}" onchange="expenses[${i}].amount=Number(this.value); updateExpenseTotal();"></td>
-                <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="expenses.splice(${i},1); renderExpenses();">✕</button></td>
+                <td><input type="text" data-money-input="true" inputmode="numeric" value="${escapeHtml(formatInputNumber(e.amount))}" onfocus="prepareNumberInput(this)" onblur="updateExpenseAmount(${i}, this)"></td>
+                <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="expenses.splice(${i},1); renderExpenses();">Xóa</button></td>
             </tr>`).join('');
         updateExpenseTotal();
     }
 
+    function updateProductPriceAmount(index, input) {
+        products[index].price = parseNumberText(input.value);
+        input.value = formatInputNumber(products[index].price);
+        updateSummaryTable();
+    }
+
+    function updateExpenseAmount(index, input) {
+        expenses[index].amount = parseNumberText(input.value);
+        input.value = formatInputNumber(expenses[index].amount);
+        updateExpenseTotal();
+    }
+
     function updateExpenseTotal() {
-        const total = expenses.reduce((s, e) => s + e.amount, 0);
-        document.getElementById('expenseTotal').textContent = total.toLocaleString() + ' đ';
+        document.getElementById('expenseTotal').textContent = totalExpenses().toLocaleString() + ' đ';
         updateFinancials();
     }
 
     function updateFinancials() {
-        const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
-        const profit = totalF - expTotal - totalGoods;
+        const adsTotal = totalAds();
+        const expTotal = totalExpenses();
+        const profit = totalF - adsTotal - expTotal - totalGoods;
         document.getElementById('totalGoodsValue').textContent = totalGoods.toLocaleString() + ' đ';
         document.getElementById('revenueValue').textContent = totalF.toLocaleString() + ' đ';
+        document.getElementById('adsValue').textContent = adsTotal.toLocaleString() + ' đ';
         document.getElementById('costsValue').textContent = expTotal.toLocaleString() + ' đ';
         document.getElementById('profitValue').textContent = profit.toLocaleString() + ' đ';
+        document.getElementById('profitValue').className = `number ${profit >= 0 ? 'positive' : 'negative'}`;
         updateStatValue('statOrderCount', totalOrderCount.toLocaleString());
         updateStatValue('statRevenue', totalF.toLocaleString() + ' đ');
         updateStatValue('statGoods', totalGoods.toLocaleString() + ' đ');
-        updateStatValue('statCosts', expTotal.toLocaleString() + ' đ');
+        updateStatValue('statCosts', (adsTotal + expTotal).toLocaleString() + ' đ');
         updateStatValue('statProfit', profit.toLocaleString() + ' đ');
         document.getElementById('statProfit')?.classList.toggle('negative', profit < 0);
         document.getElementById('statProfit')?.classList.toggle('positive', profit >= 0);
+    }
+
+    function totalAds() {
+        return gmvHistory.reduce((sum, item) => sum + Math.abs(item.amount || 0), 0) +
+            manualAds.reduce((sum, item) => sum + Math.abs(parseNumberText(item.amount)), 0);
+    }
+
+    function totalExpenses() {
+        return expenses.reduce((sum, item) => sum + Math.abs(parseNumberText(item.amount)), 0);
     }
 
     function updateStatValue(id, value) {
@@ -1251,6 +1611,25 @@
 
     function parseNumberText(value) {
         return Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    function formatMoney(value) {
+        return `${parseNumberText(value).toLocaleString('vi-VN')} đ`;
+    }
+
+    function formatInputNumber(value) {
+        const number = parseNumberText(value);
+        return Number.isFinite(number) ? number.toLocaleString('vi-VN') : String(value ?? '');
+    }
+
+    function prepareNumberInput(input) {
+        const rawValue = String(input.value ?? '').trim();
+        if (!rawValue) {
+            input.value = '';
+            return;
+        }
+        input.value = String(parseNumberText(rawValue));
+        if (input.value === '0') input.select();
     }
 
     function buildExcelSheet(rows, options = {}) {
@@ -1315,7 +1694,8 @@
     function exportExcelReport() {
         if (typeof XLSX === 'undefined') return alert('Khong tai duoc thu vien xuat Excel.');
 
-        const expTotal = expenses.reduce((s, e) => s + e.amount, 0);
+        const adsTotal = totalAds();
+        const expTotal = totalExpenses();
         const workbook = XLSX.utils.book_new();
         const settlementSuccessRows = Array.from(filteredMap.values()).flatMap(order => (order.items || []).map(item => ({
             'ID don': order.id,
@@ -1357,6 +1737,24 @@
             'Gia nhap': product.price,
             'Thanh tien': (productTotals[product.name] || 0) * product.price
         }));
+        const orderTypeRows = calculateOrderTypeSummary().map(row => ({
+            'Ten san pham': row.productName,
+            'Loai mat hang': row.variantName,
+            'Don thanh cong': row.successCount,
+            'Don hoan huy': row.returnCount,
+            'Tong don': row.successCount + row.returnCount
+        }));
+        const adRows = gmvHistory.map(item => ({
+            'Ngay nap': formatDateDisplay(item.date || ''),
+            'Nguon': 'File quyết toán',
+            'Ghi chu': item.note || 'GMV thanh toán',
+            'So tien': Math.abs(item.amount)
+        })).concat(manualAds.map(item => ({
+            'Ngay nap': formatDateDisplay(item.date || ''),
+            'Nguon': 'Chuyển khoản',
+            'Ghi chu': item.note || '',
+            'So tien': Math.abs(parseNumberText(item.amount))
+        })));
         const expenseRows = expenses.map(item => ({
             'Ten chi phi': item.name,
             'So tien': item.amount
@@ -1370,8 +1768,9 @@
         XLSX.utils.book_append_sheet(workbook, buildExcelSheet([
             { 'Hang muc': 'Doanh thu quyet toan', 'Gia tri': totalF },
             { 'Hang muc': 'Tien hang', 'Gia tri': totalGoods },
-            { 'Hang muc': 'Chi phi van hanh', 'Gia tri': expTotal },
-            { 'Hang muc': 'Loi nhuan rong', 'Gia tri': totalF - expTotal - totalGoods },
+            { 'Hang muc': 'Nap tien quang cao', 'Gia tri': adsTotal },
+            { 'Hang muc': 'Chi phi khac', 'Gia tri': expTotal },
+            { 'Hang muc': 'Loi nhuan rong', 'Gia tri': totalF - adsTotal - expTotal - totalGoods },
             { 'Hang muc': 'Tong so don quyet toan', 'Gia tri': totalOrderCount }
         ], {
             columns: [{ wch: 28 }, { wch: 18 }],
@@ -1404,6 +1803,18 @@
             currencyColumns: ['Gia nhap', 'Thanh tien']
         }), 'Tong hop hang');
 
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(orderTypeRows, {
+            columns: [{ wch: 42 }, { wch: 24 }, { wch: 14 }, { wch: 14 }, { wch: 14 }],
+            integerColumns: ['Don thanh cong', 'Don hoan huy', 'Tong don'],
+            wrapColumns: ['Ten san pham', 'Loai mat hang']
+        }), 'Thong ke don');
+
+        XLSX.utils.book_append_sheet(workbook, buildExcelSheet(adRows, {
+            columns: [{ wch: 14 }, { wch: 18 }, { wch: 42 }, { wch: 16 }],
+            currencyColumns: ['So tien'],
+            wrapColumns: ['Ghi chu']
+        }), 'Nap quang cao');
+
         XLSX.utils.book_append_sheet(workbook, buildExcelSheet(expenseRows, {
             columns: [{ wch: 28 }, { wch: 16 }],
             currencyColumns: ['So tien']
@@ -1420,11 +1831,9 @@
     }
 
     document.getElementById('excelExportBtn').onclick = exportExcelReport;
+    document.getElementById('addManualAdBtn').onclick = () => { manualAds.push({date:'', note:'Nạp quảng cáo bằng chuyển khoản', amount:0}); renderAds(); };
     document.getElementById('addExpenseBtn').onclick = () => { expenses.push({name:'', amount:0}); renderExpenses(); };
     function updateAll() { if(filteredMap.size > 0 || returnOrders.length > 0) renderOrderTables(); else updateSummaryTable(); }
 </script>
 </body>
 </html>
-
-
-
