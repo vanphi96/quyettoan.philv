@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tính Lợi Nhuận Theo Giá Bán</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <style>
+        :root {
+            --bg: #f4f6f8;
+            --panel: #ffffff;
+            --line: #d9e0e7;
+            --text: #1f2933;
+            --muted: #66788a;
+            --brand: #0f766e;
+            --brand-dark: #115e59;
+            --good: #168a4a;
+            --bad: #c62828;
+            --focus: #1769aa;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 30%),
+                linear-gradient(180deg, #f7fbfb 0%, #f4f6f8 100%);
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1320px;
+            margin: 22px auto;
+            padding: 0 16px 32px;
+        }
+
+        .back-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: #fff;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .back-home:hover { background: #f0fdfa; }
+
+        h1 {
+            margin: 0 0 8px;
+            color: var(--brand);
+            font-size: 30px;
+            line-height: 1.15;
+        }
+
+        .subtitle {
+            margin: 0 0 18px;
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.55;
+        }
+
+        .section {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            margin-top: 14px;
+            overflow: hidden;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--line);
+            background: linear-gradient(180deg, #fcfefe 0%, #f8fbfb 100%);
+        }
+
+        .section-title {
+            margin: 0;
+            font-size: 18px;
+            color: var(--text);
+        }
+
+        .section-note {
+            padding: 0 16px 14px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .scroll {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .profit-table {
+            min-width: 1080px;
+        }
+
+        th, td {
+            border-bottom: 1px solid var(--line);
+            padding: 10px 9px;
+            text-align: left;
+            vertical-align: top;
+            word-break: break-word;
+            font-size: 14px;
+        }
+
+        th {
+            color: #344054;
+            font-size: 12px;
+            background: #f7f9fb;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        input, textarea {
+            width: 100%;
+            min-height: 36px;
+            border: 1px solid #cfd8e3;
+            border-radius: 6px;
+            padding: 7px 9px;
+            font: inherit;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 74px;
+            resize: vertical;
+        }
+
+        input:focus, textarea:focus {
+            outline: 2px solid rgba(23, 105, 170, 0.18);
+            border-color: var(--focus);
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            background: var(--brand);
+            color: #fff;
+            white-space: nowrap;
+        }
+
+        button:hover { background: var(--brand-dark); }
+
+        .btn-add { background: #168a4a; }
+        .btn-add:hover { background: #0f6f3a; }
+        .btn-delete { background: #c62828; }
+        .btn-delete:hover { background: #9f1f1f; }
+
+        .number {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .product-cell strong {
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .product-meta {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .platform-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 84px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .platform-pill.tiktok { background: #111827; }
+        .platform-pill.shopee { background: #ee4d2d; }
+
+        .custom-dropdown {
+            position: relative;
+            min-width: 0;
+        }
+
+        .dropdown-trigger {
+            width: 100%;
+            min-height: 68px;
+            border: 1px solid #cfd8e3;
+            border-radius: 12px;
+            padding: 12px 42px 12px 14px;
+            background: #fff;
+            color: var(--text);
+            text-align: left;
+            font: inherit;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .dropdown-trigger:hover {
+            border-color: #bfcddd;
+            background: #fbfdff;
+        }
+
+        .dropdown-trigger:focus-visible {
+            outline: 2px solid rgba(23, 105, 170, 0.18);
+            border-color: var(--focus);
+        }
+
+        .dropdown-trigger::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 16px;
+            width: 10px;
+            height: 10px;
+            border-right: 2px solid #6b7280;
+            border-bottom: 2px solid #6b7280;
+            transform: translateY(-65%) rotate(45deg);
+            transition: transform 0.18s ease;
+        }
+
+        .custom-dropdown.open .dropdown-trigger::after {
+            transform: translateY(-30%) rotate(-135deg);
+        }
+
+        .dropdown-trigger.platform-trigger {
+            min-height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 0;
+            padding: 8px 42px 8px 10px;
+        }
+
+        .dropdown-trigger.platform-trigger .platform-pill {
+            width: auto;
+            min-width: 0;
+            max-width: 100%;
+            font-size: 15px;
+            padding: 10px 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dropdown-menu {
+            position: static;
+            width: 100%;
+            background: #fff;
+            border: 1px solid #dbe4ee;
+            border-radius: 14px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+            padding: 8px;
+            margin-top: 8px;
+            z-index: 20;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .dropdown-option {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: var(--text);
+            text-align: left;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .dropdown-option:hover,
+        .dropdown-option.active {
+            background: #f4f7fb;
+        }
+
+        .dropdown-option.product-option strong,
+        .dropdown-trigger.product-trigger strong {
+            display: block;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 4px;
+            color: #27313f;
+        }
+
+        .dropdown-option.product-option span,
+        .dropdown-trigger.product-trigger span {
+            display: block;
+            font-size: 13px;
+            color: #64748b;
+            line-height: 1.35;
+        }
+
+        .dropdown-option.platform-option {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .dropdown-option.platform-option .platform-pill {
+            width: auto;
+            min-width: 0;
+            max-width: 100%;
+            font-size: 15px;
+            padding: 10px 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .platform-dropdown {
+            max-width: 172px;
+            margin: 0 auto;
+        }
+
+        .positive { color: var(--good); font-weight: 700; }
+        .negative { color: var(--bad); font-weight: 700; }
+        .empty { color: var(--muted); text-align: center; padding: 20px; }
+        .total-row { background: #edf7ef; font-weight: 700; }
+
+        @media (max-width: 720px) {
+            .container { padding: 0 12px 24px; }
+            h1 { font-size: 24px; }
+            th, td { font-size: 13px; }
+            .section-head {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-home">← Về home</a>
+
+        <h1>Tính Lợi Nhuận Theo Giá Bán</h1>
+        <p class="subtitle">
+            Bảng 1 quản lý danh sách sản phẩm và giá nhập. Bảng 2 quản lý danh sách sàn và phí sàn. Bảng 3 cho phép thêm từng dòng lợi nhuận, chọn <strong>sản phẩm</strong> và <strong>sàn</strong> từ hai bảng cấu hình.
+            Công thức mặc định: <strong>lợi nhuận = giá bán - (giá nhập/hộp x số hộp) - phí sàn - phí đóng gói - chi phí quảng cáo</strong>.
+            Phí sàn đang được nhập theo <strong>% trên giá bán</strong>, phí đóng gói nhập theo <strong>số tiền của từng dòng</strong>, và chi phí quảng cáo được suy ra từ <strong>ROI/ROAS nhập tay</strong>.
+        </p>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">1. Cấu hình sản phẩm</h2>
+                <button type="button" class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 58%;">Tên mặt hàng</th>
+                            <th style="width: 30%;">Giá nhập / hộp</th>
+                            <th style="width: 12%;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">2. Cấu hình sàn</h2>
+                <button type="button" class="btn-add" onclick="addPlatform()">+ Thêm sàn</button>
+            </div>
+            <div class="scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 58%;">Tên sàn</th>
+                            <th style="width: 30%;">Phí sàn (%)</th>
+                            <th style="width: 12%;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="platformBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="section-head">
+                <h2 class="section-title">3. Bảng tính lợi nhuận</h2>
+                <button type="button" class="btn-add" onclick="addProfitRow()">+ Thêm dòng</button>
+            </div>
+            <div class="section-note">
+                Chọn sàn để tự lấy <strong>phí sàn</strong> từ bảng cấu hình phía trên. Nhập trực tiếp <strong>ROI/ROAS</strong> cho từng dòng. Hệ thống sẽ tự tính <strong>chi phí quảng cáo = giá bán / ROI/ROAS</strong> khi chỉ số lớn hơn 0, rồi trừ vào lợi nhuận.
+            </div>
+            <div class="scroll">
+                <table class="profit-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 18%;">Sản phẩm</th>
+                            <th style="width: 12%;">Sàn</th>
+                            <th style="width: 12%;" class="number">Phí sàn (%)</th>
+                            <th style="width: 14%;" class="number">Phí đóng gói</th>
+                            <th style="width: 10%;" class="number">Số hộp</th>
+                            <th style="width: 14%;" class="number">Giá bán</th>
+                            <th style="width: 10%;" class="number">ROI/ROAS</th>
+                            <th style="width: 10%;" class="number">Lợi nhuận</th>
+                            <th style="width: 80px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="profitBody"></tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let platforms = [
+            { key: 'tiktok', label: 'TikTok', feeRate: 25 },
+            { key: 'shopee', label: 'Shopee', feeRate: 30 }
+        ];
+
+        let nextProductId = 5;
+        let nextPlatformId = 3;
+        let nextProfitRowId = 2;
+        let openDropdownId = null;
+        let products = [
+            { id: 1, name: 'Trà ba kích', price: 22000 },
+            { id: 2, name: 'Dây thìa canh', price: 21000 },
+            { id: 3, name: 'Cà gai leo', price: 21000 },
+            { id: 4, name: 'Kim tiền thảo râu mèo', price: 22000 }
+        ];
+        let profitRows = [createProfitRow(1)];
+
+        window.onload = () => {
+            syncProfitRows();
+            renderProductConfig();
+            renderPlatformConfig();
+            renderProfitTable();
+            updateAllProfitRows();
+        };
+
+        function createProfitRow(rowId = nextProfitRowId++) {
+            return {
+                id: rowId,
+                productId: products[0]?.id || '',
+                platformKey: platforms[0]?.key || 'tiktok',
+                packagingFee: 0,
+                boxes: 1,
+                salePrice: 0,
+                roiRoas: 0
+            };
+        }
+
+        function syncProfitRows() {
+            const validIds = new Set(products.map(product => String(product.id)));
+            profitRows.forEach(row => {
+                if (!validIds.has(String(row.productId))) row.productId = products[0]?.id || '';
+                if (!platforms.some(platform => platform.key === row.platformKey)) row.platformKey = platforms[0]?.key || 'tiktok';
+            });
+            if (profitRows.length === 0) profitRows = [createProfitRow()];
+        }
+
+        function addProduct() {
+            products.push({ id: nextProductId++, name: '', price: 0 });
+            syncProfitRows();
+            renderProductConfig();
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function addPlatform() {
+            platforms.push({ key: `platform_${nextPlatformId}`, label: '', feeRate: 0 });
+            nextPlatformId += 1;
+            syncProfitRows();
+            renderPlatformConfig();
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function removePlatform(platformKey) {
+            if (platforms.length <= 1) {
+                alert('Phải có ít nhất một sàn.');
+                return;
+            }
+            platforms = platforms.filter(platform => platform.key !== platformKey);
+            syncProfitRows();
+            renderPlatformConfig();
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function removeProduct(productId) {
+            if (products.length <= 1) {
+                alert('Phải có ít nhất một sản phẩm.');
+                return;
+            }
+            products = products.filter(product => product.id !== productId);
+            syncProfitRows();
+            renderProductConfig();
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function addProfitRow() {
+            profitRows.push(createProfitRow());
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function removeProfitRow(rowId) {
+            if (profitRows.length <= 1) {
+                profitRows = [createProfitRow(1)];
+                nextProfitRowId = Math.max(nextProfitRowId, 2);
+            } else {
+                profitRows = profitRows.filter(row => row.id !== rowId);
+            }
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function renderProductConfig() {
+            document.getElementById('productBody').innerHTML = products.map((product, index) => `
+                <tr>
+                    <td>
+                        <input
+                            type="text"
+                            value="${escapeHtml(product.name)}"
+                            placeholder="Tên mặt hàng..."
+                            oninput="updateProductName(${index}, this.value)"
+                        >
+                    </td>
+                    <td>
+                        <input
+                            type="text"
+                            data-money-input="true"
+                            inputmode="numeric"
+                            value="${escapeHtml(formatInputNumber(product.price))}"
+                            onfocus="prepareNumberInput(this)"
+                            oninput="updateProductPrice(${index}, this)"
+                            onblur="formatMoneyInput(this)"
+                        >
+                    </td>
+                    <td><button type="button" class="btn-delete" onclick="removeProduct(${product.id})">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPlatformConfig() {
+            document.getElementById('platformBody').innerHTML = platforms.map((platform, index) => `
+                <tr>
+                    <td>
+                        <input
+                            type="text"
+                            value="${escapeHtml(platform.label)}"
+                            placeholder="Tên sàn..."
+                            oninput="updatePlatformLabel(${index}, this.value)"
+                        >
+                    </td>
+                    <td>
+                        <input
+                            class="number"
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value="${platform.feeRate}"
+                            onfocus="prepareDecimalInput(this)"
+                            oninput="updatePlatformFeeRate(${index}, this.value)"
+                        >
+                    </td>
+                    <td><button type="button" class="btn-delete" onclick="removePlatform('${platform.key}')">✕</button></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderProfitTable() {
+            syncProfitRows();
+            const rows = profitRows.map(entry => {
+                const selectedProduct = findProductById(entry.productId) || products[0] || { name: '', price: 0 };
+                const selectedPlatform = findPlatformByKey(entry.platformKey) || platforms[0];
+                return `
+                    <tr data-row-id="${entry.id}">
+                        <td>
+                            <div class="custom-dropdown ${openDropdownId === `product-${entry.id}` ? 'open' : ''}">
+                                <button type="button" class="dropdown-trigger product-trigger" onclick="toggleDropdown('product-${entry.id}')">
+                                    <strong>${escapeHtml(selectedProduct?.name || '(Chưa đặt tên)')}</strong>
+                                    <span>Giá nhập: ${formatMoney(selectedProduct?.price || 0)} / hộp</span>
+                                </button>
+                                ${openDropdownId === `product-${entry.id}` ? `
+                                    <div class="dropdown-menu">
+                                        ${productOptions(entry.id, entry.productId)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <div class="custom-dropdown platform-dropdown ${openDropdownId === `platform-${entry.id}` ? 'open' : ''}">
+                                <button type="button" class="dropdown-trigger platform-trigger" onclick="toggleDropdown('platform-${entry.id}')">
+                                    <span class="platform-pill ${escapeHtml(selectedPlatform?.key || 'tiktok')}">${escapeHtml(selectedPlatform?.label || 'TikTok')}</span>
+                                </button>
+                                ${openDropdownId === `platform-${entry.id}` ? `
+                                    <div class="dropdown-menu">
+                                        ${platformOptions(entry.id, entry.platformKey)}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value="${findPlatformByKey(entry.platformKey)?.feeRate ?? 0}"
+                                readonly
+                                tabindex="-1"
+                            >
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="text"
+                                data-money-input="true"
+                                inputmode="numeric"
+                                value="${escapeHtml(formatInputNumber(entry.packagingFee))}"
+                                onfocus="prepareNumberInput(this)"
+                                oninput="updateProfitRowField(${entry.id}, 'packagingFee', this.value)"
+                                onblur="formatMoneyInput(this)"
+                            >
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value="${entry.boxes}"
+                                onfocus="prepareDecimalInput(this)"
+                                oninput="updateProfitRowField(${entry.id}, 'boxes', this.value)"
+                            >
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="text"
+                                data-money-input="true"
+                                inputmode="numeric"
+                                value="${escapeHtml(formatInputNumber(entry.salePrice))}"
+                                onfocus="prepareNumberInput(this)"
+                                oninput="updateProfitRowField(${entry.id}, 'salePrice', this.value)"
+                                onblur="formatMoneyInput(this)"
+                            >
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value="${entry.roiRoas}"
+                                onfocus="prepareDecimalInput(this)"
+                                oninput="updateProfitRowField(${entry.id}, 'roiRoas', this.value)"
+                            >
+                        </td>
+                        <td class="number" data-role="profit">0 đ</td>
+                        <td><button type="button" class="btn-delete" onclick="removeProfitRow(${entry.id})">✕</button></td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('profitBody').innerHTML = rows || '<tr><td class="empty" colspan="9">Chưa có dữ liệu</td></tr>';
+        }
+
+        function updateProductName(index, value) {
+            products[index].name = String(value || '');
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function updateProductPrice(index, input) {
+            products[index].price = parseNumberText(input.value);
+            updateAllProfitRows();
+        }
+
+        function updatePlatformLabel(index, value) {
+            const safeLabel = String(value || '');
+            platforms[index].label = safeLabel;
+            if (!safeLabel) {
+                renderProfitTable();
+                updateAllProfitRows();
+                return;
+            }
+            if (!/^platform_/.test(platforms[index].key)) {
+                platforms[index].key = normalizePlatformKey(safeLabel, platforms[index].key);
+                syncProfitRows();
+                renderPlatformConfig();
+            }
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function updatePlatformFeeRate(index, value) {
+            platforms[index].feeRate = parseDecimalText(value);
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function updateProfitRowField(rowId, field, value) {
+            const row = profitRows.find(item => item.id === rowId);
+            if (!row) return;
+            const parsedValue = field === 'boxes' || field === 'roiRoas'
+                ? parseDecimalText(value)
+                : field === 'productId'
+                    ? Number(value) || ''
+                    : field === 'platformKey'
+                        ? String(value || '')
+                        : parseNumberText(value);
+            row[field] = parsedValue;
+            if (field === 'productId' || field === 'platformKey') {
+                openDropdownId = null;
+                renderProfitTable();
+            }
+            updateProfitRow(rowId);
+            updateProfitSummary();
+        }
+
+        function updateAllProfitRows() {
+            profitRows.forEach(row => updateProfitRow(row.id));
+            updateProfitSummary();
+        }
+
+        function updateProfitRow(rowId) {
+            const row = document.querySelector(`tr[data-row-id="${rowId}"]`);
+            if (!row) return;
+
+            const entry = profitRows.find(item => item.id === rowId);
+            const product = findProductById(entry?.productId);
+            if (!product || !entry) return;
+
+            const goodsCost = parseDecimalText(entry.boxes) * parseNumberText(product.price);
+            const salePrice = parseNumberText(entry.salePrice);
+            const feeRate = parseDecimalText(findPlatformByKey(entry.platformKey)?.feeRate ?? 0);
+            const platformFeeAmount = salePrice * (feeRate / 100);
+            const packagingFeeAmount = parseNumberText(entry.packagingFee);
+            const adCost = parseDecimalText(entry.roiRoas) > 0 ? salePrice / parseDecimalText(entry.roiRoas) : 0;
+            const totalCost = goodsCost + platformFeeAmount + packagingFeeAmount + adCost;
+            const profit = salePrice - totalCost;
+
+            const profitCell = row.querySelector('[data-role="profit"]');
+
+            profitCell.textContent = formatMoney(profit);
+            profitCell.className = `number ${profit >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function updateProfitSummary() {
+            return;
+        }
+
+        function findProductById(productId) {
+            return products.find(product => product.id === Number(productId)) || null;
+        }
+
+        function findPlatformByKey(platformKey) {
+            return platforms.find(platform => platform.key === platformKey) || null;
+        }
+
+        function normalizePlatformKey(label, fallbackKey = '') {
+            const base = String(label || '')
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '') || fallbackKey || `platform_${nextPlatformId}`;
+            let key = base;
+            let counter = 2;
+            while (platforms.some(platform => platform.key === key && platform.key !== fallbackKey)) {
+                key = `${base}_${counter++}`;
+            }
+            return key;
+        }
+
+        function productOptions(rowId, selectedProductId) {
+            return products.map(product => `
+                <button
+                    type="button"
+                    class="dropdown-option product-option ${product.id === Number(selectedProductId) ? 'active' : ''}"
+                    onclick="updateProfitRowField(${rowId}, 'productId', '${product.id}')"
+                >
+                    <strong>${escapeHtml(product.name || '(Chưa đặt tên)')}</strong>
+                    <span>Giá nhập: ${formatMoney(product.price)} / hộp</span>
+                </button>
+            `).join('');
+        }
+
+        function platformOptions(rowId, selectedPlatformKey) {
+            return platforms.map(platform => `
+                <button
+                    type="button"
+                    class="dropdown-option platform-option ${platform.key === selectedPlatformKey ? 'active' : ''}"
+                    onclick="updateProfitRowField(${rowId}, 'platformKey', '${platform.key}')"
+                >
+                    <span class="platform-pill ${escapeHtml(platform.key)}">${escapeHtml(platform.label)}</span>
+                </button>
+            `).join('');
+        }
+
+        function toggleDropdown(dropdownId) {
+            openDropdownId = openDropdownId === dropdownId ? null : dropdownId;
+            renderProfitTable();
+        }
+
+        function parseNumberText(value) {
+            return Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+        }
+
+        function parseDecimalText(value) {
+            const normalized = String(value ?? '').replace(/,/g, '.').replace(/[^\d.-]/g, '');
+            return Number(normalized) || 0;
+        }
+
+        function formatMoney(value) {
+            return `${Math.round((Number(value) || 0)).toLocaleString('vi-VN')} đ`;
+        }
+
+        function formatInputNumber(value) {
+            const number = parseNumberText(value);
+            return Number.isFinite(number) ? number.toLocaleString('vi-VN') : String(value ?? '');
+        }
+
+        function formatRatio(value) {
+            const ratio = Number.isFinite(value) && value > 0 ? value : 0;
+            return `${ratio.toFixed(2)}x`;
+        }
+
+        function prepareNumberInput(input) {
+            const rawValue = String(input.value ?? '').trim();
+            if (!rawValue) {
+                input.value = '';
+                return;
+            }
+            input.value = String(parseNumberText(rawValue));
+            if (input.value === '0') input.select();
+        }
+
+        function prepareDecimalInput(input) {
+            const rawValue = String(input.value ?? '').trim();
+            if (!rawValue) {
+                input.value = '';
+                return;
+            }
+            const normalized = parseDecimalText(rawValue);
+            input.value = normalized ? String(normalized) : '';
+            if (!input.value) return;
+            input.select();
+        }
+
+        function formatMoneyInput(input) {
+            input.value = formatInputNumber(input.value);
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        document.addEventListener('click', event => {
+            if (!event.target.closest('.custom-dropdown') && openDropdownId) {
+                openDropdownId = null;
+                renderProfitTable();
+            }
+        });
+    </script>
+</body>
+</html>
