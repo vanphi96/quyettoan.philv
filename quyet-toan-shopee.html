@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -756,6 +756,7 @@
                             type: "array",
                             cellDates: true
                         });
+                        fixWorkbookSheetRanges(workbook);
                         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                         resolve(XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" }));
                     } catch (error) {
@@ -765,6 +766,29 @@
                 reader.onerror = () => reject(new Error(`Không đọc được file ${file.name}`));
                 reader.readAsArrayBuffer(file);
             });
+        }
+
+        function fixWorkbookSheetRanges(workbook) {
+            if (!workbook || !workbook.Sheets) return;
+            for (const sheetName of workbook.SheetNames) {
+                const sheet = workbook.Sheets[sheetName];
+                if (!sheet) continue;
+                let minRow = Infinity, maxRow = -1, minCol = Infinity, maxCol = -1;
+                for (const key in sheet) {
+                    if (key[0] === '!') continue;
+                    const cell = XLSX.utils.decode_cell(key);
+                    if (cell.r < minRow) minRow = cell.r;
+                    if (cell.r > maxRow) maxRow = cell.r;
+                    if (cell.c < minCol) minCol = cell.c;
+                    if (cell.c > maxCol) maxCol = cell.c;
+                }
+                if (maxRow >= 0 && minRow !== Infinity && minCol !== Infinity && maxCol >= 0) {
+                    sheet['!ref'] = XLSX.utils.encode_range({
+                        s: { r: minRow, c: minCol },
+                        e: { r: maxRow, c: maxCol }
+                    });
+                }
+            }
         }
 
         function processSettlementRows(rows) {
