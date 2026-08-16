@@ -1,0 +1,5 @@
+.history/
+.vscode/
+node_modules/
+tmp_tiktok_rows.json
+*.tmp

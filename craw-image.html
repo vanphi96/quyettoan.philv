@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Craw Image</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:#f5f7fb;
+    min-height:100vh;
+    overflow:auto;
+}
+
+.back-home {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin:16px 20px 0;
+    padding:10px 14px;
+    border:1px solid #e5e7eb;
+    border-radius:999px;
+    background:#fff;
+    color:#111827;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:600;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04);
+}
+
+.back-home:hover {
+    background:#f9fafb;
+}
+
+.container{
+    display:flex;
+    min-height:calc(100vh - 72px);
+}
+
+.sidebar{
+    width:380px;
+    background:#fff;
+    border-right:1px solid #e5e7eb;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+}
+
+.title{
+    font-size:22px;
+    font-weight:700;
+    color:#111827;
+}
+
+.subtitle{
+    color:#6b7280;
+    font-size:14px;
+}
+
+textarea{
+    flex:1;
+    min-height:250px;
+    resize:none;
+    border:1px solid #d1d5db;
+    border-radius:12px;
+    padding:12px;
+    outline:none;
+    font-size:14px;
+}
+
+textarea:focus{
+    border-color:#2563eb;
+}
+
+.stats{
+    background:#eff6ff;
+    border-radius:12px;
+    padding:12px;
+    color:#1e40af;
+    font-weight:600;
+}
+
+.folder-box{
+    background:#f3f4f6;
+    border-radius:12px;
+    padding:12px;
+}
+
+.folder-title{
+    font-size:13px;
+    color:#6b7280;
+    margin-bottom:6px;
+}
+
+.folder-path{
+    color:#111827;
+    font-size:14px;
+    font-weight:600;
+    word-break:break-word;
+}
+
+.toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+}
+
+button{
+    border:none;
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.2s;
+}
+
+button:hover{
+    transform:translateY(-1px);
+}
+
+.primary{
+    background:#2563eb;
+    color:white;
+}
+
+.secondary{
+    background:#e5e7eb;
+    color:#111827;
+}
+
+.success{
+    background:#16a34a;
+    color:white;
+}
+
+.main{
+    flex:1;
+    overflow:auto;
+    padding:20px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:16px;
+}
+
+.card{
+    background:white;
+    border-radius:14px;
+    overflow:hidden;
+    position:relative;
+    box-shadow:0 2px 10px rgba(0,0,0,.08);
+    transition:.2s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+}
+
+.card img{
+    width:100%;
+    height:220px;
+    object-fit:contain;
+    background:white;
+}
+
+.checkbox{
+    position:absolute;
+    top:10px;
+    left:10px;
+    width:22px;
+    height:22px;
+    cursor:pointer;
+}
+
+.progress{
+    margin-top:8px;
+    font-size:14px;
+    color:#374151;
+}
+
+.empty{
+    text-align:center;
+    color:#6b7280;
+    margin-top:50px;
+}
+</style>
+</head>
+<body>
+
+<a href="index.html" class="back-home">← Quay về trang chủ</a>
+
+<div class="container">
+
+    <div class="sidebar">
+
+        <div>
+            <div class="title">HTML Image Downloader</div>
+            <div class="subtitle">
+                Paste HTML vào bên dưới, ảnh sẽ tự động hiển thị.
+            </div>
+        </div>
+
+        <textarea
+            id="htmlInput"
+            placeholder="Paste HTML chứa thẻ img vào đây..."
+        ></textarea>
+
+        <div class="stats">
+            Tổng ảnh: <span id="count">0</span>
+        </div>
+
+        <div class="folder-box">
+            <div class="folder-title">
+                Folder lưu hiện tại
+            </div>
+
+            <div
+                id="folderPath"
+                class="folder-path"
+            >
+                Chưa chọn folder
+            </div>
+        </div>
+
+        <div class="toolbar">
+            <button
+                class="secondary"
+                onclick="checkAll()"
+            >
+                Check All
+            </button>
+
+            <button
+                class="secondary"
+                onclick="uncheckAll()"
+            >
+                Uncheck All
+            </button>
+
+            <button
+                class="primary"
+                onclick="chooseFolder()"
+            >
+                Chọn Folder
+            </button>
+
+            <button
+                class="success"
+                onclick="downloadSelected()"
+            >
+                Tải Ảnh
+            </button>
+        </div>
+
+        <div
+            class="progress"
+            id="progress"
+        >
+            Chưa tải ảnh
+        </div>
+
+    </div>
+
+    <div class="main">
+
+        <div
+            id="preview"
+            class="grid"
+        ></div>
+
+        <div
+            id="empty"
+            class="empty"
+        >
+            Chưa có ảnh nào
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let images = [];
+let folderHandle = null;
+
+const htmlInput =
+    document.getElementById("htmlInput");
+
+htmlInput.addEventListener(
+    "input",
+    extractImages
+);
+
+htmlInput.addEventListener(
+    "paste",
+    () => {
+        setTimeout(
+            extractImages,
+            50
+        );
+    }
+);
+
+function extractImages(){
+
+    const html =
+        htmlInput.value;
+
+    const parser =
+        new DOMParser();
+
+    const doc =
+        parser.parseFromString(
+            html,
+            "text/html"
+        );
+
+    const imgTags =
+        [...doc.querySelectorAll("img")];
+
+    images = imgTags
+        .map(img =>
+            img.getAttribute("src")
+        )
+        .filter(Boolean);
+
+    renderImages();
+}
+
+function renderImages(){
+
+    const preview =
+        document.getElementById(
+            "preview"
+        );
+
+    const empty =
+        document.getElementById(
+            "empty"
+        );
+
+    preview.innerHTML = "";
+
+    document.getElementById(
+        "count"
+    ).textContent =
+        images.length;
+
+    if(images.length === 0){
+
+        empty.style.display =
+            "block";
+
+        return;
+    }
+
+    empty.style.display =
+        "none";
+
+    images.forEach((url,index)=>{
+
+        const card =
+            document.createElement(
+                "div"
+            );
+
+        card.className =
+            "card";
+
+        card.innerHTML = `
+            <input
+                type="checkbox"
+                class="checkbox"
+                checked
+                data-index="${index}"
+            >
+
+            <img
+                src="${url}"
+                loading="lazy"
+                referrerpolicy="no-referrer"
+            >
+        `;
+
+        preview.appendChild(card);
+    });
+}
+
+function checkAll(){
+
+    document
+        .querySelectorAll(".checkbox")
+        .forEach(
+            cb => cb.checked = true
+        );
+}
+
+function uncheckAll(){
+
+    document
+        .querySelectorAll(".checkbox")
+        .forEach(
+            cb => cb.checked = false
+        );
+}
+
+async function chooseFolder(){
+
+    try{
+
+        folderHandle =
+            await window.showDirectoryPicker();
+
+        document.getElementById(
+            "folderPath"
+        ).textContent =
+            folderHandle.name;
+
+    }
+    catch(err){
+
+        console.log(err);
+    }
+}
+
+function getSelectedUrls(){
+
+    const selected = [];
+
+    document
+        .querySelectorAll(".checkbox")
+        .forEach(cb => {
+
+            if(cb.checked){
+
+                selected.push(
+                    images[
+                        cb.dataset.index
+                    ]
+                );
+            }
+        });
+
+    return selected;
+}
+
+function getExtensionFromMime(mime){
+
+    if(
+        mime.includes("png")
+    ) return "png";
+
+    if(
+        mime.includes("jpeg")
+    ) return "jpg";
+
+    if(
+        mime.includes("jpg")
+    ) return "jpg";
+
+    if(
+        mime.includes("webp")
+    ) return "webp";
+
+    if(
+        mime.includes("gif")
+    ) return "gif";
+
+    return "jpg";
+}
+
+async function downloadOne(
+    url,
+    index,
+    total
+){
+
+    const progress =
+        document.getElementById(
+            "progress"
+        );
+
+    progress.textContent =
+        `Đang tải ${index + 1}/${total}`;
+
+    const response =
+        await fetch(url);
+
+    const blob =
+        await response.blob();
+
+    const ext =
+        getExtensionFromMime(
+            blob.type
+        );
+
+    let fileName =
+        url
+            .split("/")
+            .pop()
+            .split("?")[0];
+
+    fileName =
+        fileName.replace(
+            /\.[^.]+$/,
+            ""
+        );
+
+    if(!fileName){
+
+        fileName =
+            `image_${index + 1}`;
+    }
+
+    fileName =
+        `${fileName}.${ext}`;
+
+    const fileHandle =
+        await folderHandle
+            .getFileHandle(
+                fileName,
+                {
+                    create:true
+                }
+            );
+
+    const writable =
+        await fileHandle
+            .createWritable();
+
+    await writable.write(
+        blob
+    );
+
+    await writable.close();
+}
+
+async function downloadSelected(){
+
+    if(!folderHandle){
+
+        alert(
+            "Vui lòng chọn folder trước"
+        );
+
+        return;
+    }
+
+    const urls =
+        getSelectedUrls();
+
+    if(
+        urls.length === 0
+    ){
+
+        alert(
+            "Chưa chọn ảnh nào"
+        );
+
+        return;
+    }
+
+    try{
+
+        for(
+            let i = 0;
+            i < urls.length;
+            i++
+        ){
+
+            await downloadOne(
+                urls[i],
+                i,
+                urls.length
+            );
+        }
+
+        document.getElementById(
+            "progress"
+        ).textContent =
+            `Hoàn thành ${urls.length} ảnh`;
+
+        alert(
+            "Tải xong"
+        );
+
+    }
+    catch(err){
+
+        console.error(err);
+
+        alert(
+            "Một số ảnh không tải được. Có thể do CORS."
+        );
+    }
+}
+
+</script>
+
+</body>
+</html>

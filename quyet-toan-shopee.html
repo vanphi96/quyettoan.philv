@@ -30,6 +30,61 @@
             color: var(--text);
         }
 
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-card {
+            background: #ffffff;
+            padding: 32px 40px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #ffe4de;
+            border-top: 4px solid var(--brand);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 6px;
+        }
+
+        .loading-sub {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
         .back-home {
             display: inline-flex;
             align-items: center;
@@ -396,7 +451,10 @@
         <section class="section">
             <div class="section-head">
                 <h2 class="section-title">1. Cấu hình mặt hàng</h2>
-                <button type="button" id="addProductBtn" data-html2canvas-ignore="true">+ Thêm mặt hàng</button>
+                <div style="display: flex; gap: 8px;" data-html2canvas-ignore="true">
+                    <button type="button" onclick="loadProductsFromGoogleSheet(true)" style="background: #0f766e; color: white;">🔄 Tải lại từ Google Sheet</button>
+                    <button type="button" id="addProductBtn">+ Thêm mặt hàng</button>
+                </div>
             </div>
             <div class="scroll keep-footer">
                 <table>
@@ -617,10 +675,20 @@
         </div>
     </div>
 
+    <div id="globalLoadingModal" class="loading-overlay" style="display: flex;">
+        <div class="loading-card">
+            <div class="spinner"></div>
+            <div class="loading-title">Đang tải cấu hình sản phẩm</div>
+            <div class="loading-sub" id="loadingStatusText">Đang kết nối tới Google Sheet...</div>
+        </div>
+    </div>
+
     <script>
         const MONEY_FORMAT = new Intl.NumberFormat("vi-VN");
         const SETTLEMENT_START_ROW = 19;
         const AD_PAYMENT_PREFIX = normalizeText("Nạp tiền quảng cáo Shope");
+        const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1ZKWhdX5k8sXYUMJEL9ao4meJZhqGCBqg_zmHakMM8xc/gviz/tq?tqx=out:csv&gid=0";
+        const GOOGLE_SHEET_FALLBACK_URL = "https://docs.google.com/spreadsheets/d/1ZKWhdX5k8sXYUMJEL9ao4meJZhqGCBqg_zmHakMM8xc/export?format=csv&gid=0";
 
         const state = {
             settlementLoaded: false,
@@ -646,7 +714,11 @@
             expenses: [{ name: "Chi phí vật tư", amount: 0 }]
         };
 
-        window.addEventListener("load", initDates);
+        window.addEventListener("load", async () => {
+            initDates();
+            await loadProductsFromGoogleSheet(false);
+            renderAll();
+        });
         document.getElementById("settlementFile").addEventListener("change", event => loadExcel(event, "settlement"));
         document.getElementById("orderFile").addEventListener("change", event => loadExcel(event, "order"));
         document.getElementById("addProductBtn").addEventListener("click", addProduct);
@@ -657,8 +729,6 @@
             document.getElementById("dateModal").style.display = "flex";
         });
         document.getElementById("confirmBtn").addEventListener("click", captureReport);
-
-        renderAll();
 
         function initDates() {
             const today = new Date();
@@ -806,22 +876,26 @@
                 const orderId = isOrderId(rawOrderId) ? rawOrderId : extractOrderIdFromText(note);
                 const amount = parseMoney(row[5]);
 
-                if (isOrderId(orderId) && amount > 0) {
-                    state.settlementOrders.set(orderId, { orderId, amount, date, note });
-                }
-
-                if (isOrderId(orderId) && amount >= -5000 && amount < 0) {
-                    const existing = state.returnOrders.get(orderId);
-                    if (existing) {
-                        existing.amount += amount;
-                        existing.note = `${existing.note}; ${note}`;
-                    } else {
-                        state.returnOrders.set(orderId, { orderId, amount, date, note });
-                    }
-                }
-
                 if (normalizeText(note).startsWith(AD_PAYMENT_PREFIX)) {
                     state.adFromFile.push({ date: toDateInputValue(date), note, amount });
+                } else if (isOrderId(orderId)) {
+                    if (amount > 0) {
+                        const existing = state.settlementOrders.get(orderId);
+                        if (existing) {
+                            existing.amount += amount;
+                            existing.note = `${existing.note}; ${note}`;
+                        } else {
+                            state.settlementOrders.set(orderId, { orderId, amount, date, note });
+                        }
+                    } else if (amount < 0) {
+                        const existing = state.returnOrders.get(orderId);
+                        if (existing) {
+                            existing.amount += amount;
+                            existing.note = `${existing.note}; ${note}`;
+                        } else {
+                            state.returnOrders.set(orderId, { orderId, amount, date, note });
+                        }
+                    }
                 }
             }
 
@@ -1088,7 +1162,7 @@
                 return;
             }
             if (state.returnRows.length === 0) {
-                body.innerHTML = '<tr><td class="empty" colspan="6">Không có đơn hoàn hủy dưới 5.000 đ</td></tr>';
+                body.innerHTML = '<tr><td class="empty" colspan="6">Không có đơn hoàn hủy</td></tr>';
                 return;
             }
 
@@ -2102,6 +2176,205 @@
 
         function escapeAttr(value) {
             return escapeHtml(value);
+        }
+
+        function loadProductsFromGoogleSheet(isManualTrigger = false) {
+            return new Promise((resolve) => {
+                const loadingModal = document.getElementById("globalLoadingModal");
+                const statusText = document.getElementById("loadingStatusText");
+                if (loadingModal) {
+                    loadingModal.style.opacity = "1";
+                    loadingModal.style.display = "flex";
+                }
+                if (statusText) statusText.textContent = "Đang kết nối và tải sản phẩm từ Google Sheet...";
+
+                let isHandled = false;
+                const scriptId = "google-sheet-jsonp-script";
+
+                const cleanup = () => {
+                    const oldScript = document.getElementById(scriptId);
+                    if (oldScript) oldScript.remove();
+                    if (window.handleGoogleSheetData) {
+                        delete window.handleGoogleSheetData;
+                    }
+                };
+
+                const finish = (message, success = false) => {
+                    if (statusText) statusText.textContent = message;
+                    if (success) renderAll();
+
+                    setTimeout(() => {
+                        if (loadingModal) {
+                            loadingModal.style.opacity = "0";
+                            setTimeout(() => {
+                                loadingModal.style.display = "none";
+                                loadingModal.style.opacity = "1";
+                            }, 300);
+                        }
+                        resolve();
+                    }, isManualTrigger ? 600 : 400);
+                };
+
+                window.handleGoogleSheetData = function(json) {
+                    if (isHandled) return;
+                    isHandled = true;
+
+                    try {
+                        if (json && json.status === "ok" && json.table && json.table.rows) {
+                            const parsedProducts = [];
+                            json.table.rows.forEach(row => {
+                                if (!row || !row.c) return;
+                                const c = row.c;
+                                const cell0 = c[0] && c[0].v !== undefined && c[0].v !== null ? String(c[0].v).trim() : "";
+                                if (!cell0) return;
+
+                                const norm = normalizeText(cell0);
+                                if (norm.includes("san pham") || norm.includes("ten san pham") || norm.includes("nhan dien")) {
+                                    return;
+                                }
+
+                                const cell1 = c[1] && c[1].v !== undefined && c[1].v !== null ? String(c[1].v).trim() : "";
+                                let aliases = [];
+                                if (cell1) {
+                                    aliases = cell1.split(/[\n,;]+/).map(a => a.trim()).filter(a => a.length > 0);
+                                }
+                                if (!aliases.some(a => normalizeText(a) === norm)) {
+                                    aliases.unshift(cell0);
+                                }
+
+                                const priceVal = c[2] && c[2].v !== undefined && c[2].v !== null ? c[2].v : (c[1] && c[1].v !== undefined ? c[1].v : 0);
+                                const price = parsePriceValue(priceVal);
+
+                                parsedProducts.push({
+                                    name: cell0,
+                                    aliases: aliases,
+                                    price: price
+                                });
+                            });
+
+                            if (parsedProducts.length > 0) {
+                                state.products = parsedProducts;
+                                cleanup();
+                                finish(`Thành công! Đã tải ${parsedProducts.length} mặt hàng từ Google Sheet.`, true);
+                                return;
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Lỗi xử lý JSONP Google Sheet:", err);
+                    }
+
+                    cleanup();
+                    finish("Không có dữ liệu hợp lệ từ Google Sheet, sử dụng cấu hình mặc định.", false);
+                };
+
+                const script = document.createElement("script");
+                script.id = scriptId;
+                script.src = `https://docs.google.com/spreadsheets/d/1ZKWhdX5k8sXYUMJEL9ao4meJZhqGCBqg_zmHakMM8xc/gviz/tq?tqx=responseHandler:handleGoogleSheetData&gid=0&_t=${Date.now()}`;
+                
+                script.onerror = function(e) {
+                    if (isHandled) return;
+                    isHandled = true;
+                    console.warn("Lỗi tải script từ Google Sheet:", e);
+                    cleanup();
+                    finish("Không thể truy cập Google Sheet, sử dụng cấu hình mặc định.", false);
+                };
+
+                document.body.appendChild(script);
+
+                setTimeout(() => {
+                    if (isHandled) return;
+                    isHandled = true;
+                    console.warn("Hết thời gian kết nối Google Sheet (Timeout)");
+                    cleanup();
+                    finish("Kết nối Google Sheet quá thời gian (Timeout), sử dụng cấu hình mặc định.", false);
+                }, 6000);
+            });
+        }
+
+        function parseProductsFromCSV(csvText) {
+            const rows = parseCSV(csvText);
+            if (!rows || rows.length <= 1) return null;
+
+            let startIdx = 0;
+            const firstRowNormalized = rows[0].map(c => normalizeText(c));
+            if (firstRowNormalized.some(cell => cell.includes("san pham") || cell.includes("ten") || cell.includes("gia"))) {
+                startIdx = 1;
+            }
+
+            const products = [];
+            for (let i = startIdx; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                const name = (row[0] || "").trim();
+                if (!name) continue;
+
+                const aliasRaw = (row[1] || "").trim();
+                let aliases = [];
+                if (aliasRaw) {
+                    aliases = aliasRaw
+                        .split(/[\n,;]+/)
+                        .map(a => a.trim())
+                        .filter(a => a.length > 0);
+                }
+                if (!aliases.some(a => normalizeText(a) === normalizeText(name))) {
+                    aliases.unshift(name);
+                }
+
+                const priceRaw = row[2] !== undefined && row[2] !== "" ? row[2] : (row[1] || "");
+                const price = parsePriceValue(priceRaw);
+
+                products.push({
+                    name: name,
+                    aliases: aliases,
+                    price: price
+                });
+            }
+            return products.length > 0 ? products : null;
+        }
+
+        function parsePriceValue(val) {
+            if (typeof val === "number") return val;
+            if (!val) return 0;
+            const digits = String(val).replace(/[^0-9]/g, "");
+            return parseInt(digits, 10) || 0;
+        }
+
+        function parseCSV(text) {
+            const lines = [];
+            let row = [];
+            let cell = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        cell += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    row.push(cell.trim());
+                    cell = '';
+                } else if ((char === '\r' || char === '\n') && !inQuotes) {
+                    if (char === '\r' && nextChar === '\n') i++;
+                    row.push(cell.trim());
+                    if (row.some(c => c !== '')) lines.push(row);
+                    row = [];
+                    cell = '';
+                } else {
+                    cell += char;
+                }
+            }
+            if (cell || row.length > 0) {
+                row.push(cell.trim());
+                if (row.some(c => c !== '')) lines.push(row);
+            }
+            return lines;
         }
     </script>
 </body>
