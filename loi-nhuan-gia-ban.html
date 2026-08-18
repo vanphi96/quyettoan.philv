@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tính Lợi Nhuận Theo Giá Bán</title>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="sheet-sync.css">
+    <script src="sheet-sync.js"></script>
     <style>
         :root {
             --bg: #f4f6f8;
@@ -421,8 +423,12 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">1. Cấu hình sản phẩm</h2>
-                <div style="display: flex; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 class="section-title">1. Cấu hình sản phẩm</h2>
+                    <span id="sheetSyncBadge" class="sheet-sync-badge"></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-sheet-sync" onclick="syncProductsToGoogleSheet(products, { isManual: true, source: 'Lợi nhuận giá bán' })">💾 Lưu lên Sheet</button>
                     <button type="button" onclick="loadProductsFromGoogleSheet(true)" style="background: #0f766e; color: white;">🔄 Tải lại từ Google Sheet</button>
                     <button type="button" class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
                 </div>
@@ -523,6 +529,7 @@
             renderPlatformConfig();
             renderProfitTable();
             updateAllProfitRows();
+            updateAllSyncBadges();
         };
 
         function createProfitRow(rowId = nextProfitRowId++) {
@@ -547,11 +554,17 @@
         }
 
         function addProduct() {
-            products.push({ id: nextProductId++, name: '', price: 0 });
+            products.push({ id: nextProductId++, name: '', aliases: [], price: 0 });
             syncProfitRows();
             renderProductConfig();
             renderProfitTable();
             updateAllProfitRows();
+            setTimeout(() => {
+                const container = document.getElementById('productBody')?.closest('.scroll, .table-shell');
+                if (container) container.scrollTop = container.scrollHeight;
+                const inputs = document.querySelectorAll('#productBody input[type="text"]');
+                if (inputs.length > 0) inputs[inputs.length - 2]?.focus();
+            }, 50);
         }
 
         function addPlatform() {
@@ -580,11 +593,14 @@
                 alert('Phải có ít nhất một sản phẩm.');
                 return;
             }
+            const container = document.getElementById('productBody')?.closest('.scroll, .table-shell');
+            const prevScroll = container ? container.scrollTop : 0;
             products = products.filter(product => product.id !== productId);
             syncProfitRows();
             renderProductConfig();
             renderProfitTable();
             updateAllProfitRows();
+            if (container) container.scrollTop = prevScroll;
         }
 
         function addProfitRow() {
@@ -622,8 +638,8 @@
                             inputmode="numeric"
                             value="${escapeHtml(formatInputNumber(product.price))}"
                             onfocus="prepareNumberInput(this)"
-                            oninput="updateProductPrice(${index}, this)"
-                            onblur="formatMoneyInput(this)"
+                            oninput="updateProductPrice(${index}, this.value)"
+                            onblur="updateProductPriceAmount(${index}, this)"
                         >
                     </td>
                     <td><button type="button" class="btn-delete" onclick="removeProduct(${product.id})">✕</button></td>
@@ -757,13 +773,24 @@
         }
 
         function updateProductName(index, value) {
-            products[index].name = String(value || '');
+            const oldName = products[index].name;
+            const newName = String(value || '').trim();
+            products[index].name = newName;
+            if (oldName && products[index].aliases && products[index].aliases.includes(oldName)) {
+                products[index].aliases = products[index].aliases.map(a => a === oldName ? newName : a);
+            }
             renderProfitTable();
             updateAllProfitRows();
         }
 
-        function updateProductPrice(index, input) {
+        function updateProductPrice(index, value) {
+            products[index].price = parseNumberText(value);
+            updateAllProfitRows();
+        }
+
+        function updateProductPriceAmount(index, input) {
             products[index].price = parseNumberText(input.value);
+            input.value = formatInputNumber(products[index].price);
             updateAllProfitRows();
         }
 
@@ -895,7 +922,10 @@
         }
 
         function parseNumberText(value) {
-            return Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+            if (typeof value === 'number') return Math.round(value);
+            if (!value) return 0;
+            const digits = String(value).replace(/[^\d-]/g, '');
+            return parseInt(digits, 10) || 0;
         }
 
         function parseDecimalText(value) {
@@ -923,8 +953,9 @@
                 input.value = '';
                 return;
             }
-            input.value = String(parseNumberText(rawValue));
-            if (input.value === '0') input.select();
+            const num = parseNumberText(rawValue);
+            input.value = num === 0 ? '' : String(num);
+            input.select();
         }
 
         function prepareDecimalInput(input) {
@@ -1020,11 +1051,18 @@
                                     return;
                                 }
 
+                                const cell1 = c[1] && c[1].v !== undefined && c[1].v !== null ? String(c[1].v).trim() : "";
+                                let aliases = [];
+                                if (cell1) {
+                                    aliases = cell1.split(/[\n,;]+/).map(a => a.trim()).filter(a => a.length > 0);
+                                }
+
                                 const priceVal = c[2] && c[2].v !== undefined && c[2].v !== null ? c[2].v : (c[1] && c[1].v !== undefined ? c[1].v : 0);
                                 const price = parsePriceValue(priceVal);
 
                                 parsedProducts.push({
                                     name: cell0,
+                                    aliases: aliases,
                                     price: price
                                 });
                             });
@@ -1033,6 +1071,7 @@
                                 products = parsedProducts.map((p, i) => ({
                                     id: i + 1,
                                     name: p.name,
+                                    aliases: p.aliases || (p.name ? [p.name] : []),
                                     price: p.price
                                 }));
                                 nextProductId = products.length + 1;

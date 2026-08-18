@@ -7,6 +7,8 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="sheet-sync.css">
+    <script src="sheet-sync.js"></script>
     <style>
         :root {
             --bg: #f4f6f8;
@@ -450,8 +452,12 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">1. Cấu hình mặt hàng</h2>
-                <div style="display: flex; gap: 8px;" data-html2canvas-ignore="true">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 class="section-title">1. Cấu hình mặt hàng</h2>
+                    <span id="sheetSyncBadge" class="sheet-sync-badge" data-html2canvas-ignore="true"></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;" data-html2canvas-ignore="true">
+                    <button type="button" class="btn-sheet-sync" onclick="syncProductsToGoogleSheet(state.products, { isManual: true, source: 'Quyết toán Shopee' })">💾 Lưu lên Sheet</button>
                     <button type="button" onclick="loadProductsFromGoogleSheet(true)" style="background: #0f766e; color: white;">🔄 Tải lại từ Google Sheet</button>
                     <button type="button" id="addProductBtn">+ Thêm mặt hàng</button>
                 </div>
@@ -647,8 +653,11 @@
         </section>
 
         <section class="section">
-            <div class="section-head">
+            <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 class="section-title">7. Tổng kết</h2>
+                <button type="button" class="btn-sheet-sync" style="background: #2563eb; color: white;" onclick="handleOpenSaveShopeeSettlementToMonthly()" data-html2canvas-ignore="true">
+                    📌 Lưu vào Báo cáo Tháng
+                </button>
             </div>
             <table>
                 <tbody>
@@ -718,6 +727,7 @@
             initDates();
             await loadProductsFromGoogleSheet(false);
             renderAll();
+            updateAllSyncBadges();
         });
         document.getElementById("settlementFile").addEventListener("change", event => loadExcel(event, "settlement"));
         document.getElementById("orderFile").addEventListener("change", event => loadExcel(event, "order"));
@@ -1108,8 +1118,8 @@
         function renderProducts() {
             document.getElementById("productBody").innerHTML = state.products.map((product, index) => `
                 <tr>
-                    <td><input value="${escapeAttr(product.name)}" onchange="updateProductName(${index}, this.value)"></td>
-                    <td><textarea onchange="updateProductAliases(${index}, this.value)" placeholder="Mỗi dòng một tên sản phẩm">${escapeHtml(productAliasesText(product))}</textarea></td>
+                    <td><input value="${escapeAttr(product.name)}" oninput="updateProductName(${index}, this.value)"></td>
+                    <td><textarea oninput="updateProductAliases(${index}, this.value)" placeholder="Mỗi dòng một tên sản phẩm">${escapeHtml(productAliasesText(product))}</textarea></td>
                     <td><input class="number" type="text" inputmode="numeric" value="${escapeAttr(formatInputNumber(product.price))}" onfocus="prepareNumberInput(this)" onblur="updateProductPriceAmount(${index}, this)"></td>
                     <td data-html2canvas-ignore="true"><button type="button" class="btn-delete" onclick="removeProduct(${index})">Xóa</button></td>
                 </tr>
@@ -1333,15 +1343,36 @@
             document.getElementById("summaryProfit").className = `number ${profit >= 0 ? "positive" : "negative"}`;
         }
 
+        function updateCalculations() {
+            renderStats();
+            renderMappedOrders();
+            renderReturnOrders();
+            renderVariantGroups();
+            renderGoodsSummary();
+            renderOrderTypeSummary();
+            renderFinancialSummary();
+        }
+
         function addProduct() {
             state.products.push({ name: "", aliases: [], price: 0 });
-            renderAll();
+            renderProducts();
+            updateCalculations();
+            setTimeout(() => {
+                const container = document.getElementById("productBody")?.closest('.scroll, .table-shell');
+                if (container) container.scrollTop = container.scrollHeight;
+                const inputs = document.querySelectorAll('#productBody input');
+                if (inputs.length > 0) inputs[inputs.length - 2]?.focus();
+            }, 50);
         }
 
         function removeProduct(index) {
             if (state.products.length <= 1) return alert("Phải có ít nhất một mặt hàng.");
+            const container = document.getElementById("productBody")?.closest('.scroll, .table-shell');
+            const prevScroll = container ? container.scrollTop : 0;
             state.products.splice(index, 1);
-            renderAll();
+            renderProducts();
+            updateCalculations();
+            if (container) container.scrollTop = prevScroll;
         }
 
         function updateProductName(index, value) {
@@ -1355,24 +1386,24 @@
                     if (config.productType === oldName) config.productType = nextName;
                 });
             }
-            renderAll();
+            updateCalculations();
         }
 
         function updateProductAliases(index, value) {
             state.products[index].aliases = parseAliasList(value);
-            renderAll();
+            updateCalculations();
         }
 
         function updateProductPrice(index, value) {
             state.products[index].price = parseNumber(value);
-            renderAll();
+            updateCalculations();
         }
 
         function updateProductPriceAmount(index, input) {
             const amount = parseNumber(input.value);
             state.products[index].price = amount;
             input.value = formatInputNumber(amount);
-            renderAll();
+            updateCalculations();
         }
 
         function updateVariantBoxes(key, value) {
@@ -1528,8 +1559,9 @@
                 input.value = "";
                 return;
             }
-            input.value = String(parseNumber(rawValue));
-            if (input.value === "0") input.select();
+            const num = parseNumber(rawValue);
+            input.value = num === 0 ? "" : String(num);
+            input.select();
         }
 
         function calculateGoodsSummary() {
@@ -2238,9 +2270,6 @@
                                 if (cell1) {
                                     aliases = cell1.split(/[\n,;]+/).map(a => a.trim()).filter(a => a.length > 0);
                                 }
-                                if (!aliases.some(a => normalizeText(a) === norm)) {
-                                    aliases.unshift(cell0);
-                                }
 
                                 const priceVal = c[2] && c[2].v !== undefined && c[2].v !== null ? c[2].v : (c[1] && c[1].v !== undefined ? c[1].v : 0);
                                 const price = parsePriceValue(priceVal);
@@ -2317,9 +2346,6 @@
                         .map(a => a.trim())
                         .filter(a => a.length > 0);
                 }
-                if (!aliases.some(a => normalizeText(a) === normalizeText(name))) {
-                    aliases.unshift(name);
-                }
 
                 const priceRaw = row[2] !== undefined && row[2] !== "" ? row[2] : (row[1] || "");
                 const price = parsePriceValue(priceRaw);
@@ -2375,6 +2401,51 @@
                 if (row.some(c => c !== '')) lines.push(row);
             }
             return lines;
+        }
+
+        function handleOpenSaveShopeeSettlementToMonthly() {
+            const sDate = document.getElementById('startDate')?.value || '';
+            const eDate = document.getElementById('endDate')?.value || '';
+            let dateRange = '';
+            if (sDate && eDate) {
+                dateRange = `${sDate} - ${eDate}`;
+            }
+
+            let materialCost = 0;
+            let otherExp = 0;
+            if (Array.isArray(state.expenses)) {
+                state.expenses.forEach(ex => {
+                    const name = (ex.name || '').toLowerCase();
+                    const amt = Number(ex.amount) || 0;
+                    if (name.includes('vật tư') || name.includes('vat tu') || name.includes('đóng gói') || name.includes('bao bì') || name.includes('hộp')) {
+                        materialCost += amt;
+                    } else {
+                        otherExp += amt;
+                    }
+                });
+            }
+
+            const rev = typeof mappedRevenue === 'function' ? mappedRevenue() : 0;
+            const goods = typeof totalGoodsCost === 'function' ? totalGoodsCost() : 0;
+            const ads = typeof totalAds === 'function' ? totalAds() : 0;
+            const profit = rev - goods - ads - materialCost - otherExp;
+
+            showSaveSettlementPeriodDialog({
+                platform: 'Shopee',
+                shopName: 'Shopee Shop 1',
+                startDate: sDate,
+                endDate: eDate,
+                dateRange: dateRange,
+                totalOrders: state.mappedRows ? state.mappedRows.length : 0,
+                returnOrders: state.returnRows ? state.returnRows.length : 0,
+                revenue: rev,
+                goodsCost: goods,
+                adsCost: ads,
+                materialCost: materialCost,
+                otherExpenses: otherExp,
+                profit: profit,
+                note: `Quyết toán Shopee ${dateRange}`
+            });
         }
     </script>
 </body>

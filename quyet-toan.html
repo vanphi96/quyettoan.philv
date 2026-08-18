@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="sheet-sync.css">
+    <script src="sheet-sync.js"></script>
     <style>
         :root {
             --bg: #f4f6f8;
@@ -380,8 +382,12 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">1. Cấu hình mặt hàng</h2>
-                <div style="display: flex; gap: 8px;" data-html2canvas-ignore="true">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 class="section-title">1. Cấu hình mặt hàng</h2>
+                    <span id="sheetSyncBadge" class="sheet-sync-badge" data-html2canvas-ignore="true"></span>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center;" data-html2canvas-ignore="true">
+                    <button type="button" class="btn-sheet-sync" onclick="syncProductsToGoogleSheet(products, { isManual: true, source: 'Quyết toán TikTok' })">💾 Lưu lên Sheet</button>
                     <button type="button" onclick="loadProductsFromGoogleSheet(true)" style="background: #0f766e; color: white;">🔄 Tải lại từ Google Sheet</button>
                     <button class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
                 </div>
@@ -496,8 +502,11 @@
         </section>
 
         <section class="section">
-            <div class="section-head">
+            <div class="section-head" style="display: flex; justify-content: space-between; align-items: center;">
                 <h2 class="section-title">7. Tổng kết</h2>
+                <button type="button" class="btn-sheet-sync" style="background: #2563eb; color: white;" onclick="handleOpenSaveTikTokSettlementToMonthly()" data-html2canvas-ignore="true">
+                    📌 Lưu vào Báo cáo Tháng
+                </button>
             </div>
             <table>
                 <tbody>
@@ -561,6 +570,7 @@
         renderProductConfig();
         renderAds();
         renderExpenses();
+        updateAllSyncBadges();
     };
 
     function setupScrollableTables() {
@@ -581,20 +591,39 @@
         products.push({name: "", aliases: [], price: 0});
         renderProductConfig();
         if(filteredMap.size > 0 || returnOrders.length > 0) renderOrderTables(); // Cập nhật dropdown ở bảng 3, 4
+        setTimeout(() => {
+            const container = document.getElementById('productBody')?.closest('.scroll, .table-shell');
+            if (container) container.scrollTop = container.scrollHeight;
+            const inputs = document.querySelectorAll('#productBody input[type="text"]');
+            if (inputs.length > 0) inputs[inputs.length - 2]?.focus();
+        }, 50);
     }
 
     function removeProduct(index) {
         if(products.length <= 1) return alert("Phải có ít nhất một sản phẩm.");
+        const container = document.getElementById('productBody')?.closest('.scroll, .table-shell');
+        const prevScroll = container ? container.scrollTop : 0;
         products.splice(index, 1);
         renderProductConfig();
+        updateAll();
+        if (container) container.scrollTop = prevScroll;
+    }
+
+    function updateProductName(index, value) {
+        products[index].name = value;
+        updateAll();
+    }
+
+    function updateProductAliases(index, value) {
+        products[index].aliases = parseAliasList(value);
         updateAll();
     }
 
     function renderProductConfig() {
         document.getElementById('productBody').innerHTML = products.map((p, i) => `
             <tr>
-                <td><input type="text" value="${escapeHtml(p.name)}" placeholder="Ten mat hang..." onchange="products[${i}].name=this.value; updateAll();"></td>
-                <td><textarea placeholder="Moi dong mot ten nhan dien" onchange="products[${i}].aliases=parseAliasList(this.value); updateAll();">${escapeHtml((p.aliases || []).join('\n'))}</textarea></td>
+                <td><input type="text" value="${escapeHtml(p.name)}" placeholder="Tên mặt hàng..." oninput="updateProductName(${i}, this.value)"></td>
+                <td><textarea placeholder="Mỗi dòng một tên nhận diện" oninput="updateProductAliases(${i}, this.value)">${escapeHtml((p.aliases || []).join('\n'))}</textarea></td>
                 <td><input type="text" data-money-input="true" inputmode="numeric" value="${escapeHtml(formatInputNumber(p.price))}" onfocus="prepareNumberInput(this)" onblur="updateProductPriceAmount(${i}, this)"></td>
                 <td data-html2canvas-ignore="true"><button class="btn-delete" onclick="removeProduct(${i})">✕</button></td>
             </tr>`).join('');
@@ -1697,7 +1726,10 @@
     }
 
     function parseNumberText(value) {
-        return Number(String(value ?? '').replace(/[^\d.-]/g, '')) || 0;
+        if (typeof value === 'number') return Math.round(value);
+        if (!value) return 0;
+        const digits = String(value).replace(/[^\d-]/g, '');
+        return parseInt(digits, 10) || 0;
     }
 
     function formatMoney(value) {
@@ -1715,8 +1747,9 @@
             input.value = '';
             return;
         }
-        input.value = String(parseNumberText(rawValue));
-        if (input.value === '0') input.select();
+        const num = parseNumberText(rawValue);
+        input.value = num === 0 ? '' : String(num);
+        input.select();
     }
 
     function buildExcelSheet(rows, options = {}) {
@@ -1985,9 +2018,6 @@
                             if (cell1) {
                                 aliases = cell1.split(/[\n,;]+/).map(a => a.trim()).filter(a => a.length > 0);
                             }
-                            if (!aliases.some(a => normalizeText(a) === norm)) {
-                                aliases.unshift(cell0);
-                            }
 
                             const priceVal = c[2] && c[2].v !== undefined && c[2].v !== null ? c[2].v : (c[1] && c[1].v !== undefined ? c[1].v : 0);
                             const price = parsePriceValue(priceVal);
@@ -2043,6 +2073,53 @@
         if (!val) return 0;
         const digits = String(val).replace(/[^0-9]/g, "");
         return parseInt(digits, 10) || 0;
+    }
+
+    function handleOpenSaveTikTokSettlementToMonthly() {
+        const sDate = document.getElementById('startDate')?.value || '';
+        const eDate = document.getElementById('endDate')?.value || '';
+        let dateRange = '';
+        if (sDate && eDate) {
+            const formatD = (ds) => {
+                const p = ds.split('-');
+                return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds;
+            };
+            dateRange = `${formatD(sDate)} - ${formatD(eDate)}`;
+        }
+
+        let materialCost = 0;
+        let otherExp = 0;
+        if (Array.isArray(expenses)) {
+            expenses.forEach(ex => {
+                const name = (ex.name || '').toLowerCase();
+                const amt = Number(ex.amount) || 0;
+                if (name.includes('vật tư') || name.includes('vat tu') || name.includes('đóng gói') || name.includes('bao bì') || name.includes('hộp')) {
+                    materialCost += amt;
+                } else {
+                    otherExp += amt;
+                }
+            });
+        }
+
+        const adsTotal = typeof totalManualAds === 'function' ? totalManualAds() : 0;
+        const profit = totalF - totalGoods - adsTotal - materialCost - otherExp;
+
+        showSaveSettlementPeriodDialog({
+            platform: 'TikTok Shop',
+            shopName: 'TikTok Shop 1',
+            startDate: sDate,
+            endDate: eDate,
+            dateRange: dateRange,
+            totalOrders: filteredMap ? filteredMap.size : 0,
+            returnOrders: Array.isArray(returnOrders) ? returnOrders.length : 0,
+            revenue: totalF || 0,
+            goodsCost: totalGoods || 0,
+            adsCost: adsTotal,
+            materialCost: materialCost,
+            otherExpenses: otherExp,
+            profit: profit,
+            note: `Quyết toán TikTok ${dateRange}`
+        });
     }
 </script>
 </body>
