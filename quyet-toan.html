@@ -934,25 +934,36 @@
         const headerIndex = findHeaderIndex(rows, ['ID đơn hàng/điều chỉnh', 'Loại giao dịch', 'Tổng số tiền quyết toán']);
         const startIndex = headerIndex >= 0 ? headerIndex + 1 : 1;
         const headerRow = rows[headerIndex] || rows[0] || [];
-        const orderDateIndex = findColumnIndex(headerRow, ['Thời gian tạo đơn hàng', 'Ngày đặt hàng', 'Order Created Time', 'Created Time', 'Order Date', 'Create Time'], 2);
+        const settlementDateIndex = findColumnIndex(headerRow, [
+            'Thời gian thanh toán', 'Thời gian quyết toán', 'Thời gian giải phóng thanh toán', 'Thời gian giải phóng khoản thanh toán',
+            'Thời gian giao dịch', 'Payment Settled Time', 'Settlement Time', 'Settled Time', 'Paid Time', 'Payout Time',
+            'Transaction Time', 'Payment Time', 'Payout Date', 'Settlement Date'
+        ], -1);
+        const orderDateIndex = findColumnIndex(headerRow, [
+            'Thời gian tạo đơn hàng', 'Ngày đặt hàng', 'Order Created Time', 'Created Time', 'Order Date', 'Create Time'
+        ], 2);
 
         for (let i = startIndex; i < rows.length; i++) {
             const row = rows[i]; if (!row) continue;
             const transactionType = String(row[1] || '').trim(); // Cot B: Loai giao dich
             const pPay = parseMoney(row[5]); // Cot F: Tong so tien quyet toan
+            const settlementDate = settlementDateIndex >= 0 ? toDateInputValue(row[settlementDateIndex]) : '';
             const orderDate = toDateInputValue(row[orderDateIndex]);
+            const itemDate = settlementDate || orderDate;
+
             if (isGmvPaymentRow(row)) {
-                gmvHistory.push({date: orderDate, note: transactionType, amount: pPay});
+                gmvHistory.push({date: itemDate, settlementDate: settlementDate, orderDate: orderDate, note: transactionType, amount: pPay});
                 continue;
             }
             const orderId = String(row[0] || '').trim(); // Cot A: ID don hang
             if (!orderId || orderId.toLowerCase().includes('id ')) continue;
             totalF += pPay;
-            if (!settlementMap.has(orderId)) settlementMap.set(orderId, {id: orderId, pays: [], amount: 0, note: '', orderDate: ''});
+            if (!settlementMap.has(orderId)) settlementMap.set(orderId, {id: orderId, pays: [], amount: 0, note: '', orderDate: '', settlementDate: ''});
             const settlement = settlementMap.get(orderId);
             settlement.amount += pPay;
             settlement.pays.push(pPay);
             settlement.note = settlement.note ? `${settlement.note}; ${transactionType}` : transactionType;
+            if (!settlement.settlementDate && settlementDate) settlement.settlementDate = settlementDate;
             if (!settlement.orderDate && orderDate) settlement.orderDate = orderDate;
         }
         for (const settlement of settlementMap.values()) {
@@ -2075,34 +2086,88 @@
         return parseInt(digits, 10) || 0;
     }
 
-    function handleOpenSaveTikTokSettlementToMonthly() {
-        const sDate = document.getElementById('startDate')?.value || '';
-        const eDate = document.getElementById('endDate')?.value || '';
-        let dateRange = '';
-        if (sDate && eDate) {
-            const formatD = (ds) => {
-                const p = ds.split('-');
-                return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds;
-            };
-            dateRange = `${formatD(sDate)} - ${formatD(eDate)}`;
-        }
+    function getTikTokFileMinMaxDates() {
+        const settlementDates = [];
+        const orderDates = [];
 
-        let materialCost = 0;
-        let otherExp = 0;
-        if (Array.isArray(expenses)) {
-            expenses.forEach(ex => {
-                const name = (ex.name || '').toLowerCase();
-                const amt = Number(ex.amount) || 0;
-                if (name.includes('vật tư') || name.includes('vat tu') || name.includes('đóng gói') || name.includes('bao bì') || name.includes('hộp')) {
-                    materialCost += amt;
-                } else {
-                    otherExp += amt;
+        if (typeof filteredMap !== 'undefined' && filteredMap) {
+            filteredMap.forEach(order => {
+                if (order.settlementDate) settlementDates.push(order.settlementDate);
+                if (order.orderDate) orderDates.push(order.orderDate);
+                if (Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        if (item.settlementDate) settlementDates.push(item.settlementDate);
+                        if (item.orderDate) orderDates.push(item.orderDate);
+                    });
                 }
             });
         }
+        if (typeof settlementMap !== 'undefined' && settlementMap) {
+            settlementMap.forEach(s => {
+                if (s.settlementDate) settlementDates.push(s.settlementDate);
+                if (s.orderDate) orderDates.push(s.orderDate);
+            });
+        }
+        if (typeof returnOrders !== 'undefined' && Array.isArray(returnOrders)) {
+            returnOrders.forEach(order => {
+                if (order.settlementDate) settlementDates.push(order.settlementDate);
+                if (order.orderDate) orderDates.push(order.orderDate);
+                if (Array.isArray(order.items)) {
+                    order.items.forEach(item => {
+                        if (item.settlementDate) settlementDates.push(item.settlementDate);
+                        if (item.orderDate) orderDates.push(item.orderDate);
+                    });
+                }
+            });
+        }
+        if (typeof gmvHistory !== 'undefined' && Array.isArray(gmvHistory)) {
+            gmvHistory.forEach(item => {
+                if (item.settlementDate) settlementDates.push(item.settlementDate);
+                else if (item.date) settlementDates.push(item.date);
+                if (item.orderDate) orderDates.push(item.orderDate);
+            });
+        }
 
-        const adsTotal = typeof totalManualAds === 'function' ? totalManualAds() : 0;
-        const profit = totalF - totalGoods - adsTotal - materialCost - otherExp;
+        // Ưu tiên ngày quyết toán / thanh toán trong file nếu có; nếu file chỉ có ngày tạo đơn thì fallback sang ngày tạo đơn
+        const targetDates = settlementDates.length > 0 ? settlementDates : orderDates;
+        const cleanDates = targetDates.map(toDateInputValue).filter(Boolean).sort();
+        if (cleanDates.length > 0) {
+            return {
+                minDate: cleanDates[0],
+                maxDate: cleanDates[cleanDates.length - 1]
+            };
+        }
+        return { minDate: '', maxDate: '' };
+    }
+
+    function handleOpenSaveTikTokSettlementToMonthly() {
+        const minMax = getTikTokFileMinMaxDates();
+        let sDate = '';
+        let eDate = '';
+        let dateRange = '';
+
+        if (minMax.minDate && minMax.maxDate) {
+            sDate = formatDateDisplay(minMax.minDate);
+            eDate = formatDateDisplay(minMax.maxDate);
+            dateRange = `${sDate} - ${eDate}`;
+        } else {
+            const sInput = document.getElementById('startDate')?.value || '';
+            const eInput = document.getElementById('endDate')?.value || '';
+            if (sInput && eInput) {
+                const formatD = (ds) => {
+                    const p = ds.split('-');
+                    return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds;
+                };
+                sDate = formatD(sInput);
+                eDate = formatD(eInput);
+                dateRange = `${sDate} - ${eDate}`;
+            }
+        }
+
+        const expTotal = typeof totalExpenses === 'function' ? totalExpenses() : 0;
+        const adsTotal = typeof totalAds === 'function' ? totalAds() : 0;
+        const profit = (totalF || 0) - (totalGoods || 0) - adsTotal - expTotal;
+        const currentExpenses = Array.isArray(expenses) ? JSON.parse(JSON.stringify(expenses)) : [{ name: 'Vật tư', amount: 0 }];
 
         showSaveSettlementPeriodDialog({
             platform: 'TikTok Shop',
@@ -2115,10 +2180,11 @@
             revenue: totalF || 0,
             goodsCost: totalGoods || 0,
             adsCost: adsTotal,
-            materialCost: materialCost,
-            otherExpenses: otherExp,
+            materialCost: expTotal,
+            otherExpenses: 0,
+            expenses: currentExpenses,
             profit: profit,
-            note: `Quyết toán TikTok ${dateRange}`
+            note: ''
         });
     }
 </script>

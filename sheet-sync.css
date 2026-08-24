@@ -201,3 +201,434 @@
     border-top: 1px solid #e2e8f0;
     background: #f8fafc;
 }
+
+/* ============================================================
+   DATE RANGE PICKER STYLES (Bộ chọn khoảng ngày quyết toán)
+   ============================================================ */
+.sp-date-picker-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.sp-date-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.sp-date-input {
+    width: 100%;
+    padding: 9px 36px 9px 12px !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    font-family: inherit !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    background: #ffffff !important;
+    cursor: pointer;
+    transition: all 0.2s ease !important;
+}
+
+.sp-date-input:focus,
+.sp-date-input:hover {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+}
+
+.sp-date-icon-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    color: #64748b;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, transform 0.15s;
+    user-select: none;
+}
+
+.sp-date-icon-btn:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.sp-calendar-popup {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    width: 320px;
+    max-width: calc(100vw - 32px);
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    box-shadow: 0 20px 35px -5px rgba(0, 0, 0, 0.18), 0 10px 15px -5px rgba(0, 0, 0, 0.08);
+    z-index: 1000;
+    padding: 14px;
+    display: none;
+    animation: sp-cal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    user-select: none;
+}
+
+.sp-calendar-popup.show {
+    display: block;
+}
+
+@keyframes sp-cal-pop {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Thanh phím tắt (Presets) */
+.sp-presets-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.sp-preset-btn {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-family: inherit;
+}
+
+.sp-preset-btn:hover {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    transform: translateY(-1px);
+}
+
+/* Header lịch */
+.sp-calendar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.sp-cal-nav-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #475569;
+    transition: all 0.15s ease;
+    line-height: 1;
+}
+
+.sp-cal-nav-btn:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.sp-cal-title-selects {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.sp-cal-month-select, .sp-cal-year-select {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0f172a;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 3px 6px;
+    cursor: pointer;
+    font-family: inherit;
+    outline: none;
+}
+
+.sp-cal-month-select:hover, .sp-cal-year-select:hover {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+/* Thứ trong tuần */
+.sp-calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 6px;
+    padding: 0;
+}
+
+/* Lưới ngày (Days Grid) */
+.sp-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 3px;
+}
+
+.sp-day-cell {
+    position: relative;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+.sp-day-cell .sp-day-num {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 2;
+    transition: all 0.15s ease;
+    pointer-events: none;
+}
+
+.sp-day-cell.other-month {
+    color: #cbd5e1;
+}
+
+.sp-day-cell.other-month:hover .sp-day-num {
+    color: #475569;
+    background: #f1f5f9;
+}
+
+.sp-day-cell.today .sp-day-num {
+    border: 1.5px solid #2563eb;
+    color: #2563eb;
+    font-weight: 700;
+}
+
+.sp-day-cell:not(.in-range):not(.range-start):not(.range-end):hover .sp-day-num {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+/* HIGHLIGHT DẢI NGÀY ĐƯỢC CHỌN (RANGE HIGHLIGHT) */
+.sp-day-cell.in-range {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    border-radius: 0 !important;
+}
+
+.sp-day-cell.in-range .sp-day-num {
+    color: #1e40af !important;
+    font-weight: 700;
+}
+
+.sp-day-cell.range-start {
+    background: linear-gradient(to right, transparent 50%, #dbeafe 50%) !important;
+    border-radius: 0 !important;
+}
+
+.sp-day-cell.range-end {
+    background: linear-gradient(to left, transparent 50%, #dbeafe 50%) !important;
+    border-radius: 0 !important;
+}
+
+.sp-day-cell.range-start .sp-day-num,
+.sp-day-cell.range-end .sp-day-num {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4) !important;
+}
+
+.sp-day-cell.range-single,
+.sp-day-cell.range-start.range-end {
+    background: transparent !important;
+}
+
+.sp-day-cell.range-single .sp-day-num,
+.sp-day-cell.range-start.range-end .sp-day-num {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Footer Lịch */
+.sp-calendar-footer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sp-cal-info-text {
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 500;
+    line-height: 1.3;
+    flex: 1;
+}
+
+.sp-cal-info-text strong {
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.sp-cal-btn-group {
+    display: flex;
+    gap: 6px;
+}
+
+.sp-cal-action-btn {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+
+.sp-cal-btn-clear {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+.sp-cal-btn-clear:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.sp-cal-btn-apply {
+    background: #2563eb;
+    color: white;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+}
+.sp-cal-btn-apply:hover {
+    background: #1d4ed8;
+}
+
+/* FULLSCREEN LOADING OVERLAY */
+.global-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.global-loading-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.global-loading-card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.15);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: loading-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes loading-pop {
+    0% { transform: scale(0.9) translateY(12px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.global-loading-spinner-box {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.global-loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 4.5px solid #e2e8f0;
+    border-top-color: #2563eb;
+    border-right-color: #38bdf8;
+    border-radius: 50%;
+    animation: global-spin 0.8s linear infinite;
+}
+
+.global-loading-icon {
+    position: absolute;
+    font-size: 22px;
+    animation: pulse-icon 1.5s ease-in-out infinite;
+}
+
+@keyframes global-spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-icon {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.8; }
+}
+
+.global-loading-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.35;
+}
+
+.global-loading-subtext {
+    font-size: 0.85rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+

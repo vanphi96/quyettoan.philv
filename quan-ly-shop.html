@@ -1,0 +1,1858 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Shop & Cấu Hình Sản Phẩm Bán</title>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="sheet-sync.css">
+    <script src="sheet-sync.js"></script>
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --radius: 14px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* HEADER */
+        .page-header {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-title-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .header-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 9px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+        }
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* KPI CARDS */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .kpi-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+        .kpi-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .kpi-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 22px 24px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* FILTER TABS */
+        .filter-tabs {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 9px;
+        }
+
+        .filter-tab {
+            padding: 6px 14px;
+            border-radius: 7px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #64748b;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+
+        .filter-tab:hover {
+            color: #0f172a;
+        }
+
+        .filter-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* TABLE */
+        .table-responsive {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        .shop-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }
+
+        .shop-table th {
+            background: #f8fafc;
+            color: #475569;
+            font-weight: 700;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .shop-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .shop-table tbody tr:hover {
+            background: #f8fafc;
+        }
+
+        .platform-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 9px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .platform-badge.shopee {
+            background: #fff7ed;
+            color: #ea580c;
+            border: 1px solid #fed7aa;
+        }
+
+        .platform-badge.tiktok {
+            background: #f1f5f9;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+        }
+
+        .fee-badge {
+            display: inline-block;
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-weight: 800;
+            font-size: 0.85rem;
+        }
+
+        .action-btns {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 7px;
+            border: 1px solid var(--border);
+            background: white;
+            color: #475569;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.15s ease;
+        }
+
+        .btn-icon:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+
+        .btn-icon.delete:hover {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        /* SECTION SHOP PRODUCT SELECTOR BAR */
+        .shop-selector-bar {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .shop-select-control {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1.5px solid #3b82f6;
+            background: white;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #1e3a8a;
+            outline: none;
+            cursor: pointer;
+            min-width: 250px;
+            font-family: inherit;
+        }
+
+        /* MODALS (CHUẨN FLEX + SCROLL KHÔNG BỊ TRÀN VIEW) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(15, 23, 42, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 520px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 32px);
+            overflow: hidden;
+        }
+
+        .modal-card.large {
+            max-width: 920px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .modal-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-close-modal {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .btn-close-modal:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .form-control {
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            font-size: 0.9rem;
+            font-family: inherit;
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.15s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .modal-footer {
+            padding: 14px 20px;
+            background: #f8fafc;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* COMBO / PRODUCT EDIT ITEMS */
+        .section-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .section-box-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* GRID-BASED BOM ITEM ROW (KHÔNG BỊ ĐÈ CHỮ) */
+        .bom-item-row {
+            display: grid;
+            grid-template-columns: 1fr 100px 130px 34px;
+            align-items: center;
+            gap: 10px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .deal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 800;
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fde68a;
+            padding: 3px 7px;
+            border-radius: 5px;
+        }
+
+        .cost-badge {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .profit-positive { color: #16a34a; font-weight: 800; }
+        .profit-negative { color: #dc2626; font-weight: 800; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- HEADER -->
+        <header class="page-header">
+            <div class="header-title-box">
+                <h1 class="header-title">
+                    <span>🏪</span> Quản Lý Shop & Cấu Hình Sản Phẩm Bán
+                </h1>
+                <p class="header-subtitle">
+                    Khai báo danh sách Shop theo Sàn (Shopee / TikTok Shop), đọc danh mục kho từ tab <strong>products</strong> và cấu hình sản phẩm đăng bán theo từng Shop vào tab <strong>shop_products</strong>.
+                </p>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn btn-primary" onclick="openAddShopModal()">
+                    + Thêm Shop Mới
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="syncShopsToCloud()">
+                    ☁️ Lưu lên Sheet
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="loadShopsFromCloud()">
+                    🔄 Tải từ Sheet
+                </button>
+                <a href="loi-nhuan-gia-ban.html" class="btn btn-secondary">
+                    📈 Bảng Tính Lợi Nhuận
+                </a>
+                <a href="index.html" class="btn btn-secondary">
+                    🏠 Home
+                </a>
+            </div>
+        </header>
+
+        <!-- KPI SUMMARY CARDS -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: #eff6ff; color: #2563eb;">🏪</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Tổng số Shop</span>
+                    <span id="kpiTotalShops" class="kpi-value">0</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: #fff7ed; color: #ea580c;">🛍️</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Shop Shopee</span>
+                    <span id="kpiShopeeShops" class="kpi-value">0</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: #f1f5f9; color: #0f172a;">🎵</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Shop TikTok</span>
+                    <span id="kpiTiktokShops" class="kpi-value">0</span>
+                </div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon" style="background: #ecfdf5; color: #059669;">📦</div>
+                <div class="kpi-info">
+                    <span class="kpi-label">Mặt Hàng Trong Kho</span>
+                    <span id="kpiWarehouseItemsCount" class="kpi-value">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 1. BẢNG DANH MỤC MẶT HÀNG TRONG KHO (TAB PRODUCTS) -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span>📦</span> 1. Danh Mục Mặt Hàng Trong Kho (Đọc từ Tab "products" trên Google Sheet)
+                </h2>
+                <div>
+                    <button type="button" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" onclick="loadWarehouseProductsFromSheet(true)">
+                        🔄 Tải lại từ tab products
+                    </button>
+                </div>
+            </div>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: -8px;">
+                Bảng danh mục các nguyên liệu / hàng nhập kho dùng để chọn thành phần cấu tạo và quà tặng khi tạo sản phẩm bán cho từng Shop.
+            </p>
+            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+                <table class="shop-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">STT</th>
+                            <th>Tên Mặt Hàng Trong Kho</th>
+                            <th style="width: 200px; text-align: right;">Đơn Giá Nhập Kho (VNĐ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehouseTableBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 2. BẢNG DANH SÁCH SHOP (SHOPEE & TIKTOK SHOP) -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span>🏪</span> 2. Danh Sách Shop Theo Sàn (Shopee & TikTok Shop)
+                </h2>
+                <div class="filter-tabs">
+                    <button type="button" class="filter-tab active" data-filter="all" onclick="setShopFilter('all', this)">Tất cả</button>
+                    <button type="button" class="filter-tab" data-filter="Shopee" onclick="setShopFilter('Shopee', this)">🛍️ Shopee</button>
+                    <button type="button" class="filter-tab" data-filter="TikTok Shop" onclick="setShopFilter('TikTok Shop', this)">🎵 TikTok Shop</button>
+                </div>
+            </div>
+            <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: -8px;">
+                Quản lý các Shop trên 2 sàn TikTok và Shopee. Bấm nút <strong>"📦 Chọn Shop Này"</strong> để cấu hình sản phẩm bán cho Shop tương ứng.
+            </p>
+
+            <div class="table-responsive">
+                <table class="shop-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 45px; text-align: center;">STT</th>
+                            <th style="width: 120px;">Sàn</th>
+                            <th>Tên Shop</th>
+                            <th style="width: 120px; text-align: right;">% Phí Sàn</th>
+                            <th style="width: 180px; text-align: center;">Sản Phẩm Đang Bán</th>
+                            <th>Ghi chú</th>
+                            <th style="width: 150px; text-align: center;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shopTableBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. BẢNG CẤU HÌNH SẢN PHẨM BÁN THEO SHOP (TAB SHOP_PRODUCTS) -->
+        <div class="card" id="shopProductsSection">
+            <div class="card-header">
+                <h2 class="card-title">
+                    <span>🧩</span> 3. Cấu Hình Sản Phẩm Bán Theo Shop (Lưu vào Tab "shop_products")
+                </h2>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-primary" onclick="openAddProductModal()">
+                        + Thêm Sản Phẩm Mới Cho Shop
+                    </button>
+                </div>
+            </div>
+
+            <!-- THANH CHỌN SHOP -->
+            <div class="shop-selector-bar">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <label style="font-weight: 800; color: #1e3a8a; font-size: 0.95rem;">Đang cấu hình cho Shop:</label>
+                    <select id="selectedShopDropdown" class="shop-select-control" onchange="onSelectedShopChange(this.value)">
+                        <!-- Dynamic Shop Options grouped by Shopee & TikTok -->
+                    </select>
+                </div>
+                <div id="selectedShopBadgeInfo" style="display: flex; align-items: center; gap: 8px;">
+                    <!-- Platform & Fee badge rendered by JS -->
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="shop-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">STT</th>
+                            <th style="width: 170px;">Tên Sản Phẩm Bán</th>
+                            <th style="width: 130px;">Phân Loại / Gói</th>
+                            <th>Thành Phần Xuất Kho (BOM)</th>
+                            <th style="width: 150px;">Khuyến Mãi (Deal)</th>
+                            <th style="width: 130px; text-align: right;">Giá Vốn Xuất Kho</th>
+                            <th style="width: 150px; text-align: right;">Bán Lẻ (1 SP) & Lãi</th>
+                            <th style="width: 160px; text-align: right;">Bán Theo Deal & Lãi</th>
+                            <th style="width: 80px; text-align: center;">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="selectedShopProductsTableBody">
+                        <!-- Rendered by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1: THÊM / SỬA THÔNG TIN SHOP -->
+    <div id="shopModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="shopModalTitle" class="modal-title">+ Thêm Shop Mới</h3>
+                <button type="button" class="btn-close-modal" onclick="closeShopModal()">✕</button>
+            </div>
+            <form id="shopModalForm" class="modal-form" onsubmit="handleShopModalSubmit(event)">
+                <input type="hidden" id="modalShopId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Sàn thương mại <span style="color:red">*</span></label>
+                        <select id="modalShopPlatform" class="form-control" required onchange="onModalPlatformChange()">
+                            <option value="Shopee">🛍️ Shopee</option>
+                            <option value="TikTok Shop">🎵 TikTok Shop</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tên Shop <span style="color:red">*</span></label>
+                        <input type="text" id="modalShopName" class="form-control" placeholder="Ví dụ: Shopee Shop 1, TikTok Shop 1..." required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">% Phí sàn / Chiết khấu (%) <span style="color:red">*</span></label>
+                        <input type="number" id="modalShopFee" class="form-control" step="0.1" min="0" max="100" placeholder="Ví dụ: 14.5" required>
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">% này sẽ tự động điền vào bảng tính lợi nhuận khi bạn chọn Shop này.</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Ghi chú</label>
+                        <input type="text" id="modalShopNote" class="form-control" placeholder="Ghi chú thêm về shop...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeShopModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">💾 Lưu Shop</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: THÊM / CHỈNH SỬA SẢN PHẨM BÁN CỦA SHOP (TAB SHOP_PRODUCTS) -->
+    <div id="productEditModal" class="modal-overlay">
+        <div class="modal-card large">
+            <div class="modal-header">
+                <h3 id="productEditModalTitle" class="modal-title">🧩 Thêm / Chỉnh Sửa Sản Phẩm Bán</h3>
+                <button type="button" class="btn-close-modal" onclick="closeProductEditModal()">✕</button>
+            </div>
+            <form id="productEditForm" class="modal-form" onsubmit="handleProductEditSubmit(event)">
+                <input type="hidden" id="productEditId">
+                <div class="modal-body">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                        <div class="form-group">
+                            <label class="form-label">Tên sản phẩm đăng bán trên sàn <span style="color:red">*</span></label>
+                            <input type="text" id="spEditName" class="form-control" placeholder="Ví dụ: Combo Học Sinh, Trà Ba Kích Hộp 20 Gói..." required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tên phân loại / Gói bán <span style="color:red">*</span></label>
+                            <input type="text" id="spEditVariation" class="form-control" placeholder="Ví dụ: Set 2 Bút + 1 Thước, Deal Mua 2 Tặng 1, Hộp 20 Gói..." required>
+                        </div>
+                    </div>
+
+                    <!-- 1. THÀNH PHẦN TỪ KHO -->
+                    <div class="section-box">
+                        <div class="section-box-title">
+                            <span>📦 1. Chọn các mặt hàng nhập kho cấu thành nên 1 sản phẩm bán</span>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="addWarehouseItemToProduct()">+ Thêm món từ kho</button>
+                        </div>
+                        <div id="spWarehouseItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                            <!-- Dynamic BOM items rendered by JS -->
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border);">
+                            <span style="font-size: 0.82rem; color: var(--text-muted);">Giá vốn gốc cho 1 sản phẩm bán lẻ (chưa tính quà tặng kèm):</span>
+                            <strong id="spBaseCostDisplay" style="color: #0f172a; font-size: 0.95rem;">0 đ</strong>
+                        </div>
+                    </div>
+
+                    <!-- 2. CẤU HÌNH KHUYẾN MÃI & QUÀ TẶNG KÈM (MUA X TẶNG NHIỀU QUÀ) -->
+                    <div class="section-box" style="background: #fffbeb; border-color: #fde68a;">
+                        <div class="section-box-title" style="color: #92400e;">
+                            <span>🎁 2. Cài đặt khuyến mãi & Danh sách quà tặng kèm (Mua X Tặng Quà)</span>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; border-color: #f59e0b; color: #b45309;" onclick="addGiftItemToProduct()">+ Thêm quà tặng từ kho</button>
+                        </div>
+                        
+                        <!-- Ô SỐ LƯỢNG MUA ĐỂ ĐƯỢC DEAL -->
+                        <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center;">
+                            <div class="form-group">
+                                <label class="form-label" style="color: #92400e;">Khách mua số lượng</label>
+                                <input type="number" id="spDealBuyQty" class="form-control" min="1" value="1" oninput="onDealQtyChange()" required>
+                            </div>
+                            <div style="font-size: 0.82rem; color: #92400e; padding-top: 14px;">
+                                👉 Khi khách mua đúng số lượng trên sẽ được tặng kèm danh sách quà bên dưới:
+                            </div>
+                        </div>
+
+                        <!-- DANH SÁCH QUÀ TẶNG KÈM TỪ KHO -->
+                        <div id="spGiftItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                            <!-- Dynamic Gift items rendered by JS -->
+                        </div>
+
+                        <div id="spDealSummaryText" style="font-size: 0.82rem; font-weight: 700; color: #b45309; padding-top: 4px;">
+                            ⚡ Mua 1 SP (Không có quà tặng kèm)
+                        </div>
+                    </div>
+
+                    <!-- 3. GIÁ BÁN & DỰ TOÁN LỢI NHUẬN GỘP (HIỂN THỊ SONG SONG RÕ RÀNG) -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px;">
+                        <!-- CARD 1: MUA LẺ -->
+                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+                                <strong style="color: #1e293b; font-size: 0.92rem;">🛒 Bán Lẻ (1 Sản Phẩm)</strong>
+                                <span style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 7px; border-radius: 5px; font-weight: 700;">Không Quà</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label class="form-label">Giá bán lẻ (VNĐ) <span style="color:red">*</span></label>
+                                    <input type="text" id="spEditPrice" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="onSinglePriceInput(this)" onblur="formatMoneyInput(this)" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Phí đóng gói lẻ (VNĐ)</label>
+                                    <input type="text" id="spEditPackagingFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
+                                </div>
+                            </div>
+
+                            <!-- BẢNG CHI TIẾT TÍNH TOÁN LẺ -->
+                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: #475569;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Doanh thu lẻ (1 SP):</span>
+                                    <strong id="spSingleRevDisplay">0 đ</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Vốn xuất kho (1 SP):</span>
+                                    <strong id="spSingleCostDisplay">0 đ</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Phí sàn (<span id="spSingleFeePercentLabel">14.5%</span>):</span>
+                                    <span id="spSingleFeeDisplay">0 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Phí đóng gói lẻ:</span>
+                                    <span id="spSinglePkgDisplay">0 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
+                                    <span style="font-weight: 700; color: #0f172a;">Lợi Nhuận Bán Lẻ:</span>
+                                    <strong id="spSingleProfitDisplay" style="font-size: 1.05rem;" class="profit-positive">0 đ (0%)</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CARD 2: MUA THEO DEAL -->
+                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fef3c7; padding-bottom: 8px;">
+                                <strong style="color: #92400e; font-size: 0.92rem;">🎁 Bán Theo Deal (Ưu Đãi)</strong>
+                                <span class="deal-badge" id="spDealBadgeDisplay">Mua 1 SP</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div class="form-group">
+                                    <label class="form-label" style="color: #92400e;">Giá trọn gói Deal (VNĐ)</label>
+                                    <input type="text" id="spEditDealPrice" class="form-control" placeholder="Tự tính = Mua X x Giá lẻ" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
+                                    <small style="color: #92400e; font-size: 0.72rem;" id="spDealPriceNote">Mặc định = Mua X x Giá lẻ</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" style="color: #92400e;">Phí đóng gói Deal (VNĐ)</label>
+                                    <input type="text" id="spEditDealPackagingFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
+                                </div>
+                            </div>
+
+                            <!-- BẢNG CHI TIẾT TÍNH TOÁN DEAL -->
+                            <div style="background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: #78350f;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Doanh thu Deal (Khách trả):</span>
+                                    <strong id="spDealRevDisplay">0 đ</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span id="spDealCostLabel">Vốn xuất kho (Hàng bán + Quà):</span>
+                                    <strong id="spDealCostDisplay">0 đ</strong>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Phí sàn (<span id="spDealFeePercentLabel">14.5%</span>):</span>
+                                    <span id="spDealFeeDisplay">0 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Phí đóng gói Deal:</span>
+                                    <span id="spDealPkgDisplay">0 đ</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px dashed #fde68a; padding-top: 6px; margin-top: 2px;">
+                                    <span style="font-weight: 700; color: #92400e;">Lợi Nhuận Theo Deal:</span>
+                                    <strong id="spDealProfitDisplay" style="font-size: 1.05rem;" class="profit-positive">0 đ (0%)</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeProductEditModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">💾 Lưu Sản Phẩm Vào Shop</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentFilter = 'all';
+        let currentSelectedShopId = null;
+
+        // 1. Danh mục mặt hàng nhập kho (Đọc từ tab products trên Sheet)
+        let warehouseProducts = [
+            { id: 1, name: 'Trà ba kích', price: 21000 },
+            { id: 2, name: 'Dây thìa canh', price: 20000 },
+            { id: 3, name: 'Cà gai leo', price: 20000 },
+            { id: 4, name: 'Kim tiền thảo râu mèo', price: 21000 },
+            { id: 5, name: 'Cây rau mương', price: 21000 },
+            { id: 6, name: 'Bút bi', price: 5000 },
+            { id: 7, name: 'Thước kẻ', price: 8000 }
+        ];
+
+        let currentModalItems = [];
+        let currentModalGiftItems = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadWarehouseProductsFromSheet(false);
+            renderWarehouseTable();
+            renderShopTable();
+            initShopSelectorDropdown();
+            renderSelectedShopProducts();
+
+            try {
+                const cloudShops = await fetchShopsFromGoogleSheet();
+                if (cloudShops && cloudShops.length > 0) {
+                    renderShopTable();
+                    initShopSelectorDropdown();
+                    renderSelectedShopProducts();
+                }
+            } catch (e) {}
+        });
+
+        /* BẢNG 1: TẢI & HIỂN THỊ DANH MỤC MẶT HÀNG KHO (TAB PRODUCTS) */
+        async function loadWarehouseProductsFromSheet(showFeedback = false) {
+            if (showFeedback) {
+                showGlobalLoading('⏳ Đang tải danh mục mặt hàng từ tab "products"...', 'Đang đọc dữ liệu từ Google Sheet...');
+            }
+            try {
+                const data = await fetchGvizJsonp('products');
+                if (data && data.status === 'ok' && data.table && data.table.rows) {
+                    const parsed = [];
+                    data.table.rows.forEach(r => {
+                        const c = r.c || [];
+                        if (!c[0] || !c[0].v) return;
+                        const name = String(c[0].v).trim();
+                        if (name.toLowerCase().includes('san pham') || name.toLowerCase().includes('sản phẩm')) return;
+                        const priceVal = c[2] ? c[2].v : (c[1] ? c[1].v : 0);
+                        const digits = String(priceVal || '').replace(/[^0-9]/g, '');
+                        const price = parseInt(digits, 10) || 0;
+                        parsed.push({
+                            id: parsed.length + 1,
+                            name: name,
+                            price: price
+                        });
+                    });
+                    if (parsed.length > 0) {
+                        warehouseProducts = parsed;
+                    }
+                }
+                renderWarehouseTable();
+                if (showFeedback) {
+                    hideGlobalLoading();
+                    showToast(`✅ Đã tải ${warehouseProducts.length} mặt hàng kho từ tab "products"!`);
+                }
+            } catch (e) {
+                if (showFeedback) {
+                    hideGlobalLoading();
+                    showToast('❌ Lỗi khi đọc tab products.');
+                }
+            }
+        }
+
+        function renderWarehouseTable() {
+            const tbody = document.getElementById('warehouseTableBody');
+            const kpiCount = document.getElementById('kpiWarehouseItemsCount');
+            if (kpiCount) kpiCount.textContent = warehouseProducts.length;
+            if (!tbody) return;
+
+            if (warehouseProducts.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="3" style="text-align:center; color: var(--text-muted); padding: 20px;">
+                            Chưa có dữ liệu mặt hàng trong kho.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = warehouseProducts.map((wp, i) => `
+                <tr>
+                    <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                    <td><strong style="color: #0f172a;">${escapeHtml(wp.name)}</strong></td>
+                    <td style="text-align: right; font-weight: 800; color: #1e3a8a;">${formatMoney(wp.price)}</td>
+                </tr>
+            `).join('');
+        }
+
+        /* BẢNG 2: SHOP MANAGEMENT */
+        function setShopFilter(filter, btn) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            renderShopTable();
+        }
+
+        function renderShopTable() {
+            const allShops = getAppShops();
+            const tbody = document.getElementById('shopTableBody');
+            if (!tbody) return;
+
+            const shopeeCount = allShops.filter(s => s.platform.toLowerCase().includes('shopee')).length;
+            const tiktokCount = allShops.filter(s => s.platform.toLowerCase().includes('tiktok')).length;
+
+            document.getElementById('kpiTotalShops').textContent = allShops.length;
+            document.getElementById('kpiShopeeShops').textContent = shopeeCount;
+            document.getElementById('kpiTiktokShops').textContent = tiktokCount;
+
+            let filtered = allShops;
+            if (currentFilter !== 'all') {
+                filtered = allShops.filter(s => s.platform.toLowerCase().includes(currentFilter.toLowerCase()));
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align:center; color: var(--text-muted); padding: 30px;">
+                            Chưa có Shop nào phù hợp. Bấm <strong>+ Thêm Shop Mới</strong> để tạo.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((shop, i) => {
+                const isShopee = shop.platform.toLowerCase().includes('shopee');
+                const platBadge = isShopee 
+                    ? `<span class="platform-badge shopee">🛍️ Shopee</span>` 
+                    : `<span class="platform-badge tiktok">🎵 TikTok</span>`;
+
+                const prodCount = Array.isArray(shop.products) ? shop.products.length : 0;
+                const isCurrentActive = shop.id === currentSelectedShopId;
+
+                return `
+                    <tr style="${isCurrentActive ? 'background: #eff6ff;' : ''}">
+                        <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                        <td>${platBadge}</td>
+                        <td><strong style="color: var(--text-main); font-size: 0.95rem;">${escapeHtml(shop.name)}</strong></td>
+                        <td style="text-align: right;">
+                            <span class="fee-badge">${Number(shop.feePercent || 0).toFixed(1)}%</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <button type="button" class="btn ${isCurrentActive ? 'btn-primary' : 'btn-secondary'}" style="padding: 4px 10px; font-size: 0.8rem;" onclick="selectShopToConfigure('${shop.id}')">
+                                📦 ${prodCount} SP (Xem & Cài đặt)
+                            </button>
+                        </td>
+                        <td style="color: var(--text-muted); font-size: 0.85rem;">${escapeHtml(shop.note || '')}</td>
+                        <td style="text-align: center;">
+                            <div class="action-btns" style="justify-content: center;">
+                                <button type="button" class="btn-icon" onclick="openEditShopModal('${shop.id}')" title="Chỉnh sửa shop">✏️</button>
+                                <button type="button" class="btn-icon delete" onclick="handleDeleteShop('${shop.id}')" title="Xóa shop">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function selectShopToConfigure(shopId) {
+            currentSelectedShopId = shopId;
+            const dropdown = document.getElementById('selectedShopDropdown');
+            if (dropdown) dropdown.value = shopId;
+            renderShopTable();
+            renderSelectedShopProducts();
+            document.getElementById('shopProductsSection')?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /* BẢNG 3: CẤU HÌNH SẢN PHẨM THEO SHOP ĐANG CHỌN (TAB SHOP_PRODUCTS) */
+        function initShopSelectorDropdown() {
+            const dropdown = document.getElementById('selectedShopDropdown');
+            if (!dropdown) return;
+
+            const allShops = getAppShops();
+            if (allShops.length === 0) {
+                dropdown.innerHTML = '<option value="">(Chưa có Shop nào)</option>';
+                currentSelectedShopId = null;
+                return;
+            }
+
+            if (!currentSelectedShopId || !allShops.some(s => s.id === currentSelectedShopId)) {
+                currentSelectedShopId = allShops[0].id;
+            }
+
+            const shopeeShops = allShops.filter(s => s.platform.toLowerCase().includes('shopee'));
+            const tiktokShops = allShops.filter(s => s.platform.toLowerCase().includes('tiktok'));
+
+            let html = '';
+            if (shopeeShops.length > 0) {
+                html += `<optgroup label="🛍️ Sàn Shopee">`;
+                shopeeShops.forEach(s => {
+                    html += `<option value="${s.id}" ${s.id === currentSelectedShopId ? 'selected' : ''}>🛍️ ${escapeHtml(s.name)} (${s.feePercent}%)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            if (tiktokShops.length > 0) {
+                html += `<optgroup label="🎵 Sàn TikTok Shop">`;
+                tiktokShops.forEach(s => {
+                    html += `<option value="${s.id}" ${s.id === currentSelectedShopId ? 'selected' : ''}>🎵 ${escapeHtml(s.name)} (${s.feePercent}%)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+
+            dropdown.innerHTML = html;
+        }
+
+        function onSelectedShopChange(shopId) {
+            currentSelectedShopId = shopId;
+            renderShopTable();
+            renderSelectedShopProducts();
+        }
+
+        function renderSelectedShopProducts() {
+            const tbody = document.getElementById('selectedShopProductsTableBody');
+            const badgeInfo = document.getElementById('selectedShopBadgeInfo');
+            if (!tbody) return;
+
+            const shops = getAppShops();
+            const shop = shops.find(s => s.id === currentSelectedShopId || s.name === currentSelectedShopId);
+
+            if (!shop) {
+                if (badgeInfo) badgeInfo.innerHTML = '';
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align:center; color: var(--text-muted); padding: 30px;">
+                            Vui lòng thêm hoặc chọn 1 Shop để xem cấu hình sản phẩm bán.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const isShopee = shop.platform.toLowerCase().includes('shopee');
+            const platBadge = isShopee 
+                ? `<span class="platform-badge shopee">🛍️ Shopee</span>` 
+                : `<span class="platform-badge tiktok">🎵 TikTok Shop</span>`;
+
+            if (badgeInfo) {
+                badgeInfo.innerHTML = `
+                    ${platBadge}
+                    <span class="fee-badge">Phí sàn: ${Number(shop.feePercent || 0).toFixed(1)}%</span>
+                `;
+            }
+
+            const products = Array.isArray(shop.products) ? shop.products : [];
+            const feePercent = Number(shop.feePercent) || 0;
+
+            if (products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align:center; color: var(--text-muted); padding: 35px;">
+                            Shop <strong>"${escapeHtml(shop.name)}"</strong> chưa có sản phẩm bán nào (Mặc định trống).<br>
+                            Bấm <strong>+ Thêm Sản Phẩm Mới Cho Shop</strong> để bắt đầu tạo sản phẩm từ danh mục kho.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = products.map((p, idx) => {
+                const costInfo = calcShopProductCost(p, warehouseProducts);
+                const pkgFee = Number(p.packagingFee) || 0;
+                const dealPkgFee = Number(p.dealPackagingFee) || pkgFee;
+
+                // 1. Mua Lẻ (1 SP)
+                const singlePrice = Number(p.price) || 0;
+                const singlePlatformFee = singlePrice * (feePercent / 100);
+                const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - pkgFee;
+                const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
+
+                // 2. Mua Theo Deal
+                const deal = p.deal || {};
+                const buyQty = Number(deal.buyQty) || 1;
+                const giftCount = costInfo.giftQty || 0;
+                const hasDeal = giftCount > 0 || buyQty > 1;
+
+                const dealPrice = Number(p.dealPrice) || (singlePrice * buyQty);
+                const dealPlatformFee = dealPrice * (feePercent / 100);
+                const dealProfit = dealPrice - costInfo.dealCost - dealPlatformFee - dealPkgFee;
+                const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
+
+                let dealBadge = '<span style="color:#94a3b8; font-size:12px;">Không quà tặng</span>';
+                if (hasDeal) {
+                    dealBadge = `<span class="deal-badge">⚡ ${escapeHtml(costInfo.dealDesc)} (Xuất ${costInfo.totalUnits} món)</span>`;
+                }
+
+                return `
+                    <tr>
+                        <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
+                        <td><strong style="color: #0f172a;">${escapeHtml(p.name)}</strong></td>
+                        <td><span style="color: #2563eb; font-weight: 600;">${escapeHtml(p.variation || 'Mặc định')}</span></td>
+                        <td>
+                            <div style="font-size: 0.82rem; color: #334155; line-height: 1.35;">
+                                ${escapeHtml(costInfo.partsDesc || '(Chưa chọn món kho)')}
+                            </div>
+                        </td>
+                        <td>${dealBadge}</td>
+                        <td style="text-align: right;">
+                            <div class="cost-badge">${formatMoney(costInfo.baseCost)}</div>
+                            <div style="font-size: 10.5px; color: #64748b;">(Vốn 1 SP lẻ)</div>
+                            ${hasDeal ? `<div style="font-size: 11px; font-weight: 700; color: #92400e; margin-top: 2px;">Vốn Deal: ${formatMoney(costInfo.dealCost)}</div>` : ''}
+                        </td>
+                        <td style="text-align: right;">
+                            <strong style="color: #0f172a; font-size: 0.9rem;">${formatMoney(singlePrice)}</strong>
+                            <div style="font-size: 10.5px; color: #64748b;">(Gói: ${formatMoney(pkgFee)})</div>
+                            <div style="font-size: 11px; font-weight: 700; color: ${singleProfit >= 0 ? '#16a34a' : '#dc2626'};">
+                                Lãi: ${formatMoney(singleProfit)} (${singleMargin}%)
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            ${hasDeal ? `
+                                <strong style="color: #92400e; font-size: 0.9rem;">${formatMoney(dealPrice)}</strong>
+                                <div style="font-size: 10.5px; color: #64748b;">(Gói: ${formatMoney(dealPkgFee)})</div>
+                                <div style="font-size: 11px; font-weight: 700; color: ${dealProfit >= 0 ? '#16a34a' : '#dc2626'};">
+                                    Lãi Deal: ${formatMoney(dealProfit)} (${dealMargin}%)
+                                </div>
+                            ` : `
+                                <span style="color: #94a3b8; font-size: 12px;">(Không cài deal)</span>
+                            `}
+                        </td>
+                        <td style="text-align: center;">
+                            <div class="action-btns" style="justify-content: center;">
+                                <button type="button" class="btn-icon" onclick="openEditProductModal('${p.id}')" title="Sửa sản phẩm">✏️</button>
+                                <button type="button" class="btn-icon delete" onclick="handleDeleteProduct('${p.id}')" title="Xóa sản phẩm">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* SHOP MODAL (ADD / EDIT) */
+        function openAddShopModal() {
+            document.getElementById('shopModalTitle').textContent = '+ Thêm Shop Mới';
+            document.getElementById('modalShopId').value = '';
+            document.getElementById('modalShopName').value = '';
+            document.getElementById('modalShopPlatform').value = 'Shopee';
+            document.getElementById('modalShopFee').value = '14.5';
+            document.getElementById('modalShopNote').value = '';
+            document.getElementById('shopModal').style.display = 'flex';
+        }
+
+        function openEditShopModal(shopId) {
+            const shops = getAppShops();
+            const s = shops.find(item => item.id === shopId || item.name === shopId);
+            if (!s) return;
+
+            document.getElementById('shopModalTitle').textContent = '✏️ Chỉnh Sửa Shop';
+            document.getElementById('modalShopId').value = s.id;
+            document.getElementById('modalShopName').value = s.name;
+            document.getElementById('modalShopPlatform').value = s.platform.toLowerCase().includes('tiktok') ? 'TikTok Shop' : 'Shopee';
+            document.getElementById('modalShopFee').value = s.feePercent || 0;
+            document.getElementById('modalShopNote').value = s.note || '';
+            document.getElementById('shopModal').style.display = 'flex';
+        }
+
+        function closeShopModal() {
+            document.getElementById('shopModal').style.display = 'none';
+        }
+
+        function onModalPlatformChange() {
+            const plat = document.getElementById('modalShopPlatform').value;
+            const feeInput = document.getElementById('modalShopFee');
+            if (!feeInput.value || feeInput.value === '14.5' || feeInput.value === '14.0') {
+                feeInput.value = plat === 'Shopee' ? '14.5' : '14.0';
+            }
+        }
+
+        function handleShopModalSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('modalShopId').value;
+            const name = document.getElementById('modalShopName').value.trim();
+            const platform = document.getElementById('modalShopPlatform').value;
+            const fee = parseFloat(document.getElementById('modalShopFee').value) || 0;
+            const note = document.getElementById('modalShopNote').value.trim();
+
+            if (!name) {
+                alert('Vui lòng nhập tên Shop.');
+                return;
+            }
+
+            const savedShop = addOrUpdateAppShop({
+                id: id || undefined,
+                name: name,
+                platform: platform,
+                feePercent: fee,
+                note: note
+            });
+
+            closeShopModal();
+            currentSelectedShopId = savedShop.id;
+            renderShopTable();
+            initShopSelectorDropdown();
+            renderSelectedShopProducts();
+            showToast(`✅ Đã lưu Shop "${name}"!`);
+        }
+
+        function handleDeleteShop(shopId) {
+            const shops = getAppShops();
+            const s = shops.find(item => item.id === shopId || item.name === shopId);
+            if (!s) return;
+
+            if (!confirm(`Bạn có chắc chắn muốn xóa Shop "${s.name}" cùng toàn bộ cấu hình sản phẩm của Shop này?`)) return;
+
+            deleteAppShop(shopId);
+            currentSelectedShopId = null;
+            renderShopTable();
+            initShopSelectorDropdown();
+            renderSelectedShopProducts();
+            showToast(`🗑️ Đã xóa Shop "${s.name}"!`);
+        }
+
+        /* PRODUCT ADD / EDIT MODAL */
+        function openAddProductModal() {
+            if (!currentSelectedShopId) {
+                alert('Vui lòng chọn 1 Shop trước khi thêm sản phẩm.');
+                return;
+            }
+
+            const shops = getAppShops();
+            const s = shops.find(item => item.id === currentSelectedShopId || item.name === currentSelectedShopId);
+            const shopName = s ? s.name : 'Shop';
+
+            document.getElementById('productEditModalTitle').innerHTML = `🧩 Thêm Sản Phẩm Mới Cho Shop: <strong>${escapeHtml(shopName)}</strong>`;
+            document.getElementById('productEditId').value = '';
+            document.getElementById('spEditName').value = '';
+            document.getElementById('spEditVariation').value = 'Mặc định';
+            document.getElementById('spDealBuyQty').value = '1';
+            document.getElementById('spEditPrice').value = '0';
+            document.getElementById('spEditDealPrice').value = '';
+            document.getElementById('spEditPackagingFee').value = '0';
+            document.getElementById('spEditDealPackagingFee').value = '0';
+
+            currentModalItems = [
+                { productId: warehouseProducts[0]?.id || 1, quantity: 1 }
+            ];
+            currentModalGiftItems = [];
+
+            renderModalWarehouseItems();
+            renderModalGiftItems();
+            recalcProductModalCost();
+            document.getElementById('productEditModal').style.display = 'flex';
+        }
+
+        function openEditProductModal(productId) {
+            if (!currentSelectedShopId) return;
+            const prods = getShopProducts(currentSelectedShopId);
+            const p = prods.find(item => item.id === productId);
+            if (!p) return;
+
+            const shops = getAppShops();
+            const s = shops.find(item => item.id === currentSelectedShopId || item.name === currentSelectedShopId);
+            const shopName = s ? s.name : 'Shop';
+
+            document.getElementById('productEditModalTitle').innerHTML = `✏️ Chỉnh Sửa Sản Phẩm: <strong>${escapeHtml(p.name)}</strong> (${escapeHtml(shopName)})`;
+            document.getElementById('productEditId').value = p.id;
+            document.getElementById('spEditName').value = p.name || '';
+            document.getElementById('spEditVariation').value = p.variation || 'Mặc định';
+            
+            const deal = p.deal || {};
+            document.getElementById('spDealBuyQty').value = deal.buyQty || 1;
+            document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
+            document.getElementById('spEditDealPrice').value = p.dealPrice ? formatInputNumber(p.dealPrice) : '';
+            document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
+            document.getElementById('spEditDealPackagingFee').value = formatInputNumber(p.dealPackagingFee || p.packagingFee || 0);
+
+            currentModalItems = (p.items && p.items.length > 0)
+                ? JSON.parse(JSON.stringify(p.items))
+                : [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }];
+
+            if (Array.isArray(deal.giftItems) && deal.giftItems.length > 0) {
+                currentModalGiftItems = JSON.parse(JSON.stringify(deal.giftItems));
+            } else if (deal.giftQty > 0) {
+                currentModalGiftItems = [{
+                    productId: (deal.giftProductId && deal.giftProductId !== 'self') ? deal.giftProductId : (currentModalItems[0]?.productId || 1),
+                    quantity: Number(deal.giftQty) || 1
+                }];
+            } else {
+                currentModalGiftItems = [];
+            }
+
+            renderModalWarehouseItems();
+            renderModalGiftItems();
+            recalcProductModalCost();
+            document.getElementById('productEditModal').style.display = 'flex';
+        }
+
+        function closeProductEditModal() {
+            document.getElementById('productEditModal').style.display = 'none';
+        }
+
+        /* 1. THÀNH PHẦN KHO CHÍNH (BOM) */
+        function renderModalWarehouseItems() {
+            const container = document.getElementById('spWarehouseItemsContainer');
+            if (!container) return;
+
+            container.innerHTML = currentModalItems.map((item, index) => {
+                const wp = warehouseProducts.find(p => p.id === Number(item.productId)) || warehouseProducts[0];
+                const price = wp ? wp.price : 0;
+                const totalItemCost = (Number(item.quantity) || 1) * price;
+
+                return `
+                    <div class="bom-item-row" id="bomItemRow_${index}">
+                        <div>
+                            <select class="form-control" style="padding: 7px 10px;" onchange="onModalItemProductChange(${index}, this.value)">
+                                ${warehouseProducts.map(p => `
+                                    <option value="${p.id}" ${p.id === Number(item.productId) ? 'selected' : ''}>
+                                        ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                min="1" 
+                                value="${item.quantity || 1}" 
+                                style="text-align: center; font-weight: 700; padding: 7px 4px;"
+                                placeholder="SL"
+                                oninput="onModalItemQtyInput(${index}, this.value)"
+                            >
+                        </div>
+                        <div id="bomItemCost_${index}" style="text-align: right; font-weight: 800; color: #0f172a; font-size: 13.5px; white-space: nowrap;">
+                            ${formatMoney(totalItemCost)}
+                        </div>
+                        <div>
+                            <button type="button" class="btn-icon delete" style="width: 30px; height: 30px;" onclick="removeModalItem(${index})">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addWarehouseItemToProduct() {
+            currentModalItems.push({
+                productId: warehouseProducts[0]?.id || 1,
+                quantity: 1
+            });
+            renderModalWarehouseItems();
+            recalcProductModalCost();
+        }
+
+        function removeModalItem(index) {
+            if (currentModalItems.length <= 1) {
+                alert('Sản phẩm phải chọn ít nhất 1 mặt hàng từ kho.');
+                return;
+            }
+            currentModalItems.splice(index, 1);
+            renderModalWarehouseItems();
+            recalcProductModalCost();
+        }
+
+        function onModalItemProductChange(index, value) {
+            if (!currentModalItems[index]) return;
+            currentModalItems[index].productId = Number(value);
+            const wp = warehouseProducts.find(p => p.id === Number(value));
+            if (wp) currentModalItems[index].productName = wp.name;
+            
+            const price = wp ? wp.price : 0;
+            const totalItemCost = (Number(currentModalItems[index].quantity) || 1) * price;
+            const costEl = document.getElementById(`bomItemCost_${index}`);
+            if (costEl) costEl.textContent = formatMoney(totalItemCost);
+            
+            recalcProductModalCost();
+        }
+
+        function onModalItemQtyInput(index, value) {
+            if (!currentModalItems[index]) return;
+            const qty = Math.max(1, parseInt(value, 10) || 1);
+            currentModalItems[index].quantity = qty;
+            
+            const wp = warehouseProducts.find(p => p.id === Number(currentModalItems[index].productId)) || warehouseProducts[0];
+            const price = wp ? wp.price : 0;
+            const totalItemCost = qty * price;
+            const costEl = document.getElementById(`bomItemCost_${index}`);
+            if (costEl) costEl.textContent = formatMoney(totalItemCost);
+
+            recalcProductModalCost();
+        }
+
+        /* 2. QUÀ TẶNG KÈM TỪ KHO (GIFT ITEMS LIST) */
+        function renderModalGiftItems() {
+            const container = document.getElementById('spGiftItemsContainer');
+            if (!container) return;
+
+            if (currentModalGiftItems.length === 0) {
+                container.innerHTML = `
+                    <div style="font-size: 0.8rem; color: #b45309; padding: 6px 10px; background: rgba(254, 243, 199, 0.5); border-radius: 6px;">
+                        (Chưa có quà tặng kèm nào. Bấm <strong>+ Thêm quà tặng từ kho</strong> nếu muốn tặng kèm khi khách mua deal)
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = currentModalGiftItems.map((gift, index) => {
+                const wp = warehouseProducts.find(p => p.id === Number(gift.productId)) || warehouseProducts[0];
+                const price = wp ? wp.price : 0;
+                const totalGiftItemCost = (Number(gift.quantity) || 1) * price;
+
+                return `
+                    <div class="bom-item-row" id="giftItemRow_${index}" style="border-color: #fde68a; background: #fffdf5;">
+                        <div>
+                            <select class="form-control" style="padding: 7px 10px;" onchange="onModalGiftProductChange(${index}, this.value)">
+                                ${warehouseProducts.map(p => `
+                                    <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
+                                        🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <input 
+                                type="number" 
+                                class="form-control" 
+                                min="1" 
+                                value="${gift.quantity || 1}" 
+                                style="text-align: center; font-weight: 700; padding: 7px 4px;"
+                                placeholder="SL quà"
+                                oninput="onModalGiftQtyInput(${index}, this.value)"
+                            >
+                        </div>
+                        <div id="giftItemCost_${index}" style="text-align: right; font-weight: 800; color: #92400e; font-size: 13.5px; white-space: nowrap;">
+                            ${formatMoney(totalGiftItemCost)}
+                        </div>
+                        <div>
+                            <button type="button" class="btn-icon delete" style="width: 30px; height: 30px;" onclick="removeGiftItem(${index})">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addGiftItemToProduct() {
+            currentModalGiftItems.push({
+                productId: warehouseProducts[0]?.id || 1,
+                quantity: 1
+            });
+            renderModalGiftItems();
+            recalcProductModalCost();
+        }
+
+        function removeGiftItem(index) {
+            currentModalGiftItems.splice(index, 1);
+            renderModalGiftItems();
+            recalcProductModalCost();
+        }
+
+        function onModalGiftProductChange(index, value) {
+            if (!currentModalGiftItems[index]) return;
+            currentModalGiftItems[index].productId = Number(value);
+            const wp = warehouseProducts.find(p => p.id === Number(value));
+            if (wp) currentModalGiftItems[index].productName = wp.name;
+
+            const price = wp ? wp.price : 0;
+            const totalGiftItemCost = (Number(currentModalGiftItems[index].quantity) || 1) * price;
+            const costEl = document.getElementById(`giftItemCost_${index}`);
+            if (costEl) costEl.textContent = formatMoney(totalGiftItemCost);
+
+            recalcProductModalCost();
+        }
+
+        function onModalGiftQtyInput(index, value) {
+            if (!currentModalGiftItems[index]) return;
+            const qty = Math.max(1, parseInt(value, 10) || 1);
+            currentModalGiftItems[index].quantity = qty;
+
+            const wp = warehouseProducts.find(p => p.id === Number(currentModalGiftItems[index].productId)) || warehouseProducts[0];
+            const price = wp ? wp.price : 0;
+            const totalGiftItemCost = qty * price;
+            const costEl = document.getElementById(`giftItemCost_${index}`);
+            if (costEl) costEl.textContent = formatMoney(totalGiftItemCost);
+
+            recalcProductModalCost();
+        }
+
+        function onSinglePriceInput(input) {
+            const buyQty = parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1;
+            const singlePrice = parseNumberText(input.value);
+            const dealPriceInput = document.getElementById('spEditDealPrice');
+            
+            if (dealPriceInput && !dealPriceInput.value) {
+                dealPriceInput.placeholder = formatMoney(singlePrice * buyQty);
+            }
+            recalcProductModalCost();
+        }
+
+        function onDealQtyChange() {
+            const buyQty = parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1;
+            const singlePrice = parseNumberText(document.getElementById('spEditPrice')?.value);
+            const dealPriceInput = document.getElementById('spEditDealPrice');
+            if (dealPriceInput && !dealPriceInput.value) {
+                dealPriceInput.placeholder = formatMoney(singlePrice * buyQty);
+            }
+            recalcProductModalCost();
+        }
+
+        /* TÍNH TOÁN LỢI NHUẬN GỘP CHÍNH XÁC (MUA LẺ & MUA THEO DEAL) */
+        function recalcProductModalCost() {
+            const buyQty = Math.max(1, parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1);
+
+            const dummyProduct = {
+                items: currentModalItems,
+                deal: {
+                    buyQty: buyQty,
+                    giftItems: currentModalGiftItems
+                }
+            };
+
+            const costInfo = calcShopProductCost(dummyProduct, warehouseProducts);
+            const shop = getAppShops().find(s => s.id === currentSelectedShopId || s.name === currentSelectedShopId);
+            const feePercent = shop ? Number(shop.feePercent) || 0 : 14.5;
+
+            const singlePrice = parseNumberText(document.getElementById('spEditPrice')?.value);
+            const rawDealPrice = parseNumberText(document.getElementById('spEditDealPrice')?.value);
+            const dealPrice = rawDealPrice > 0 ? rawDealPrice : (singlePrice * buyQty);
+
+            // Phí đóng gói riêng biệt
+            const singlePkgFee = parseNumberText(document.getElementById('spEditPackagingFee')?.value);
+            const rawDealPkgFee = document.getElementById('spEditDealPackagingFee')?.value;
+            const dealPkgFee = (rawDealPkgFee !== '' && rawDealPkgFee !== undefined) 
+                ? parseNumberText(rawDealPkgFee) 
+                : singlePkgFee;
+
+            // ==========================================
+            // 1. TÍNH TOÁN TRƯỜNG HỢP MUA LẺ (1 SẢN PHẨM)
+            // ==========================================
+            const singlePlatformFee = singlePrice * (feePercent / 100);
+            const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - singlePkgFee;
+            const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
+
+            // Displays Cột 1 (Mua Lẻ)
+            const baseCostEl = document.getElementById('spBaseCostDisplay');
+            if (baseCostEl) baseCostEl.textContent = formatMoney(costInfo.baseCost);
+
+            document.getElementById('spSingleRevDisplay').textContent = formatMoney(singlePrice);
+            document.getElementById('spSingleCostDisplay').textContent = formatMoney(costInfo.baseCost);
+            document.getElementById('spSingleFeePercentLabel').textContent = `${feePercent.toFixed(1)}%`;
+            document.getElementById('spSingleFeeDisplay').textContent = formatMoney(singlePlatformFee);
+            document.getElementById('spSinglePkgDisplay').textContent = formatMoney(singlePkgFee);
+
+            const singleProfitEl = document.getElementById('spSingleProfitDisplay');
+            singleProfitEl.textContent = `${formatMoney(singleProfit)} (${singleMargin}%)`;
+            singleProfitEl.className = singleProfit >= 0 ? 'profit-positive' : 'profit-negative';
+
+            // ==========================================
+            // 2. TÍNH TOÁN TRƯỜNG HỢP MUA THEO DEAL
+            // ==========================================
+            const hasDeal = costInfo.giftQty > 0 || buyQty > 1;
+            const dealPlatformFee = dealPrice * (feePercent / 100);
+            const dealProfit = dealPrice - costInfo.dealCost - dealPlatformFee - dealPkgFee;
+            const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
+
+            // Cập nhật text deal summary
+            const dealTextEl = document.getElementById('spDealSummaryText');
+            if (dealTextEl) {
+                if (costInfo.giftQty > 0) {
+                    dealTextEl.textContent = `⚡ ${costInfo.dealDesc} (Tổng xuất ${costInfo.totalUnits} món) -> Tổng vốn Deal = ${formatMoney(costInfo.dealCost)}`;
+                } else if (buyQty > 1) {
+                    dealTextEl.textContent = `⚡ Mua gói combo ${buyQty} SP (Tổng xuất ${costInfo.totalUnits} món) -> Tổng vốn Combo = ${formatMoney(costInfo.dealCost)}`;
+                } else {
+                    dealTextEl.textContent = `⚡ Mua 1 SP (Không có quà tặng kèm) -> Xuất ${costInfo.totalUnits} món`;
+                }
+            }
+
+            // Displays Cột 2 (Mua Deal)
+            document.getElementById('spDealBadgeDisplay').textContent = costInfo.giftQty > 0 ? `Mua ${buyQty} Tặng ${costInfo.giftQty} quà` : `Mua ${buyQty} SP`;
+            document.getElementById('spDealRevDisplay').textContent = formatMoney(dealPrice);
+            document.getElementById('spDealCostLabel').textContent = `Vốn xuất kho (Hàng bán + Quà):`;
+            document.getElementById('spDealCostDisplay').textContent = formatMoney(costInfo.dealCost);
+            document.getElementById('spDealFeePercentLabel').textContent = `${feePercent.toFixed(1)}%`;
+            document.getElementById('spDealFeeDisplay').textContent = formatMoney(dealPlatformFee);
+            document.getElementById('spDealPkgDisplay').textContent = formatMoney(dealPkgFee);
+
+            const dealProfitEl = document.getElementById('spDealProfitDisplay');
+            dealProfitEl.textContent = `${formatMoney(dealProfit)} (${dealMargin}%)`;
+            dealProfitEl.className = dealProfit >= 0 ? 'profit-positive' : 'profit-negative';
+
+            const dealPriceNote = document.getElementById('spDealPriceNote');
+            if (dealPriceNote) {
+                dealPriceNote.textContent = rawDealPrice > 0 ? `(Đang dùng giá riêng: ${formatMoney(rawDealPrice)})` : `(Tự tính = ${buyQty} x ${formatMoney(singlePrice)} = ${formatMoney(dealPrice)})`;
+            }
+        }
+
+        function handleProductEditSubmit(event) {
+            event.preventDefault();
+            if (!currentSelectedShopId) return;
+
+            const id = document.getElementById('productEditId').value;
+            const name = document.getElementById('spEditName').value.trim();
+            const variation = document.getElementById('spEditVariation').value.trim();
+            const buyQty = parseInt(document.getElementById('spDealBuyQty').value, 10) || 1;
+            const price = parseNumberText(document.getElementById('spEditPrice').value);
+            const dealPrice = parseNumberText(document.getElementById('spEditDealPrice').value);
+            const packagingFee = parseNumberText(document.getElementById('spEditPackagingFee').value);
+            const dealPackagingFee = parseNumberText(document.getElementById('spEditDealPackagingFee').value);
+
+            if (!name) {
+                alert('Vui lòng nhập tên sản phẩm.');
+                return;
+            }
+
+            const productData = {
+                id: id || undefined,
+                name: name,
+                variation: variation || 'Mặc định',
+                items: currentModalItems.map(it => {
+                    const wp = warehouseProducts.find(p => p.id === Number(it.productId));
+                    return {
+                        productId: Number(it.productId),
+                        productName: wp?.name || 'Mặt hàng kho',
+                        quantity: Number(it.quantity) || 1
+                    };
+                }),
+                deal: {
+                    buyQty: buyQty,
+                    giftItems: currentModalGiftItems.map(g => {
+                        const wp = warehouseProducts.find(p => p.id === Number(g.productId));
+                        return {
+                            productId: Number(g.productId),
+                            productName: wp?.name || 'Mặt hàng kho',
+                            quantity: Number(g.quantity) || 1
+                        };
+                    })
+                },
+                price: price,
+                dealPrice: dealPrice > 0 ? dealPrice : (price * buyQty),
+                packagingFee: packagingFee,
+                dealPackagingFee: dealPackagingFee > 0 ? dealPackagingFee : packagingFee
+            };
+
+            addOrUpdateShopProduct(currentSelectedShopId, productData);
+            closeProductEditModal();
+            renderSelectedShopProducts();
+            renderShopTable();
+            showToast(`✅ Đã lưu sản phẩm "${name}" (${variation})!`);
+        }
+
+        function handleDeleteProduct(productId) {
+            if (!currentSelectedShopId) return;
+            if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm/phân loại này khỏi shop?')) return;
+
+            deleteShopProduct(currentSelectedShopId, productId);
+            renderSelectedShopProducts();
+            renderShopTable();
+            showToast('🗑️ Đã xóa sản phẩm khỏi Shop!');
+        }
+
+        /* CLOUD SYNC */
+        async function syncShopsToCloud() {
+            showGlobalLoading('⏳ Đang lưu danh sách Shop & Sản phẩm lên Google Sheet...', 'Đang cập nhật tab "shops" và "shop_products"...');
+            try {
+                await syncShopsToGoogleSheet(getAppShops());
+                hideGlobalLoading();
+                showToast('✅ Đã lưu danh sách Shop & Sản phẩm lên Google Sheet (tab shops & shop_products)!');
+            } catch (e) {
+                hideGlobalLoading();
+                showToast('❌ Lỗi khi lưu lên Google Sheet.');
+            }
+        }
+
+        async function loadShopsFromCloud() {
+            showGlobalLoading('⏳ Đang tải danh sách Shop từ Google Sheet...', 'Đang đọc dữ liệu từ tab "shops"...');
+            try {
+                const cloudShops = await fetchShopsFromGoogleSheet();
+                hideGlobalLoading();
+                renderShopTable();
+                initShopSelectorDropdown();
+                renderSelectedShopProducts();
+                showToast(`✅ Đã tải ${cloudShops.length} Shop từ Google Sheet!`);
+            } catch (e) {
+                hideGlobalLoading();
+                showToast('❌ Lỗi khi tải từ Google Sheet.');
+            }
+        }
+
+        /* HELPERS */
+        function parseNumberText(value) {
+            if (typeof value === 'number') return Math.round(value);
+            if (!value) return 0;
+            const digits = String(value).replace(/[^\d-]/g, '');
+            return parseInt(digits, 10) || 0;
+        }
+
+        function formatMoney(value) {
+            return `${Math.round((Number(value) || 0)).toLocaleString('vi-VN')} đ`;
+        }
+
+        function formatInputNumber(value) {
+            const number = parseNumberText(value);
+            return Number.isFinite(number) ? number.toLocaleString('vi-VN') : String(value ?? '');
+        }
+
+        function prepareNumberInput(input) {
+            const rawValue = String(input.value ?? '').trim();
+            if (!rawValue) {
+                input.value = '';
+                return;
+            }
+            const num = parseNumberText(rawValue);
+            input.value = num === 0 ? '' : String(num);
+            input.select();
+        }
+
+        function formatMoneyInput(input) {
+            input.value = formatInputNumber(input.value);
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+    </script>
+</body>
+</html>

@@ -975,7 +975,7 @@
                             <th style="text-align: right;">Doanh thu (VNĐ)</th>
                             <th style="text-align: right;">Tiền hàng (VNĐ)</th>
                             <th style="text-align: right;">Chi phí Ads (VNĐ)</th>
-                            <th style="text-align: right;">Chi phí Vật tư (VNĐ)</th>
+                            <th style="text-align: right; min-width: 170px;">Chi phí khác (VNĐ)</th>
                             <th style="text-align: right;">Lợi nhuận (VNĐ)</th>
                             <th>Ghi chú</th>
                             <th style="width: 80px; text-align: center;">Thao tác</th>
@@ -1208,7 +1208,7 @@
             if (!monthStr) return '';
             let s = String(monthStr).trim();
             
-            const dateMatch = s.match(/^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})\)/);
+            const dateMatch = s.match(/^Date\((\d{4}),\s*(\d{1,2})/);
             if (dateMatch) {
                 const y = dateMatch[1];
                 const m = String(parseInt(dateMatch[2], 10) + 1).padStart(2, '0');
@@ -1227,9 +1227,32 @@
             } else if (parts.length === 3) {
                 if (parts[2].length === 4) {
                     return `${parts[2]}-${parts[1].padStart(2, '0')}`;
+                } else if (parts[0].length === 4) {
+                    return `${parts[0]}-${parts[1].padStart(2, '0')}`;
                 }
             }
             return s;
+        }
+
+        // Lấy key Tháng (YYYY-MM) chính xác của từng kỳ quyết toán (có fallback trích xuất từ dateRange)
+        function getPeriodMonthKey(p) {
+            if (!p) return '';
+            if (p.month) {
+                const norm = normalizeMonthKey(p.month);
+                if (isValidMonthString(norm)) return norm;
+            }
+            if (p.dateRange) {
+                const dateMatch = String(p.dateRange).match(/(\d{4}[-/]\d{1,2})|(\d{1,2}[-/]\d{1,2}[-/]\d{4})/g);
+                if (dateMatch && dateMatch.length > 0) {
+                    const norm = normalizeMonthKey(dateMatch[dateMatch.length - 1]);
+                    if (isValidMonthString(norm)) return norm;
+                }
+            }
+            if (p.savedAt) {
+                const norm = normalizeMonthKey(p.savedAt);
+                if (isValidMonthString(norm)) return norm;
+            }
+            return '';
         }
 
         // =========================================================================
@@ -1299,6 +1322,7 @@
             renderKPIs();
             renderChart();
             renderYearFilterOptions();
+            renderPeriodTable();
         }
 
         let selectedMonthKey = null;
@@ -1330,6 +1354,11 @@
                 const periodCard = document.getElementById('periodSectionCard');
                 if (periodCard) {
                     periodCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    periodCard.style.transition = 'all 0.3s ease';
+                    periodCard.style.boxShadow = '0 0 0 3px rgba(37, 99, 235, 0.35)';
+                    setTimeout(() => {
+                        periodCard.style.boxShadow = '';
+                    }, 1200);
                 }
             }
         }
@@ -1499,13 +1528,20 @@
                     </button>
                 `;
 
+                const mKey = normalizeMonthKey(r.month);
+                const periodsInMonth = settlementPeriods.filter(p => getPeriodMonthKey(p) === mKey);
+                const periodsCountBadge = periodsInMonth.length > 0
+                    ? `<span class="stat-badge blue" style="font-size: 0.72rem; cursor: pointer;" title="${periodsInMonth.length} kỳ quyết toán trong tháng ${formatMonthDisplay(mKey)}">${periodsInMonth.length} kỳ</span>`
+                    : `<span style="font-size: 0.72rem; color: #94a3b8; background: #f1f5f9; padding: 2px 6px; border-radius: 6px;" title="Chưa có kỳ quyết toán chi tiết">0 kỳ</span>`;
+
                 return `
-                    <tr data-index="${i}" data-month="${escapeHtml(normalizeMonthKey(r.month))}" class="clickable-row ${rowClass}" ${rowOnClick}>
+                    <tr data-index="${i}" data-month="${escapeHtml(mKey)}" class="clickable-row ${rowClass}" ${rowOnClick} title="Bấm để xem chi tiết các kỳ quyết toán của ${formatMonthDisplay(r.month)} ở bảng bên dưới">
                         <td>
-                            <div style="display: flex; align-items: center; gap: 6px;">
+                            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                                 <span class="month-badge">📅 ${escapeHtml(formatMonthDisplay(r.month))}</span>
+                                ${periodsCountBadge}
                                 ${isLatest ? '<span class="badge-latest">Mới</span>' : ''}
-                                ${isSelected && !isEditing ? '<span style="font-size: 0.75rem; color: #2563eb; font-weight: 800;">✓</span>' : ''}
+                                ${isSelected && !isEditing ? '<span style="font-size: 0.72rem; color: #2563eb; font-weight: 800; background: #dbeafe; padding: 2px 6px; border-radius: 4px;">✓ Đang chọn</span>' : ''}
                                 ${isEditing ? '<span style="font-size: 0.72rem; background: #eab308; color: white; padding: 2px 6px; border-radius: 4px; font-weight: 700;">Đang sửa</span>' : ''}
                             </div>
                         </td>
@@ -2076,48 +2112,56 @@
         async function loadMonthlyReportsFromGoogleSheet(isManual = false) {
             updateSyncBadge('sheetSyncBadge', 'syncing', 'Đang tải từ Sheet...');
             
+            let loadedReportsCount = 0;
+            let loadedPeriodsCount = 0;
+
             try {
-                // 1. Thử tải qua Google Visualization API (Direct & Nhanh)
-                const res = await fetch(GOOGLE_SHEET_CSV_URL + '&_t=' + Date.now());
-                const text = await res.text();
-                
-                const jsonMatch = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);/);
-                if (jsonMatch && jsonMatch[1]) {
-                    const data = JSON.parse(jsonMatch[1]);
-                    if (data.status === 'ok' && data.table && data.table.rows) {
-                        const parsed = [];
-                        data.table.rows.forEach(r => {
-                            const c = r.c || [];
-                            if (!c[0]) return;
-                            const rawMonth = c[0].f || (c[0].v !== undefined && c[0].v !== null ? String(c[0].v) : '');
-                            if (!rawMonth || !isValidMonthString(rawMonth)) return;
+                // Tải danh sách kỳ quyết toán (Settlement Periods) từ Google Sheet bằng JSONP (CORS-free)
+                const cloudPeriods = await fetchSettlementPeriodsFromGoogleSheet();
+                if (cloudPeriods && cloudPeriods.length > 0) {
+                    settlementPeriods = cloudPeriods;
+                    saveLocalSettlementPeriods(settlementPeriods);
+                    renderPeriodTable();
+                    loadedPeriodsCount = cloudPeriods.length;
+                }
 
-                            const monthKey = normalizeMonthKey(rawMonth);
-                            if (!monthKey || !isValidMonthString(monthKey)) return;
+                // 1. Thử tải Báo cáo tháng qua Google Visualization API (JSONP - Hoàn toàn không bị chặn CORS)
+                const data = await fetchGvizJsonp('monthly_reports');
+                if (data && data.status === 'ok' && data.table && data.table.rows) {
+                    const parsed = [];
+                    data.table.rows.forEach(r => {
+                        const c = r.c || [];
+                        if (!c[0]) return;
+                        const rawMonth = c[0].f || (c[0].v !== undefined && c[0].v !== null ? String(c[0].v) : '');
+                        if (!rawMonth || !isValidMonthString(rawMonth)) return;
 
-                            const rev = c[1] && c[1].v !== undefined ? Number(c[1].v) || 0 : 0;
-                            const prof = c[2] && c[2].v !== undefined ? Number(c[2].v) || 0 : 0;
-                            const ads = c[3] && c[3].v !== undefined ? Number(c[3].v) || 0 : 0;
-                            const mat = c[4] && c[4].v !== undefined ? Number(c[4].v) || 0 : 0;
-                            const note = c[5] && c[5].v !== undefined ? String(c[5].v).trim() : '';
+                        const monthKey = normalizeMonthKey(rawMonth);
+                        if (!monthKey || !isValidMonthString(monthKey)) return;
 
-                            parsed.push({
-                                month: monthKey,
-                                revenue: rev,
-                                profit: prof,
-                                adsCost: ads,
-                                materialCost: mat,
-                                note: note
-                            });
+                        const rev = c[1] && c[1].v !== undefined ? Number(c[1].v) || 0 : 0;
+                        const prof = c[2] && c[2].v !== undefined ? Number(c[2].v) || 0 : 0;
+                        const ads = c[3] && c[3].v !== undefined ? Number(c[3].v) || 0 : 0;
+                        const mat = c[4] && c[4].v !== undefined ? Number(c[4].v) || 0 : 0;
+                        const note = c[5] && c[5].v !== undefined ? String(c[5].v).trim() : '';
+
+                        parsed.push({
+                            month: monthKey,
+                            revenue: rev,
+                            profit: prof,
+                            adsCost: ads,
+                            materialCost: mat,
+                            note: note
                         });
+                    });
 
-                        if (parsed.length > 0) {
-                            monthlyReports = parsed;
-                            sortAndRenderAll();
-                            updateSyncBadge('sheetSyncBadge', 'synced');
-                            if (isManual) showToast(`✅ Đã tải ${parsed.length} tháng báo cáo từ Google Sheet!`);
-                            return;
+                    if (parsed.length > 0) {
+                        monthlyReports = parsed;
+                        sortAndRenderAll();
+                        updateSyncBadge('sheetSyncBadge', 'synced');
+                        if (isManual) {
+                            showToast(`✅ Đã tải ${parsed.length} tháng và ${loadedPeriodsCount} kỳ quyết toán từ Google Sheet!`);
                         }
+                        return;
                     }
                 }
 
@@ -2139,13 +2183,13 @@
                         monthlyReports = validAppReports;
                         sortAndRenderAll();
                         updateSyncBadge('sheetSyncBadge', 'synced');
-                        if (isManual) showToast(`✅ Đã tải ${monthlyReports.length} tháng báo cáo từ Google Sheet!`);
+                        if (isManual) showToast(`✅ Đã tải ${monthlyReports.length} tháng và ${loadedPeriodsCount} kỳ quyết toán từ Google Sheet!`);
                         return;
                     }
                 }
 
                 updateSyncBadge('sheetSyncBadge', 'ready');
-                if (isManual) showToast('ℹ️ Sheet chưa có dữ liệu hoặc đã cập nhật dữ liệu hiện tại.');
+                if (isManual) showToast(`ℹ️ Đã đồng bộ ${loadedPeriodsCount} kỳ quyết toán từ Google Sheet.`);
             } catch (err) {
                 console.warn('Không thể tải từ Google Sheet, sử dụng dữ liệu offline:', err);
                 updateSyncBadge('sheetSyncBadge', 'ready');
@@ -2196,9 +2240,23 @@
             settlementPeriods = getLocalSettlementPeriods();
             if (settlementPeriods.length === 0) {
                 settlementPeriods = [
-                    { id: "PERIOD_1", savedAt: "15/08/2026 10:30:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 180, returnOrders: 6, revenue: 79000000, goodsCost: 31500000, adsCost: 10800000, materialCost: 7400000, otherExpenses: 0, profit: 29300000, note: "Kỳ 1 tháng 8 TikTok" },
-                    { id: "PERIOD_2", savedAt: "15/08/2026 11:15:00", platform: "Shopee", shopName: "Shopee Shop 1", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 120, returnOrders: 4, revenue: 48000000, goodsCost: 18000000, adsCost: 6000000, materialCost: 4800000, otherExpenses: 0, profit: 19200000, note: "Kỳ 1 tháng 8 Shopee 1" },
-                    { id: "PERIOD_3", savedAt: "15/08/2026 11:45:00", platform: "Shopee", shopName: "Shopee Shop 2", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 95, returnOrders: 3, revenue: 38000000, goodsCost: 14200000, adsCost: 5200000, materialCost: 3800000, otherExpenses: 0, profit: 14800000, note: "Kỳ 1 tháng 8 Shopee 2" }
+                    // Tháng 08/2026
+                    { id: "PERIOD_8_1", savedAt: "15/08/2026 10:30:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 180, returnOrders: 6, revenue: 79000000, goodsCost: 31500000, adsCost: 10800000, materialCost: 7400000, otherExpenses: 0, profit: 29300000, note: "" },
+                    { id: "PERIOD_8_2", savedAt: "15/08/2026 11:15:00", platform: "Shopee", shopName: "Shopee Shop 1", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 120, returnOrders: 4, revenue: 48000000, goodsCost: 18000000, adsCost: 6000000, materialCost: 4800000, otherExpenses: 0, profit: 19200000, note: "" },
+                    { id: "PERIOD_8_3", savedAt: "15/08/2026 11:45:00", platform: "Shopee", shopName: "Shopee Shop 2", dateRange: "01/08 - 15/08/2026", month: "2026-08", totalOrders: 95, returnOrders: 3, revenue: 38000000, goodsCost: 14200000, adsCost: 5200000, materialCost: 3800000, otherExpenses: 0, profit: 14800000, note: "" },
+                    
+                    // Tháng 07/2026
+                    { id: "PERIOD_7_1", savedAt: "15/07/2026 10:00:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "01/07 - 15/07/2026", month: "2026-07", totalOrders: 105, returnOrders: 3, revenue: 42000000, goodsCost: 16800000, adsCost: 6000000, materialCost: 4200000, otherExpenses: 0, profit: 15000000, note: "" },
+                    { id: "PERIOD_7_2", savedAt: "31/07/2026 18:00:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "16/07 - 31/07/2026", month: "2026-07", totalOrders: 110, returnOrders: 4, revenue: 45000000, goodsCost: 18000000, adsCost: 6500000, materialCost: 4500000, otherExpenses: 0, profit: 16000000, note: "" },
+                    { id: "PERIOD_7_3", savedAt: "31/07/2026 19:30:00", platform: "Shopee", shopName: "Shopee Shop 1", dateRange: "01/07 - 31/07/2026", month: "2026-07", totalOrders: 140, returnOrders: 5, revenue: 55000000, goodsCost: 21000000, adsCost: 7000000, materialCost: 5300000, otherExpenses: 0, profit: 21700000, note: "" },
+
+                    // Tháng 06/2026
+                    { id: "PERIOD_6_1", savedAt: "30/06/2026 17:00:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "01/06 - 30/06/2026", month: "2026-06", totalOrders: 175, returnOrders: 5, revenue: 70000000, goodsCost: 28000000, adsCost: 9800000, materialCost: 7000000, otherExpenses: 0, profit: 25200000, note: "" },
+                    { id: "PERIOD_6_2", savedAt: "30/06/2026 18:30:00", platform: "Shopee", shopName: "Shopee Shop 1", dateRange: "01/06 - 30/06/2026", month: "2026-06", totalOrders: 150, returnOrders: 4, revenue: 60000000, goodsCost: 24000000, adsCost: 8200000, materialCost: 6200000, otherExpenses: 0, profit: 21600000, note: "" },
+
+                    // Tháng 05/2026
+                    { id: "PERIOD_5_1", savedAt: "31/05/2026 17:00:00", platform: "TikTok Shop", shopName: "TikTok Shop 1", dateRange: "01/05 - 31/05/2026", month: "2026-05", totalOrders: 160, returnOrders: 5, revenue: 65000000, goodsCost: 26000000, adsCost: 9000000, materialCost: 6500000, otherExpenses: 0, profit: 23500000, note: "" },
+                    { id: "PERIOD_5_2", savedAt: "31/05/2026 18:30:00", platform: "Shopee", shopName: "Shopee Shop 1", dateRange: "01/05 - 31/05/2026", month: "2026-05", totalOrders: 130, returnOrders: 4, revenue: 50000000, goodsCost: 20000000, adsCost: 7000000, materialCost: 5000000, otherExpenses: 0, profit: 18000000, note: "" }
                 ];
                 saveLocalSettlementPeriods(settlementPeriods);
             }
@@ -2226,7 +2284,7 @@
             if (!select) return;
             const currentVal = select.value || 'all';
 
-            const monthsSet = new Set(settlementPeriods.map(p => normalizeMonthKey(p.month)).filter(Boolean));
+            const monthsSet = new Set(settlementPeriods.map(p => getPeriodMonthKey(p)).filter(Boolean));
             monthlyReports.forEach(r => {
                 const norm = normalizeMonthKey(r.month);
                 if (norm) monthsSet.add(norm);
@@ -2237,7 +2295,8 @@
             months.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m;
-                opt.textContent = formatMonthDisplay(m);
+                const count = settlementPeriods.filter(p => getPeriodMonthKey(p) === m).length;
+                opt.textContent = `${formatMonthDisplay(m)} (${count} kỳ)`;
                 select.appendChild(opt);
             });
 
@@ -2280,7 +2339,7 @@
 
             let filtered = settlementPeriods.filter(p => {
                 const pShop = p.shopName || '';
-                const pMonth = normalizeMonthKey(p.month);
+                const pMonth = getPeriodMonthKey(p);
                 if (shopFilter !== 'all' && pShop !== shopFilter) return false;
                 if (monthFilter !== 'all' && pMonth !== monthFilter) return false;
                 return true;
@@ -2296,7 +2355,31 @@
 
             if (filtered.length === 0) {
                 const hintMonth = selectedMonthKey ? `thuộc <strong>${formatMonthDisplay(selectedMonthKey)}</strong>` : 'phù hợp bộ lọc';
-                tbody.innerHTML = `<tr><td colspan="13" style="text-align:center; color: var(--text-muted); padding: 30px;">Chưa có kỳ quyết toán nào ${hintMonth}.<br><span style="font-size:0.85rem; margin-top:4px; display:inline-block;">Bấm <strong>"+ Thêm kỳ mới"</strong> hoặc lưu từ trang Quyết toán TikTok/Shopee.</span></td></tr>`;
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="13" style="text-align:center; color: var(--text-muted); padding: 32px 20px;">
+                            <div style="font-size: 1rem; font-weight: 700; color: #334155; margin-bottom: 6px;">
+                                ℹ️ Chưa có kỳ quyết toán nào ${hintMonth}
+                            </div>
+                            <div style="font-size: 0.85rem; color: #64748b; margin-bottom: 16px;">
+                                ${selectedMonthKey ? `Tháng <strong>${formatMonthDisplay(selectedMonthKey)}</strong> chưa có đợt quyết toán chi tiết nào được lưu từ trang TikTok/Shopee.` : 'Chưa có kỳ quyết toán nào phù hợp.'}
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                                ${selectedMonthKey ? `
+                                    <button type="button" class="btn btn-secondary" style="padding: 7px 16px; font-size: 0.85rem; background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1;" onclick="clearMonthSelection(event)">
+                                        👁️ Xem tất cả kỳ quyết toán (${settlementPeriods.length})
+                                    </button>
+                                    <button type="button" class="btn btn-primary" style="padding: 7px 16px; font-size: 0.85rem; background: #0284c7; color: white;" onclick="createPeriodFromMonthlyReport('${selectedMonthKey}')">
+                                        ⚡ Tạo kỳ từ Báo cáo ${formatMonthDisplay(selectedMonthKey)}
+                                    </button>
+                                ` : ''}
+                                <button type="button" class="btn btn-add" style="padding: 7px 16px; font-size: 0.85rem;" onclick="openAddPeriodModal()">
+                                    + Thêm kỳ mới ${selectedMonthKey ? `cho ${formatMonthDisplay(selectedMonthKey)}` : ''}
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
                 if (tfoot) tfoot.innerHTML = '';
                 return;
             }
@@ -2317,10 +2400,44 @@
                 sumMat += Number(p.materialCost) || 0;
                 sumProf += Number(p.profit) || 0;
 
-                const isSelected = selectedPeriodId === p.id || (selectedMonthKey && normalizeMonthKey(p.month) === selectedMonthKey);
+                let expenseHtml = '';
+                let pExpenses = Array.isArray(p.expenses) ? p.expenses : [];
+                if (pExpenses.length === 0 && p.expenseDetails) {
+                    pExpenses = String(p.expenseDetails).split(';').map(item => {
+                        const parts = item.split(':');
+                        if (parts.length === 2) {
+                            return { name: parts[0].trim(), amount: parseMoney(parts[1]) };
+                        }
+                        return { name: item.trim(), amount: 0 };
+                    }).filter(e => e.name);
+                }
+
+                const validExpenses = pExpenses.filter(e => (Number(e.amount) || 0) > 0 || (e.name && e.name.trim()));
+                if (validExpenses.length > 0) {
+                    expenseHtml = `
+                        <div style="display: flex; flex-direction: column; gap: 3px; align-items: flex-end;">
+                            ${validExpenses.map(e => `
+                                <div style="font-size: 0.8rem; line-height: 1.25; color: #475569; white-space: nowrap;">
+                                    <span style="color: #64748b;">${escapeHtml(e.name || 'Chi phí')}:</span> 
+                                    <strong style="color: #7c3aed;">${formatMoney(e.amount)}</strong>
+                                </div>
+                            `).join('')}
+                            ${validExpenses.length > 1 ? `
+                                <div style="font-size: 0.82rem; font-weight: 800; color: #6d28d9; border-top: 1px dashed #cbd5e1; padding-top: 2px; margin-top: 2px; width: 100%; text-align: right;">
+                                    Tổng: ${formatMoney(p.materialCost || p.otherExpenses || 0)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    const totalExp = (Number(p.materialCost) || 0) + (Number(p.otherExpenses) || 0);
+                    expenseHtml = `<span style="font-weight: 600; color: #7c3aed;">${formatMoney(totalExp)}</span>`;
+                }
+
+                const isSelected = selectedPeriodId === p.id;
 
                 return `
-                    <tr class="clickable-row ${isSelected ? 'row-selected' : ''}" onclick="selectPeriodMonth('${p.id}', '${escapeHtml(p.month)}')">
+                    <tr class="clickable-row ${isSelected ? 'row-selected' : ''}" onclick="openEditPeriodModal('${p.id}')" title="Bấm để xem và chỉnh sửa chi tiết kỳ này">
                         <td>${platBadge}</td>
                         <td><strong style="color: var(--text-main);">${escapeHtml(p.shopName || 'Shop')}</strong></td>
                         <td><span style="font-weight: 600;">${escapeHtml(p.dateRange || '')}</span></td>
@@ -2330,9 +2447,9 @@
                         <td style="text-align: right; font-weight: 700; color: #2563eb;">${formatMoney(p.revenue)}</td>
                         <td style="text-align: right; font-weight: 600;">${formatMoney(p.goodsCost)}</td>
                         <td style="text-align: right; font-weight: 600; color: #d97706;">${formatMoney(p.adsCost)}</td>
-                        <td style="text-align: right; font-weight: 600; color: #7c3aed;">${formatMoney(p.materialCost)}</td>
+                        <td style="text-align: right;">${expenseHtml}</td>
                         <td style="text-align: right; font-weight: 800; color: ${(Number(p.profit) || 0) >= 0 ? '#059669' : '#dc2626'};">${formatMoney(p.profit)}</td>
-                        <td style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(p.note || '')}</td>
+                        <td style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml((p.note && String(p.note).trim() !== 'null' && String(p.note).trim() !== 'undefined') ? String(p.note).trim() : '')}</td>
                         <td style="text-align: center;" onclick="event.stopPropagation()">
                             <div class="action-btns">
                                 <button type="button" class="btn-action" title="Chỉnh sửa kỳ này" onclick="openEditPeriodModal('${p.id}')">✏️</button>
@@ -2361,7 +2478,9 @@
         }
 
         function openAddPeriodModal() {
-            showSaveSettlementPeriodDialog({}, () => {
+            showSaveSettlementPeriodDialog({
+                month: selectedMonthKey || undefined
+            }, () => {
                 loadLocalPeriodsData();
                 renderPeriodTable();
             });
@@ -2371,6 +2490,28 @@
             const p = settlementPeriods.find(item => item.id === periodId);
             if (!p) return;
             showSaveSettlementPeriodDialog(p, () => {
+                loadLocalPeriodsData();
+                renderPeriodTable();
+            });
+        }
+
+        function createPeriodFromMonthlyReport(monthKey) {
+            const report = monthlyReports.find(r => normalizeMonthKey(r.month) === monthKey);
+            if (!report) {
+                openAddPeriodModal();
+                return;
+            }
+            showSaveSettlementPeriodDialog({
+                month: monthKey,
+                platform: 'TikTok Shop',
+                shopName: 'TikTok Shop 1',
+                revenue: report.revenue,
+                goodsCost: Math.round(report.revenue * 0.4),
+                adsCost: report.adsCost,
+                materialCost: report.materialCost,
+                profit: report.profit,
+                note: ''
+            }, () => {
                 loadLocalPeriodsData();
                 renderPeriodTable();
             });

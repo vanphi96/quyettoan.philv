@@ -126,7 +126,8 @@ function doPost(e) {
           var pMaterialCost = Number(p.materialCost) || 0;
           var pOtherExpenses = Number(p.otherExpenses) || 0;
           var pProfit = Number(p.profit) || 0;
-          var pNote = String(p.note || "").trim();
+          var rawNote = String(p.note || "").trim();
+          var pNote = (rawNote === "null" || rawNote === "undefined") ? "" : rawNote;
 
           cleanPeriodRows.push([
             pid, pTime, pPlatform, pShop, pDateRange, pMonth,
@@ -174,7 +175,7 @@ function doPost(e) {
             Number(pItem.materialCost) || 0,
             Number(pItem.otherExpenses) || 0,
             Number(pItem.profit) || 0,
-            String(pItem.note || "").trim()
+            (String(pItem.note || "").trim() === "null" || String(pItem.note || "").trim() === "undefined") ? "" : String(pItem.note || "").trim()
           ];
 
           // Kiểm tra xem ID đã tồn tại chưa để update hay append
@@ -223,6 +224,123 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
         message: "Đã lưu kỳ quyết toán thành công vào sheet settlement_periods",
+        timestamp: timeStr
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // =========================================================================
+    // XỬ LÝ: QUẢN LÝ DANH SÁCH SHOP & PHÍ SÀN & SẢN PHẨM SHOP (shops & shop_products)
+    // =========================================================================
+    if (data.action === "saveShops" || Array.isArray(data.shops)) {
+      var shops = data.shops || [];
+      var shopSheet = spreadsheet.getSheetByName("shops") || 
+                      spreadsheet.getSheetByName("danh_sach_shop") ||
+                      spreadsheet.getSheetByName("Shop");
+      if (!shopSheet) {
+        shopSheet = spreadsheet.insertSheet("shops");
+      }
+
+      var shopHeaders = ["ID", "Tên Shop", "Sàn", "% Phí sàn", "Ghi chú", "Dữ liệu sản phẩm (JSON)", "Thời gian cập nhật"];
+      if (shopSheet.getLastRow() === 0) {
+        shopSheet.appendRow(shopHeaders);
+        var sHeaderRange = shopSheet.getRange(1, 1, 1, shopHeaders.length);
+        sHeaderRange.setFontWeight("bold").setBackground("#f8fafc");
+        shopSheet.setFrozenRows(1);
+        shopSheet.setColumnWidth(1, 110);
+        shopSheet.setColumnWidth(2, 180);
+        shopSheet.setColumnWidth(3, 130);
+        shopSheet.setColumnWidth(4, 120);
+        shopSheet.setColumnWidth(5, 180);
+        shopSheet.setColumnWidth(6, 250);
+        shopSheet.setColumnWidth(7, 160);
+      }
+
+      // Ghi đè toàn bộ danh sách shop
+      if (shopSheet.getLastRow() > 1) {
+        shopSheet.getRange(2, 1, shopSheet.getLastRow() - 1, Math.max(shopSheet.getLastColumn(), shopHeaders.length)).clearContent();
+      }
+
+      var shopRows = [];
+      var allShopProductRows = [];
+
+      for (var si = 0; si < shops.length; si++) {
+        var s = shops[si];
+        var sName = String(s.name || "").trim();
+        if (!sName) continue;
+        var sId = String(s.id || "SHOP_" + (si + 1)).trim();
+        var sPlatform = String(s.platform || (sName.toLowerCase().indexOf("tiktok") >= 0 ? "TikTok Shop" : "Shopee")).trim();
+        var sFee = Number(s.feePercent) || 0;
+        var sNote = (s.note && String(s.note).trim() !== "null" && String(s.note).trim() !== "undefined") ? String(s.note).trim() : "";
+        var sProducts = Array.isArray(s.products) ? s.products : [];
+        var sProductsJson = JSON.stringify(sProducts);
+
+        shopRows.push([sId, sName, sPlatform, sFee, sNote, sProductsJson, timeStr]);
+
+        // Trích xuất từng sản phẩm cho sheet shop_products
+        for (var pi = 0; pi < sProducts.length; pi++) {
+          var p = sProducts[pi];
+          var pId = String(p.id || sId + "_P" + (pi + 1));
+          var pName = String(p.name || "");
+          var pVar = String(p.variation || "Mặc định");
+          var pItems = Array.isArray(p.items) ? p.items : [];
+          var pItemsStr = pItems.map(function(it) {
+            return (it.quantity || 1) + "x " + (it.productName || "SP Kho #" + it.productId);
+          }).join(" + ");
+          
+          var pDeal = p.deal || {};
+          var pDealStr = "";
+          if (pDeal.buyQty && pDeal.giftQty) {
+            pDealStr = "Mua " + pDeal.buyQty + " tặng " + pDeal.giftQty;
+          } else {
+            pDealStr = "Không khuyến mãi";
+          }
+
+          var pPrice = Number(p.price) || 0;
+          var pPkg = Number(p.packagingFee) || 0;
+          var pNote = String(p.note || "");
+
+          allShopProductRows.push([
+            sId, sName, sPlatform, pId, pName, pVar, pItemsStr, pDealStr, pPrice, pPkg, pNote, timeStr
+          ]);
+        }
+      }
+
+      if (shopRows.length > 0) {
+        shopSheet.getRange(2, 1, shopRows.length, shopHeaders.length).setValues(shopRows);
+        shopSheet.getRange(2, 4, shopRows.length, 1).setNumberFormat("0.0\"%\"");
+      }
+
+      // Cập nhật tab chi tiết shop_products (nếu có)
+      var shopProdSheet = spreadsheet.getSheetByName("shop_products") || spreadsheet.getSheetByName("san_pham_shop");
+      if (!shopProdSheet) {
+        shopProdSheet = spreadsheet.insertSheet("shop_products");
+      }
+      var spHeaders = ["Shop ID", "Tên Shop", "Sàn", "Mã SP", "Tên Sản Phẩm Shop", "Phân Loại", "Thành Phần Kho", "Deal Khuyến Mãi", "Giá Bán", "Phí Đóng Gói", "Ghi Chú", "Thời Gian Cập Nhật"];
+      if (shopProdSheet.getLastRow() === 0) {
+        shopProdSheet.appendRow(spHeaders);
+        shopProdSheet.getRange(1, 1, 1, spHeaders.length).setFontWeight("bold").setBackground("#f0fdf4");
+        shopProdSheet.setFrozenRows(1);
+      }
+      if (shopProdSheet.getLastRow() > 1) {
+        shopProdSheet.getRange(2, 1, shopProdSheet.getLastRow() - 1, Math.max(shopProdSheet.getLastColumn(), spHeaders.length)).clearContent();
+      }
+      if (allShopProductRows.length > 0) {
+        shopProdSheet.getRange(2, 1, allShopProductRows.length, spHeaders.length).setValues(allShopProductRows);
+      }
+
+      historySheet.appendRow([
+        timeStr,
+        "Cập nhật danh sách Shop & Sản phẩm Shop",
+        shopRows.length + " shop (" + allShopProductRows.length + " SP)",
+        "Lưu cấu hình " + shopRows.length + " shop và " + allShopProductRows.length + " sản phẩm/deal",
+        sourceName
+      ]);
+
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        message: "Đã lưu danh sách shop và sản phẩm shop thành công!",
+        shopCount: shopRows.length,
+        productCount: allShopProductRows.length,
         timestamp: timeStr
       })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -577,7 +695,7 @@ function doGet(e) {
             materialCost: Number(pRow[11]) || 0,
             otherExpenses: Number(pRow[12]) || 0,
             profit: Number(pRow[13]) || 0,
-            note: String(pRow[14] || "").trim()
+            note: (pRow[14] && String(pRow[14]).trim() !== "null" && String(pRow[14]).trim() !== "undefined") ? String(pRow[14]).trim() : ""
           });
         }
       }
@@ -611,6 +729,38 @@ function doGet(e) {
       return ContentService.createTextOutput(JSON.stringify({
         status: "success",
         reports: reports
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "getShops") {
+      var shopSheet = spreadsheet.getSheetByName("shops") || 
+                      spreadsheet.getSheetByName("danh_sach_shop") ||
+                      spreadsheet.getSheetByName("Shop");
+      var shops = [];
+      if (shopSheet && shopSheet.getLastRow() > 1) {
+        var sValues = shopSheet.getRange(2, 1, shopSheet.getLastRow() - 1, Math.max(shopSheet.getLastColumn(), 6)).getValues();
+        for (var si = 0; si < sValues.length; si++) {
+          var sRow = sValues[si];
+          var sName = String(sRow[1] || "").trim();
+          if (!sName) continue;
+          var prodJson = sRow[5] ? String(sRow[5]).trim() : "";
+          var prods = [];
+          if (prodJson) {
+            try { prods = JSON.parse(prodJson); } catch (pe) {}
+          }
+          shops.push({
+            id: String(sRow[0] || "").trim(),
+            name: sName,
+            platform: String(sRow[2] || "").trim(),
+            feePercent: Number(sRow[3]) || 0,
+            note: (sRow[4] && String(sRow[4]).trim() !== "null" && String(sRow[4]).trim() !== "undefined") ? String(sRow[4]).trim() : "",
+            products: Array.isArray(prods) ? prods : []
+          });
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "success",
+        shops: shops
       })).setMimeType(ContentService.MimeType.JSON);
     }
 

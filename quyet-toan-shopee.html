@@ -2403,32 +2403,63 @@
             return lines;
         }
 
-        function handleOpenSaveShopeeSettlementToMonthly() {
-            const sDate = document.getElementById('startDate')?.value || '';
-            const eDate = document.getElementById('endDate')?.value || '';
-            let dateRange = '';
-            if (sDate && eDate) {
-                dateRange = `${sDate} - ${eDate}`;
+        function getShopeeFileMinMaxDates() {
+            const settlementDates = [];
+            const orderDates = [];
+
+            if (state.settlementOrders && state.settlementOrders instanceof Map) {
+                state.settlementOrders.forEach(o => { if (o.date) settlementDates.push(o.date); });
+            }
+            if (state.returnOrders && state.returnOrders instanceof Map) {
+                state.returnOrders.forEach(o => { if (o.date) settlementDates.push(o.date); });
+            }
+            if (Array.isArray(state.adFromFile)) {
+                state.adFromFile.forEach(a => { if (a.date) settlementDates.push(a.date); });
             }
 
-            let materialCost = 0;
-            let otherExp = 0;
-            if (Array.isArray(state.expenses)) {
-                state.expenses.forEach(ex => {
-                    const name = (ex.name || '').toLowerCase();
-                    const amt = Number(ex.amount) || 0;
-                    if (name.includes('vật tư') || name.includes('vat tu') || name.includes('đóng gói') || name.includes('bao bì') || name.includes('hộp')) {
-                        materialCost += amt;
-                    } else {
-                        otherExp += amt;
-                    }
-                });
+            if (Array.isArray(state.mappedRows)) {
+                state.mappedRows.forEach(r => { if (r.orderDate) orderDates.push(r.orderDate); });
+            }
+            if (Array.isArray(state.returnRows)) {
+                state.returnRows.forEach(r => { if (r.orderDate) orderDates.push(r.orderDate); });
+            }
+
+            // Ưu tiên ngày phát sinh giao dịch / quyết toán về ví Shopee nếu có, nếu không lấy ngày đặt đơn
+            const targetDates = settlementDates.length > 0 ? settlementDates : orderDates;
+            const cleanDates = targetDates.map(toDateInputValue).filter(Boolean).sort();
+            if (cleanDates.length > 0) {
+                return {
+                    minDate: cleanDates[0],
+                    maxDate: cleanDates[cleanDates.length - 1]
+                };
+            }
+            return { minDate: '', maxDate: '' };
+        }
+
+        function handleOpenSaveShopeeSettlementToMonthly() {
+            const minMax = getShopeeFileMinMaxDates();
+            let sDate = '';
+            let eDate = '';
+            let dateRange = '';
+
+            if (minMax.minDate && minMax.maxDate) {
+                sDate = formatDateDisplay(minMax.minDate);
+                eDate = formatDateDisplay(minMax.maxDate);
+                dateRange = `${sDate} - ${eDate}`;
+            } else {
+                sDate = document.getElementById('startDate')?.value || '';
+                eDate = document.getElementById('endDate')?.value || '';
+                if (sDate && eDate) {
+                    dateRange = `${sDate} - ${eDate}`;
+                }
             }
 
             const rev = typeof mappedRevenue === 'function' ? mappedRevenue() : 0;
             const goods = typeof totalGoodsCost === 'function' ? totalGoodsCost() : 0;
             const ads = typeof totalAds === 'function' ? totalAds() : 0;
-            const profit = rev - goods - ads - materialCost - otherExp;
+            const expTotal = typeof totalExpenses === 'function' ? totalExpenses() : 0;
+            const profit = rev - goods - ads - expTotal;
+            const currentExpenses = Array.isArray(state.expenses) ? JSON.parse(JSON.stringify(state.expenses)) : [{ name: 'Chi phí vật tư', amount: 0 }];
 
             showSaveSettlementPeriodDialog({
                 platform: 'Shopee',
@@ -2441,10 +2472,11 @@
                 revenue: rev,
                 goodsCost: goods,
                 adsCost: ads,
-                materialCost: materialCost,
-                otherExpenses: otherExp,
+                materialCost: expTotal,
+                otherExpenses: 0,
+                expenses: currentExpenses,
                 profit: profit,
-                note: `Quyết toán Shopee ${dateRange}`
+                note: ''
             });
         }
     </script>

@@ -398,15 +398,140 @@
         .empty { color: var(--muted); text-align: center; padding: 20px; }
         .total-row { background: #edf7ef; font-weight: 700; }
 
-        @media (max-width: 720px) {
-            .container { padding: 0 12px 24px; }
-            h1 { font-size: 24px; }
-            th, td { font-size: 13px; }
-            .section-head {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            button { width: 100%; }
+        /* QUANTITY & COMBO STYLES */
+        .qty-control-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 105px;
+        }
+        .qty-inputs-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .qty-inputs-row input {
+            width: 46px;
+            text-align: center;
+            font-weight: 700;
+            padding: 6px 4px;
+            border-radius: 6px;
+            border: 1px solid #d9e0e7;
+            font-size: 13px;
+        }
+        .qty-gift-input {
+            color: #b45309 !important;
+            background: #fffbeb !important;
+            border-color: #fde68a !important;
+        }
+        .qty-total-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #065f46;
+            background: #ecfdf5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #a7f3d0;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .combo-badge-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            font-weight: 700;
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+            margin-top: 4px;
+        }
+        .btn-combo-action {
+            font-size: 11px;
+            font-weight: 700;
+            background: #f8fafc;
+            color: #2563eb;
+            border: 1px solid #cbd5e1;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            transition: all 0.15s ease;
+        }
+        .btn-combo-action:hover {
+            background: #eff6ff;
+            border-color: #93c5fd;
+        }
+
+        /* COMBO BUILDER MODAL */
+        .combo-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 20px;
+        }
+        .combo-modal-card {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .combo-modal-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .combo-modal-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #0f172a;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .combo-modal-body {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+        .combo-item-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+        }
+        .combo-modal-footer {
+            padding: 14px 20px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
         }
     </style>
 </head>
@@ -414,30 +539,30 @@
     <div class="container">
         <a href="index.html" class="back-home">← Về home</a>
 
-        <h1>Tính Lợi Nhuận Theo Giá Bán</h1>
+        <h1>Tính Lợi Nhuận Theo Giá Bán & Khuyến Mãi (Combo / Mua X Tặng Y)</h1>
         <p class="subtitle">
-            Bảng 1 quản lý danh sách sản phẩm và giá nhập. Bảng 2 quản lý danh sách sàn và phí sàn. Bảng 3 cho phép thêm từng dòng lợi nhuận, chọn <strong>sản phẩm</strong> và <strong>sàn</strong> từ hai bảng cấu hình.
-            Công thức mặc định: <strong>lợi nhuận = giá bán - (giá nhập/hộp x số hộp) - phí sàn - phí đóng gói - chi phí quảng cáo</strong>.
-            Phí sàn đang được nhập theo <strong>% trên giá bán</strong>, phí đóng gói nhập theo <strong>số tiền của từng dòng</strong>, và chi phí quảng cáo được suy ra từ <strong>ROI/ROAS nhập tay</strong>.
+            <strong>Bảng 1</strong> quản lý danh mục sản phẩm kho (hàng nhập chung). 
+            <strong>Bảng 2</strong> quản lý danh sách shop & % chiết khấu phí sàn. 
+            <strong>Bảng 3</strong> tính lợi nhuận cho từng sản phẩm hoặc <strong>Combo đa sản phẩm</strong> (ví dụ: Combo 2 Bút + 1 Thước) kèm cấu hình khuyến mại <strong>Mua X Tặng Y</strong> (ví dụ: Mua 2 tặng 1 -> tính tiền vốn xuất kho 3 hộp).
         </p>
 
         <section class="section">
             <div class="section-head">
                 <div style="display: flex; align-items: center; gap: 10px;">
-                    <h2 class="section-title">1. Cấu hình sản phẩm</h2>
+                    <h2 class="section-title">1. Danh mục sản phẩm kho (Giá nhập chung)</h2>
                     <span id="sheetSyncBadge" class="sheet-sync-badge"></span>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center;">
                     <button type="button" class="btn-sheet-sync" onclick="syncProductsToGoogleSheet(products, { isManual: true, source: 'Lợi nhuận giá bán' })">💾 Lưu lên Sheet</button>
                     <button type="button" onclick="loadProductsFromGoogleSheet(true)" style="background: #0f766e; color: white;">🔄 Tải lại từ Google Sheet</button>
-                    <button type="button" class="btn-add" onclick="addProduct()">+ Thêm sản phẩm</button>
+                    <button type="button" class="btn-add" onclick="addProduct()">+ Thêm sản phẩm kho</button>
                 </div>
             </div>
             <div class="scroll">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 58%;">Tên mặt hàng</th>
+                            <th style="width: 58%;">Tên mặt hàng kho</th>
                             <th style="width: 30%;">Giá nhập / hộp</th>
                             <th style="width: 12%;">Xóa</th>
                         </tr>
@@ -449,15 +574,19 @@
 
         <section class="section">
             <div class="section-head">
-                <h2 class="section-title">2. Cấu hình sàn</h2>
-                <button type="button" class="btn-add" onclick="addPlatform()">+ Thêm sàn</button>
+                <h2 class="section-title">2. Cấu hình Shop & Phí sàn</h2>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <a href="quan-ly-shop.html" class="btn-add" style="background:#0f766e; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:12.5px;">🏪 Quản lý shop</a>
+                    <button type="button" class="btn-add" onclick="addPlatform()">+ Thêm shop</button>
+                </div>
             </div>
             <div class="scroll">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 58%;">Tên sàn</th>
-                            <th style="width: 30%;">Phí sàn (%)</th>
+                            <th style="width: 38%;">Tên Shop</th>
+                            <th style="width: 24%;">Sàn</th>
+                            <th style="width: 26%;">Phí sàn (%)</th>
                             <th style="width: 12%;">Xóa</th>
                         </tr>
                     </thead>
@@ -469,30 +598,71 @@
         <section class="section">
             <div class="section-head">
                 <h2 class="section-title">3. Bảng tính lợi nhuận</h2>
-                <button type="button" class="btn-add" onclick="addProfitRow()">+ Thêm dòng</button>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <button type="button" class="btn-add" onclick="openComboBuilderForNewRow()">🧩 + Thêm Combo ghép</button>
+                    <button type="button" class="btn-add" onclick="addProfitRow()">+ Thêm dòng sản phẩm</button>
+                </div>
             </div>
             <div class="section-note">
-                Chọn sàn để tự lấy <strong>phí sàn</strong> từ bảng cấu hình phía trên. Nhập trực tiếp <strong>ROI/ROAS</strong> cho từng dòng. Hệ thống sẽ tự tính <strong>chi phí quảng cáo = giá bán / ROI/ROAS</strong> khi chỉ số lớn hơn 0, rồi trừ vào lợi nhuận.
+                • <strong>Sản phẩm / Combo</strong>: Chọn sản phẩm kho hoặc ghép nhiều món thành Combo (ví dụ: 2 Bút + 1 Thước).<br>
+                • <strong>SL Mua & Tặng</strong>: Cài đặt deal (ví dụ: <em>Mua 2 Tặng 1</em> -> nhập <strong>SL Mua = 2, Tặng = 1</strong> -> hệ thống tự tính tiền vốn trên <strong>3 hộp xuất kho</strong>).<br>
+                • <strong>Shop</strong>: Tự động lấy % phí sàn từ cấu hình shop phía trên.
             </div>
             <div class="scroll">
                 <table class="profit-table">
                     <thead>
                         <tr>
-                            <th style="width: 18%;">Sản phẩm</th>
-                            <th style="width: 12%;">Sàn</th>
-                            <th style="width: 12%;" class="number">Phí sàn (%)</th>
-                            <th style="width: 14%;" class="number">Phí đóng gói</th>
-                            <th style="width: 10%;" class="number">Số hộp</th>
-                            <th style="width: 14%;" class="number">Giá bán</th>
-                            <th style="width: 10%;" class="number">ROI/ROAS</th>
-                            <th style="width: 10%;" class="number">Lợi nhuận</th>
-                            <th style="width: 80px;">Xóa</th>
+                            <th style="width: 20%;">Sản phẩm / Combo</th>
+                            <th style="width: 14%;">Shop / Sàn</th>
+                            <th style="width: 9%;" class="number">Phí sàn (%)</th>
+                            <th style="width: 13%;" class="number">SL Mua & Tặng</th>
+                            <th style="width: 12%;" class="number">Tiền vốn (COGS)</th>
+                            <th style="width: 11%;" class="number">Phí gói</th>
+                            <th style="width: 12%;" class="number">Giá bán</th>
+                            <th style="width: 9%;" class="number">ROI/ROAS</th>
+                            <th style="width: 11%;" class="number">Lợi nhuận</th>
+                            <th style="width: 50px;">Xóa</th>
                         </tr>
                     </thead>
                     <tbody id="profitBody"></tbody>
                 </table>
             </div>
         </section>
+    </div>
+
+    <!-- MODAL GHÉP COMBO SẢN PHẨM -->
+    <div id="comboModal" class="combo-modal-overlay">
+        <div class="combo-modal-card">
+            <div class="combo-modal-header">
+                <div class="combo-modal-title">🧩 Cấu Hình Thành Phần Combo Bán Hàng</div>
+                <button type="button" class="btn-delete" style="padding: 4px 8px; font-size: 13px;" onclick="closeComboModal()">✕</button>
+            </div>
+            <div class="combo-modal-body">
+                <div>
+                    <label style="font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Tên Combo / Gói bán <span style="color:red">*</span></label>
+                    <input type="text" id="comboModalNameInput" placeholder="Ví dụ: Combo 2 Bút + 1 Thước, Mua 2 Hộp Tặng 1..." style="width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 13.5px;">
+                </div>
+
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 13px; font-weight: 700; color: #334155;">Danh sách sản phẩm cấu thành từ kho:</span>
+                        <button type="button" class="btn-add" style="padding: 4px 10px; font-size: 12px;" onclick="addComboItemRow()">+ Thêm món</button>
+                    </div>
+                    <div id="comboItemsContainer" style="display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Items rendered by JS -->
+                    </div>
+                </div>
+
+                <div style="background: #f1f5f9; padding: 12px 14px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng tiền vốn 1 Combo:</span>
+                    <strong id="comboModalTotalCost" style="font-size: 1.1rem; color: #0f172a;">0 đ</strong>
+                </div>
+            </div>
+            <div class="combo-modal-footer">
+                <button type="button" style="background: #94a3b8; color: white;" onclick="closeComboModal()">Hủy</button>
+                <button type="button" class="btn-add" onclick="applyComboModal()">💾 Áp dụng Combo</button>
+            </div>
+        </div>
     </div>
 
     <div id="globalLoadingModal" class="loading-overlay" style="display: flex;">
@@ -505,12 +675,29 @@
 
     <script>
         let platforms = [
-            { key: 'tiktok', label: 'TikTok', feeRate: 25 },
-            { key: 'shopee', label: 'Shopee', feeRate: 30 }
+            { key: 'SHOP_1', id: 'SHOP_1', label: 'Shopee Shop 1', platform: 'Shopee', feeRate: 14.5 },
+            { key: 'SHOP_2', id: 'SHOP_2', label: 'Shopee Shop 2', platform: 'Shopee', feeRate: 14.5 },
+            { key: 'SHOP_3', id: 'SHOP_3', label: 'TikTok Shop 1', platform: 'TikTok Shop', feeRate: 14.0 }
         ];
 
+        function loadShopsIntoPlatforms() {
+            try {
+                const appShops = typeof getAppShops === 'function' ? getAppShops() : [];
+                if (appShops && appShops.length > 0) {
+                    platforms = appShops.map(s => ({
+                        key: s.id || s.name,
+                        id: s.id || s.name,
+                        label: s.name,
+                        platform: s.platform || (s.name.toLowerCase().includes('tiktok') ? 'TikTok Shop' : 'Shopee'),
+                        feeRate: Number(s.feePercent) || 0,
+                        note: s.note || ''
+                    }));
+                }
+            } catch (e) {}
+        }
+
         let nextProductId = 5;
-        let nextPlatformId = 3;
+        let nextPlatformId = 5;
         let nextProfitRowId = 2;
         let openDropdownId = null;
         let products = [
@@ -520,10 +707,23 @@
             { id: 4, name: 'Kim tiền thảo râu mèo', price: 21000 },
             { id: 5, name: 'Cây rau mương', price: 21000 }
         ];
-        let profitRows = [createProfitRow(1)];
+
+        let profitRows = [
+            createProfitRow(1)
+        ];
+
+        let editingComboRowId = null;
+        let currentComboItems = [];
 
         window.onload = async () => {
+            loadShopsIntoPlatforms();
             await loadProductsFromGoogleSheet(false);
+            try {
+                if (typeof fetchShopsFromGoogleSheet === 'function') {
+                    await fetchShopsFromGoogleSheet();
+                    loadShopsIntoPlatforms();
+                }
+            } catch (e) {}
             syncProfitRows();
             renderProductConfig();
             renderPlatformConfig();
@@ -535,20 +735,78 @@
         function createProfitRow(rowId = nextProfitRowId++) {
             return {
                 id: rowId,
+                isCombo: false,
+                comboName: '',
+                comboItems: [],
                 productId: products[0]?.id || '',
-                platformKey: platforms[0]?.key || 'tiktok',
+                buyQuantity: 1, // Khách mua
+                giftQuantity: 0, // Tặng kèm (Mua 2 tặng 1 -> buyQuantity: 2, giftQuantity: 1 -> Tính vốn 3)
+                platformKey: platforms[0]?.key || 'SHOP_1',
                 packagingFee: 0,
-                boxes: 1,
                 salePrice: 0,
                 roiRoas: 0
             };
         }
 
+        function calculateRowGoodsCost(entry) {
+            if (!entry) return { totalCost: 0, totalUnits: 0, breakdown: '' };
+
+            if (entry.isCombo && Array.isArray(entry.comboItems) && entry.comboItems.length > 0) {
+                let baseComboCost = 0;
+                let baseComboUnits = 0;
+                let parts = [];
+                entry.comboItems.forEach(item => {
+                    const p = findProductById(item.productId);
+                    const qty = Number(item.quantity) || 1;
+                    const price = p ? Number(p.price) || 0 : 0;
+                    const itemTotal = qty * price;
+                    baseComboCost += itemTotal;
+                    baseComboUnits += qty;
+                    const giftLabel = item.isGift ? ' 🎁' : '';
+                    parts.push(`${qty}x ${p?.name || 'SP'}${giftLabel}`);
+                });
+
+                const buyQ = Number(entry.buyQuantity) || 1;
+                const giftQ = Number(entry.giftQuantity) || 0;
+                const totalPacks = buyQ + giftQ;
+                const totalCost = baseComboCost * totalPacks;
+                const totalUnits = baseComboUnits * totalPacks;
+                
+                let desc = parts.join(' + ');
+                if (giftQ > 0) {
+                    desc += ` (Mua ${buyQ} tặng ${giftQ})`;
+                }
+                return {
+                    totalCost,
+                    totalUnits,
+                    baseCost: baseComboCost,
+                    breakdown: desc
+                };
+            } else {
+                const product = findProductById(entry.productId);
+                const price = product ? Number(product.price) || 0 : 0;
+                const buyQ = Number(entry.buyQuantity) || 1;
+                const giftQ = Number(entry.giftQuantity) || 0;
+                const totalUnits = buyQ + giftQ;
+                const totalCost = totalUnits * price;
+                return {
+                    totalCost,
+                    totalUnits,
+                    baseCost: price,
+                    breakdown: giftQ > 0 ? `Mua ${buyQ} + Tặng ${giftQ} (${formatMoney(price)}/h)` : `${totalUnits} hộp x ${formatMoney(price)}`
+                };
+            }
+        }
+
         function syncProfitRows() {
             const validIds = new Set(products.map(product => String(product.id)));
             profitRows.forEach(row => {
-                if (!validIds.has(String(row.productId))) row.productId = products[0]?.id || '';
-                if (!platforms.some(platform => platform.key === row.platformKey)) row.platformKey = platforms[0]?.key || 'tiktok';
+                if (!row.isCombo && !validIds.has(String(row.productId))) {
+                    row.productId = products[0]?.id || '';
+                }
+                if (!platforms.some(platform => platform.key === row.platformKey || platform.id === row.platformKey)) {
+                    row.platformKey = platforms[0]?.key || platforms[0]?.id || 'SHOP_1';
+                }
             });
             if (profitRows.length === 0) profitRows = [createProfitRow()];
         }
@@ -567,9 +825,25 @@
             }, 50);
         }
 
+        function persistPlatformsToAppShops() {
+            try {
+                if (typeof saveAppShops === 'function') {
+                    const shopItems = platforms.map(p => ({
+                        id: p.id || p.key || `SHOP_${Date.now()}_${Math.floor(Math.random()*1000)}`,
+                        name: p.label || 'Shop',
+                        platform: p.platform || (p.label.toLowerCase().includes('tiktok') ? 'TikTok Shop' : 'Shopee'),
+                        feePercent: Number(p.feeRate) || 0,
+                        note: p.note || ''
+                    }));
+                    saveAppShops(shopItems, true);
+                }
+            } catch (e) {}
+        }
+
         function addPlatform() {
-            platforms.push({ key: `platform_${nextPlatformId}`, label: '', feeRate: 0 });
-            nextPlatformId += 1;
+            const newKey = `SHOP_${Date.now()}`;
+            platforms.push({ key: newKey, id: newKey, label: `Shop mới ${platforms.length + 1}`, platform: 'Shopee', feeRate: 14.5, note: '' });
+            persistPlatformsToAppShops();
             syncProfitRows();
             renderPlatformConfig();
             renderProfitTable();
@@ -578,10 +852,11 @@
 
         function removePlatform(platformKey) {
             if (platforms.length <= 1) {
-                alert('Phải có ít nhất một sàn.');
+                alert('Phải có ít nhất một Shop.');
                 return;
             }
-            platforms = platforms.filter(platform => platform.key !== platformKey);
+            platforms = platforms.filter(platform => platform.key !== platformKey && platform.id !== platformKey);
+            persistPlatformsToAppShops();
             syncProfitRows();
             renderPlatformConfig();
             renderProfitTable();
@@ -620,6 +895,15 @@
             updateAllProfitRows();
         }
 
+        function convertToSingleProduct(rowId) {
+            const row = profitRows.find(item => item.id === rowId);
+            if (!row) return;
+            row.isCombo = false;
+            row.productId = products[0]?.id || '';
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
         function renderProductConfig() {
             document.getElementById('productBody').innerHTML = products.map((product, index) => `
                 <tr>
@@ -627,7 +911,7 @@
                         <input
                             type="text"
                             value="${escapeHtml(product.name)}"
-                            placeholder="Tên mặt hàng..."
+                            placeholder="Tên mặt hàng kho..."
                             oninput="updateProductName(${index}, this.value)"
                         >
                     </td>
@@ -648,56 +932,99 @@
         }
 
         function renderPlatformConfig() {
-            document.getElementById('platformBody').innerHTML = platforms.map((platform, index) => `
-                <tr>
-                    <td>
-                        <input
-                            type="text"
-                            value="${escapeHtml(platform.label)}"
-                            placeholder="Tên sàn..."
-                            oninput="updatePlatformLabel(${index}, this.value)"
-                        >
-                    </td>
-                    <td>
-                        <input
-                            class="number"
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value="${platform.feeRate}"
-                            onfocus="prepareDecimalInput(this)"
-                            oninput="updatePlatformFeeRate(${index}, this.value)"
-                        >
-                    </td>
-                    <td><button type="button" class="btn-delete" onclick="removePlatform('${platform.key}')">✕</button></td>
-                </tr>
-            `).join('');
+            document.getElementById('platformBody').innerHTML = platforms.map((platform, index) => {
+                const isShopee = String(platform.platform || '').toLowerCase().includes('shopee');
+                return `
+                    <tr>
+                        <td>
+                            <input
+                                type="text"
+                                value="${escapeHtml(platform.label)}"
+                                placeholder="Tên Shop..."
+                                oninput="updatePlatformLabel(${index}, this.value)"
+                            >
+                        </td>
+                        <td>
+                            <select
+                                style="width:100%; padding:8px; border-radius:6px; border:1px solid #d9e0e7; font-family:inherit; font-size:13px;"
+                                onchange="updatePlatformPlatform(${index}, this.value)"
+                            >
+                                <option value="Shopee" ${isShopee ? 'selected' : ''}>🛍️ Shopee</option>
+                                <option value="TikTok Shop" ${!isShopee ? 'selected' : ''}>🎵 TikTok Shop</option>
+                            </select>
+                        </td>
+                        <td>
+                            <input
+                                class="number"
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="0.1"
+                                value="${platform.feeRate}"
+                                onfocus="prepareDecimalInput(this)"
+                                oninput="updatePlatformFeeRate(${index}, this.value)"
+                            >
+                        </td>
+                        <td><button type="button" class="btn-delete" onclick="removePlatform('${platform.key}')">✕</button></td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderProfitTable() {
             syncProfitRows();
             const rows = profitRows.map(entry => {
-                const selectedProduct = findProductById(entry.productId) || products[0] || { name: '', price: 0 };
+                const goodsInfo = calculateRowGoodsCost(entry);
                 const selectedPlatform = findPlatformByKey(entry.platformKey) || platforms[0];
+                const isShopee = String(selectedPlatform?.platform || '').toLowerCase().includes('shopee');
+
+                let productColumnHtml = '';
+                if (entry.isCombo) {
+                    productColumnHtml = `
+                        <div>
+                            <div style="font-weight: 800; color: #1d4ed8; font-size: 14px; margin-bottom: 2px;">
+                                🧩 ${escapeHtml(entry.comboName || 'Combo tự ghép')}
+                            </div>
+                            <div style="font-size: 11.5px; color: #64748b; line-height: 1.35;">
+                                ${escapeHtml(goodsInfo.breakdown)}
+                            </div>
+                            <div style="display: flex; gap: 6px; margin-top: 5px;">
+                                <button type="button" class="btn-combo-action" onclick="openComboBuilderForRow(${entry.id})">✏️ Sửa combo</button>
+                                <button type="button" class="btn-combo-action" onclick="convertToSingleProduct(${entry.id})" style="color: #64748b;">🔄 Sang SP đơn</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const selectedProduct = findProductById(entry.productId) || products[0] || { name: '', price: 0 };
+                    productColumnHtml = `
+                        <div class="custom-dropdown ${openDropdownId === `product-${entry.id}` ? 'open' : ''}">
+                            <button type="button" class="dropdown-trigger product-trigger" onclick="toggleDropdown('product-${entry.id}')">
+                                <strong>${escapeHtml(selectedProduct?.name || '(Chưa đặt tên)')}</strong>
+                                <span>Giá nhập kho: ${formatMoney(selectedProduct?.price || 0)} / hộp</span>
+                            </button>
+                            ${openDropdownId === `product-${entry.id}` ? `
+                                <div class="dropdown-menu">
+                                    ${productOptions(entry.id, entry.productId)}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div style="margin-top: 4px;">
+                            <button type="button" class="btn-combo-action" onclick="openComboBuilderForRow(${entry.id})">🧩 Ghép thành Combo</button>
+                        </div>
+                    `;
+                }
+
                 return `
                     <tr data-row-id="${entry.id}">
                         <td>
-                            <div class="custom-dropdown ${openDropdownId === `product-${entry.id}` ? 'open' : ''}">
-                                <button type="button" class="dropdown-trigger product-trigger" onclick="toggleDropdown('product-${entry.id}')">
-                                    <strong>${escapeHtml(selectedProduct?.name || '(Chưa đặt tên)')}</strong>
-                                    <span>Giá nhập: ${formatMoney(selectedProduct?.price || 0)} / hộp</span>
-                                </button>
-                                ${openDropdownId === `product-${entry.id}` ? `
-                                    <div class="dropdown-menu">
-                                        ${productOptions(entry.id, entry.productId)}
-                                    </div>
-                                ` : ''}
-                            </div>
+                            ${productColumnHtml}
                         </td>
                         <td>
                             <div class="custom-dropdown platform-dropdown ${openDropdownId === `platform-${entry.id}` ? 'open' : ''}">
                                 <button type="button" class="dropdown-trigger platform-trigger" onclick="toggleDropdown('platform-${entry.id}')">
-                                    <span class="platform-pill ${escapeHtml(selectedPlatform?.key || 'tiktok')}">${escapeHtml(selectedPlatform?.label || 'TikTok')}</span>
+                                    <span class="platform-pill ${isShopee ? 'shopee' : 'tiktok'}">
+                                        ${isShopee ? '🛍️' : '🎵'} ${escapeHtml(selectedPlatform?.label || 'Shop')}
+                                    </span>
                                 </button>
                                 ${openDropdownId === `platform-${entry.id}` ? `
                                     <div class="dropdown-menu">
@@ -715,7 +1042,38 @@
                                 value="${findPlatformByKey(entry.platformKey)?.feeRate ?? 0}"
                                 readonly
                                 tabindex="-1"
+                                style="background: #f8fafc; font-weight: 700; color: #1d4ed8;"
                             >
+                        </td>
+                        <td>
+                            <div class="qty-control-box">
+                                <div class="qty-inputs-row">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value="${entry.buyQuantity || 1}"
+                                        onfocus="prepareNumberInput(this)"
+                                        oninput="updateProfitRowField(${entry.id}, 'buyQuantity', this.value)"
+                                        title="Số lượng khách mua"
+                                    >
+                                    <span style="font-size: 13px; color: #b45309; font-weight: 800;">+</span>
+                                    <input
+                                        type="number"
+                                        class="qty-gift-input"
+                                        min="0"
+                                        value="${entry.giftQuantity || 0}"
+                                        onfocus="prepareNumberInput(this)"
+                                        oninput="updateProfitRowField(${entry.id}, 'giftQuantity', this.value)"
+                                        title="Số lượng tặng kèm (Ví dụ mua 2 tặng 1 -> nhập 1)"
+                                    >
+                                </div>
+                                <div class="qty-total-badge">
+                                    Xuất: ${goodsInfo.totalUnits} ${entry.isCombo ? 'món' : 'hộp'}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="number" data-role="cogs">
+                            <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">${formatMoney(goodsInfo.totalCost)}</div>
                         </td>
                         <td>
                             <input
@@ -727,17 +1085,6 @@
                                 onfocus="prepareNumberInput(this)"
                                 oninput="updateProfitRowField(${entry.id}, 'packagingFee', this.value)"
                                 onblur="formatMoneyInput(this)"
-                            >
-                        </td>
-                        <td>
-                            <input
-                                class="number"
-                                type="number"
-                                min="0"
-                                step="0.1"
-                                value="${entry.boxes}"
-                                onfocus="prepareDecimalInput(this)"
-                                oninput="updateProfitRowField(${entry.id}, 'boxes', this.value)"
                             >
                         </td>
                         <td>
@@ -769,7 +1116,7 @@
                 `;
             }).join('');
 
-            document.getElementById('profitBody').innerHTML = rows || '<tr><td class="empty" colspan="9">Chưa có dữ liệu</td></tr>';
+            document.getElementById('profitBody').innerHTML = rows || '<tr><td class="empty" colspan="10">Chưa có dữ liệu</td></tr>';
         }
 
         function updateProductName(index, value) {
@@ -786,33 +1133,34 @@
         function updateProductPrice(index, value) {
             products[index].price = parseNumberText(value);
             updateAllProfitRows();
+            renderProfitTable();
         }
 
         function updateProductPriceAmount(index, input) {
             products[index].price = parseNumberText(input.value);
             input.value = formatInputNumber(products[index].price);
             updateAllProfitRows();
+            renderProfitTable();
         }
 
         function updatePlatformLabel(index, value) {
             const safeLabel = String(value || '');
             platforms[index].label = safeLabel;
-            if (!safeLabel) {
-                renderProfitTable();
-                updateAllProfitRows();
-                return;
-            }
-            if (!/^platform_/.test(platforms[index].key)) {
-                platforms[index].key = normalizePlatformKey(safeLabel, platforms[index].key);
-                syncProfitRows();
-                renderPlatformConfig();
-            }
+            persistPlatformsToAppShops();
+            renderProfitTable();
+            updateAllProfitRows();
+        }
+
+        function updatePlatformPlatform(index, value) {
+            platforms[index].platform = value;
+            persistPlatformsToAppShops();
             renderProfitTable();
             updateAllProfitRows();
         }
 
         function updatePlatformFeeRate(index, value) {
             platforms[index].feeRate = parseDecimalText(value);
+            persistPlatformsToAppShops();
             renderProfitTable();
             updateAllProfitRows();
         }
@@ -820,15 +1168,17 @@
         function updateProfitRowField(rowId, field, value) {
             const row = profitRows.find(item => item.id === rowId);
             if (!row) return;
-            const parsedValue = field === 'boxes' || field === 'roiRoas'
+            const parsedValue = field === 'roiRoas'
                 ? parseDecimalText(value)
-                : field === 'productId'
-                    ? Number(value) || ''
-                    : field === 'platformKey'
-                        ? String(value || '')
-                        : parseNumberText(value);
+                : (field === 'buyQuantity' || field === 'giftQuantity')
+                    ? Math.max(0, parseInt(value, 10) || 0)
+                    : field === 'productId'
+                        ? Number(value) || ''
+                        : field === 'platformKey'
+                            ? String(value || '')
+                            : parseNumberText(value);
             row[field] = parsedValue;
-            if (field === 'productId' || field === 'platformKey') {
+            if (field === 'productId' || field === 'platformKey' || field === 'buyQuantity' || field === 'giftQuantity') {
                 openDropdownId = null;
                 renderProfitTable();
             }
@@ -846,10 +1196,10 @@
             if (!row) return;
 
             const entry = profitRows.find(item => item.id === rowId);
-            const product = findProductById(entry?.productId);
-            if (!product || !entry) return;
+            if (!entry) return;
 
-            const goodsCost = parseDecimalText(entry.boxes) * parseNumberText(product.price);
+            const goodsInfo = calculateRowGoodsCost(entry);
+            const goodsCost = goodsInfo.totalCost;
             const salePrice = parseNumberText(entry.salePrice);
             const feeRate = parseDecimalText(findPlatformByKey(entry.platformKey)?.feeRate ?? 0);
             const platformFeeAmount = salePrice * (feeRate / 100);
@@ -857,11 +1207,25 @@
             const adCost = parseDecimalText(entry.roiRoas) > 0 ? salePrice / parseDecimalText(entry.roiRoas) : 0;
             const totalCost = goodsCost + platformFeeAmount + packagingFeeAmount + adCost;
             const profit = salePrice - totalCost;
+            const margin = salePrice > 0 ? ((profit / salePrice) * 100).toFixed(1) : '0.0';
 
+            // Cập nhật ô tiền vốn COGS
+            const cogsCell = row.querySelector('[data-role="cogs"]');
+            if (cogsCell) {
+                cogsCell.innerHTML = `
+                    <div style="font-weight: 700; color: #0f172a; font-size: 13.5px;">${formatMoney(goodsCost)}</div>
+                    <div style="font-size: 11px; color: #64748b;">${escapeHtml(goodsInfo.breakdown)}</div>
+                `;
+            }
+
+            // Cập nhật ô Lợi nhuận
             const profitCell = row.querySelector('[data-role="profit"]');
-
-            profitCell.textContent = formatMoney(profit);
-            profitCell.className = `number ${profit >= 0 ? 'positive' : 'negative'}`;
+            if (profitCell) {
+                profitCell.innerHTML = `
+                    <div style="font-weight: 800; font-size: 14px;" class="${profit >= 0 ? 'positive' : 'negative'}">${formatMoney(profit)}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: ${profit >= 0 ? '#168a4a' : '#c62828'};">(${margin}%)</div>
+                `;
+            }
         }
 
         function updateProfitSummary() {
@@ -873,52 +1237,243 @@
         }
 
         function findPlatformByKey(platformKey) {
-            return platforms.find(platform => platform.key === platformKey) || null;
-        }
-
-        function normalizePlatformKey(label, fallbackKey = '') {
-            const base = String(label || '')
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-z0-9]+/g, '_')
-                .replace(/^_+|_+$/g, '') || fallbackKey || `platform_${nextPlatformId}`;
-            let key = base;
-            let counter = 2;
-            while (platforms.some(platform => platform.key === key && platform.key !== fallbackKey)) {
-                key = `${base}_${counter++}`;
-            }
-            return key;
+            return platforms.find(platform => platform.key === platformKey || platform.id === platformKey || platform.label === platformKey) || null;
         }
 
         function productOptions(rowId, selectedProductId) {
-            return products.map(product => `
+            const row = profitRows.find(item => item.id === rowId);
+            const shopProducts = (row && typeof getShopProducts === 'function') ? getShopProducts(row.platformKey) : [];
+
+            let html = '';
+
+            if (shopProducts.length > 0) {
+                html += `<div style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #1e40af; background: #eff6ff; border-radius: 6px; margin-bottom: 6px;">🏪 SẢN PHẨM CỦA SHOP ĐÃ CẤU HÌNH:</div>`;
+                html += shopProducts.map(sp => {
+                    const costInfo = calcShopProductCost(sp, products);
+                    const dealStr = (sp.deal && sp.deal.giftQty) ? ` (Mua ${sp.deal.buyQty} tặng ${sp.deal.giftQty})` : '';
+                    return `
+                        <button
+                            type="button"
+                            class="dropdown-option product-option"
+                            style="border-left: 3px solid #2563eb; margin-bottom: 4px; background: #f8fafc;"
+                            onclick="selectShopProductForRow(${rowId}, '${sp.id}')"
+                        >
+                            <strong style="color: #1e3a8a;">🏪 ${escapeHtml(sp.name)} - ${escapeHtml(sp.variation || '')}</strong>
+                            <span style="color: #475569;">Vốn: ${formatMoney(costInfo.totalCost)}${dealStr} | Giá bán: ${formatMoney(sp.price || 0)}</span>
+                        </button>
+                    `;
+                }).join('');
+                html += `<div style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #475569; background: #f1f5f9; border-radius: 6px; margin: 8px 0 6px 0;">📦 SẢN PHẨM KHO ĐƠN LẺ:</div>`;
+            }
+
+            html += products.map(product => `
                 <button
                     type="button"
                     class="dropdown-option product-option ${product.id === Number(selectedProductId) ? 'active' : ''}"
                     onclick="updateProfitRowField(${rowId}, 'productId', '${product.id}')"
                 >
                     <strong>${escapeHtml(product.name || '(Chưa đặt tên)')}</strong>
-                    <span>Giá nhập: ${formatMoney(product.price)} / hộp</span>
+                    <span>Giá nhập kho: ${formatMoney(product.price)} / hộp</span>
                 </button>
             `).join('');
+
+            html += `
+                <div style="padding: 6px 8px; border-top: 1px solid #e2e8f0; margin-top: 4px;">
+                    <button type="button" class="btn-add" style="width: 100%; font-size: 12.5px; padding: 6px;" onclick="openComboBuilderForRow(${rowId})">
+                        🧩 + Ghép Combo mới từ kho
+                    </button>
+                </div>
+            `;
+            return html;
+        }
+
+        function selectShopProductForRow(rowId, shopProductId) {
+            const row = profitRows.find(item => item.id === rowId);
+            if (!row) return;
+
+            const shopProducts = typeof getShopProducts === 'function' ? getShopProducts(row.platformKey) : [];
+            const sp = shopProducts.find(p => p.id === shopProductId);
+            if (!sp) return;
+
+            row.isCombo = true;
+            row.comboName = `${sp.name} (${sp.variation || 'Mặc định'})`;
+            row.comboItems = (sp.items || []).map(it => ({
+                productId: it.productId,
+                quantity: it.quantity || 1,
+                isGift: false
+            }));
+            row.buyQuantity = sp.deal?.buyQty || 1;
+            row.giftQuantity = sp.deal?.giftQty || 0;
+            if (sp.price) row.salePrice = Number(sp.price);
+            if (sp.packagingFee) row.packagingFee = Number(sp.packagingFee);
+
+            openDropdownId = null;
+            renderProfitTable();
+            updateAllProfitRows();
+            showToast(`✅ Đã áp dụng sản phẩm "${sp.name}" từ cấu hình Shop!`);
         }
 
         function platformOptions(rowId, selectedPlatformKey) {
-            return platforms.map(platform => `
-                <button
-                    type="button"
-                    class="dropdown-option platform-option ${platform.key === selectedPlatformKey ? 'active' : ''}"
-                    onclick="updateProfitRowField(${rowId}, 'platformKey', '${platform.key}')"
-                >
-                    <span class="platform-pill ${escapeHtml(platform.key)}">${escapeHtml(platform.label)}</span>
-                </button>
-            `).join('');
+            return platforms.map(platform => {
+                const isShopee = String(platform.platform || '').toLowerCase().includes('shopee');
+                const isSelected = platform.key === selectedPlatformKey || platform.id === selectedPlatformKey;
+                return `
+                    <button
+                        type="button"
+                        class="dropdown-option platform-option ${isSelected ? 'active' : ''}"
+                        onclick="updateProfitRowField(${rowId}, 'platformKey', '${platform.key}')"
+                        style="display:flex; justify-content:space-between; align-items:center;"
+                    >
+                        <span class="platform-pill ${isShopee ? 'shopee' : 'tiktok'}">
+                            ${isShopee ? '🛍️' : '🎵'} ${escapeHtml(platform.label)}
+                        </span>
+                        <strong style="color:#2563eb; font-size:12px;">${platform.feeRate}%</strong>
+                    </button>
+                `;
+            }).join('');
         }
 
         function toggleDropdown(dropdownId) {
             openDropdownId = openDropdownId === dropdownId ? null : dropdownId;
             renderProfitTable();
+        }
+
+        /**
+         * =========================================================================
+         * COMBO BUILDER MODAL FUNCTIONS
+         * =========================================================================
+         */
+        function openComboBuilderForNewRow() {
+            const newRow = createProfitRow();
+            newRow.isCombo = true;
+            profitRows.push(newRow);
+            openComboBuilderForRow(newRow.id);
+        }
+
+        function openComboBuilderForRow(rowId) {
+            editingComboRowId = rowId;
+            const entry = profitRows.find(item => item.id === rowId);
+            if (!entry) return;
+
+            document.getElementById('comboModalNameInput').value = entry.comboName || 'Combo Bán Hàng';
+            
+            currentComboItems = (entry.comboItems && entry.comboItems.length > 0)
+                ? JSON.parse(JSON.stringify(entry.comboItems))
+                : [
+                    { productId: products[0]?.id || 1, quantity: 2, isGift: false },
+                    { productId: products[1]?.id || products[0]?.id || 1, quantity: 1, isGift: false }
+                ];
+
+            renderComboModalItems();
+            document.getElementById('comboModal').style.display = 'flex';
+        }
+
+        function closeComboModal() {
+            document.getElementById('comboModal').style.display = 'none';
+            editingComboRowId = null;
+        }
+
+        function renderComboModalItems() {
+            const container = document.getElementById('comboItemsContainer');
+            if (!container) return;
+
+            container.innerHTML = currentComboItems.map((item, index) => {
+                const product = findProductById(item.productId);
+                const price = product ? Number(product.price) || 0 : 0;
+                const totalItemCost = (Number(item.quantity) || 1) * price;
+
+                return `
+                    <div class="combo-item-row">
+                        <div style="flex: 1;">
+                            <select 
+                                style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-family: inherit; font-size: 13px;"
+                                onchange="updateComboItemField(${index}, 'productId', this.value)"
+                            >
+                                ${products.map(p => `
+                                    <option value="${p.id}" ${p.id === Number(item.productId) ? 'selected' : ''}>
+                                        ${escapeHtml(p.name)} (${formatMoney(p.price)}/hộp)
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div style="width: 75px;">
+                            <input 
+                                type="number" 
+                                min="1" 
+                                value="${item.quantity || 1}" 
+                                placeholder="SL" 
+                                style="width: 100%; text-align: center; font-weight: 700; padding: 7px; border-radius: 6px; border: 1px solid #cbd5e1; font-family: inherit;"
+                                oninput="updateComboItemField(${index}, 'quantity', this.value)"
+                            >
+                        </div>
+                        <div style="width: 90px; font-size: 12.5px; font-weight: 700; color: #0f172a; text-align: right;">
+                            ${formatMoney(totalItemCost)}
+                        </div>
+                        <div>
+                            <button type="button" class="btn-delete" style="padding: 5px 8px; font-size: 12px;" onclick="removeComboItemRow(${index})">✕</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            calcComboModalTotal();
+        }
+
+        function addComboItemRow() {
+            currentComboItems.push({
+                productId: products[0]?.id || 1,
+                quantity: 1,
+                isGift: false
+            });
+            renderComboModalItems();
+        }
+
+        function removeComboItemRow(index) {
+            if (currentComboItems.length <= 1) {
+                alert('Combo phải có ít nhất 1 sản phẩm.');
+                return;
+            }
+            currentComboItems.splice(index, 1);
+            renderComboModalItems();
+        }
+
+        function updateComboItemField(index, field, value) {
+            if (!currentComboItems[index]) return;
+            if (field === 'quantity') {
+                currentComboItems[index].quantity = Math.max(1, parseInt(value, 10) || 1);
+            } else if (field === 'productId') {
+                currentComboItems[index].productId = Number(value);
+            }
+            renderComboModalItems();
+        }
+
+        function calcComboModalTotal() {
+            let total = 0;
+            currentComboItems.forEach(item => {
+                const p = findProductById(item.productId);
+                const price = p ? Number(p.price) || 0 : 0;
+                total += (Number(item.quantity) || 1) * price;
+            });
+            const totalEl = document.getElementById('comboModalTotalCost');
+            if (totalEl) {
+                totalEl.textContent = formatMoney(total);
+            }
+            return total;
+        }
+
+        function applyComboModal() {
+            const entry = profitRows.find(item => item.id === editingComboRowId);
+            if (!entry) return;
+
+            const name = document.getElementById('comboModalNameInput')?.value?.trim() || 'Combo Bán Hàng';
+            entry.isCombo = true;
+            entry.comboName = name;
+            entry.comboItems = JSON.parse(JSON.stringify(currentComboItems));
+
+            closeComboModal();
+            renderProfitTable();
+            updateAllProfitRows();
+            showToast(`✅ Đã áp dụng Combo "${name}"!`);
         }
 
         function parseNumberText(value) {
