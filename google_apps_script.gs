@@ -281,7 +281,7 @@ function doPost(e) {
           var p = sProducts[pi];
           var pId = String(p.id || sId + "_P" + (pi + 1));
           var pName = String(p.name || "");
-          var pVar = String(p.variation || "Mặc định");
+          var pVar = String(p.variation || "");
           var pItems = Array.isArray(p.items) ? p.items : [];
           var pItemsStr = pItems.map(function(it) {
             return (it.quantity || 1) + "x " + (it.productName || "SP Kho #" + it.productId);
@@ -531,21 +531,23 @@ function doPost(e) {
       var lastRow = productSheet.getLastRow();
       
       if (lastRow > 1) {
-        var oldValues = productSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+        var numCols = Math.max(3, productSheet.getLastColumn());
+        var oldValues = productSheet.getRange(2, 1, lastRow - 1, Math.min(numCols, 4)).getValues();
         for (var i = 0; i < oldValues.length; i++) {
           var row = oldValues[i];
           var oldName = String(row[0] || "").trim();
           if (!oldName) continue;
           var oldAliases = String(row[1] || "").trim();
           var oldPrice = Number(row[2]) || 0;
+          var oldInvoiceFee = Number(row[3]) || 0;
           
-          oldProductsMap[oldName] = { name: oldName, aliases: oldAliases, price: oldPrice };
+          oldProductsMap[oldName] = { name: oldName, aliases: oldAliases, price: oldPrice, invoiceFee: oldInvoiceFee };
         }
       }
 
       // Chuẩn bị danh sách mới
       var newProductsMap = {};
-      var cleanNewRows = [["Tên sản phẩm (Dùng để nhận diện)", "Từ khóa / Tên phụ nhận diện", "Giá nhập (VNĐ)"]];
+      var cleanNewRows = [["Tên sản phẩm (Dùng để nhận diện)", "Từ khóa / Tên phụ nhận diện", "Giá nhập (VNĐ)", "Chi phí xuất hóa đơn (VNĐ)"]];
       
       for (var j = 0; j < newProducts.length; j++) {
         var np = newProducts[j];
@@ -560,11 +562,12 @@ function doPost(e) {
           nAliases = "";
         }
         var nPrice = Number(np.price) || 0;
+        var nInvoiceFee = Number(np.invoiceFee) || 0;
 
-        if (nName || nAliases || nPrice > 0) {
-          cleanNewRows.push([nName, nAliases, nPrice]);
+        if (nName || nAliases || nPrice > 0 || nInvoiceFee > 0) {
+          cleanNewRows.push([nName, nAliases, nPrice, nInvoiceFee]);
           if (nName) {
-            newProductsMap[nName] = { name: nName, aliases: nAliases, price: nPrice };
+            newProductsMap[nName] = { name: nName, aliases: nAliases, price: nPrice, invoiceFee: nInvoiceFee };
           }
         }
       }
@@ -577,11 +580,12 @@ function doPost(e) {
         if (!oldProductsMap[name]) {
           var addedP = newProductsMap[name];
           var aliasDetail = addedP.aliases ? " | Từ khóa: " + addedP.aliases.replace(/\n/g, ", ") : "";
+          var feeDetail = addedP.invoiceFee ? " | Phí HĐ: " + addedP.invoiceFee.toLocaleString("vi-VN") + " đ" : "";
           logRows.push([
             timeStr,
             "Thêm sản phẩm",
             addedP.name,
-            "Thêm mới: Giá nhập " + addedP.price.toLocaleString("vi-VN") + " đ" + aliasDetail,
+            "Thêm mới: Giá nhập " + addedP.price.toLocaleString("vi-VN") + " đ" + feeDetail + aliasDetail,
             sourceName
           ]);
         }
@@ -611,6 +615,9 @@ function doPost(e) {
           if (oldP.price !== newP.price) {
             changes.push("Đổi giá nhập: " + oldP.price.toLocaleString("vi-VN") + " đ -> " + newP.price.toLocaleString("vi-VN") + " đ");
           }
+          if (oldP.invoiceFee !== newP.invoiceFee) {
+            changes.push("Đổi phí xuất HĐ: " + (oldP.invoiceFee || 0).toLocaleString("vi-VN") + " đ -> " + (newP.invoiceFee || 0).toLocaleString("vi-VN") + " đ");
+          }
           if (oldP.aliases !== newP.aliases) {
             changes.push("Đổi từ khóa nhận diện: [" + oldP.aliases.replace(/\n/g, ", ") + "] -> [" + newP.aliases.replace(/\n/g, ", ") + "]");
           }
@@ -630,11 +637,12 @@ function doPost(e) {
       // Cập nhật lại productSheet
       productSheet.clearContents();
       if (cleanNewRows.length > 0) {
-        var range = productSheet.getRange(1, 1, cleanNewRows.length, 3);
+        var colCount = cleanNewRows[0].length;
+        var range = productSheet.getRange(1, 1, cleanNewRows.length, colCount);
         range.setValues(cleanNewRows);
-        productSheet.getRange(1, 1, 1, 3).setFontWeight("bold");
+        productSheet.getRange(1, 1, 1, colCount).setFontWeight("bold");
         if (cleanNewRows.length > 1) {
-          productSheet.getRange(2, 3, cleanNewRows.length - 1, 1).setNumberFormat("#,##0");
+          productSheet.getRange(2, 3, cleanNewRows.length - 1, 2).setNumberFormat("#,##0");
         }
       }
 

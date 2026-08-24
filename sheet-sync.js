@@ -83,10 +83,12 @@ async function syncProductsToGoogleSheet(products, options = {}) {
         }
 
         const price = Number(p.price) || 0;
+        const invoiceFee = Number(p.invoiceFee) || 0;
         return {
             name: name,
             aliases: aliases,
-            price: price
+            price: price,
+            invoiceFee: invoiceFee
         };
     }).filter(p => p.name || p.price > 0 || (p.aliases && p.aliases.length > 0));
 
@@ -488,7 +490,7 @@ function addOrUpdateShopProduct(shopId, productData) {
     const cleanProduct = {
         id: productData.id || `SP_${shop.id}_${Date.now()}`,
         name: String(productData.name).trim(),
-        variation: String(productData.variation || 'Mặc định').trim(),
+        variation: String(productData.variation || '').trim(),
         items: Array.isArray(productData.items) ? productData.items : [],
         deals: cleanDeals,
         deal: primaryDeal, // backward compatibility
@@ -556,6 +558,7 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
     }
 
     let baseCost = 0;
+    let baseInvoiceFee = 0;
     let baseUnits = 0;
     let parts = [];
 
@@ -563,8 +566,10 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
     items.forEach(it => {
         const wp = wMap.get(String(it.productId)) || wMap.get(String(it.productName || '').toLowerCase());
         const price = wp ? Number(wp.price) || 0 : 0;
+        const invoiceFee = wp ? Number(wp.invoiceFee) || 0 : 0;
         const qty = Number(it.quantity) || 1;
         baseCost += qty * price;
+        baseInvoiceFee += qty * invoiceFee;
         baseUnits += qty;
         parts.push(`${qty}x ${wp?.name || it.productName || 'SP kho'}`);
     });
@@ -601,19 +606,23 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
         }
 
         let giftCost = 0;
+        let giftInvoiceFee = 0;
         let totalGiftUnits = 0;
         let giftParts = [];
 
         giftItems.forEach(g => {
             const wp = wMap.get(String(g.productId)) || wMap.get(String(g.productName || '').toLowerCase());
             const price = wp ? Number(wp.price) || 0 : 0;
+            const invoiceFee = wp ? Number(wp.invoiceFee) || 0 : 0;
             const qty = Number(g.quantity) || 1;
             giftCost += qty * price;
+            giftInvoiceFee += qty * invoiceFee;
             totalGiftUnits += qty;
             giftParts.push(`${qty}x ${wp?.name || g.productName || 'Quà'}`);
         });
 
         const dealCost = (baseCost * buyQty) + giftCost;
+        const dealInvoiceFee = (baseInvoiceFee * buyQty) + giftInvoiceFee;
         const dealUnits = (baseUnits * buyQty) + totalGiftUnits;
         const dealPrice = Number(d.dealPrice) > 0 ? Number(d.dealPrice) : (singlePrice * buyQty);
 
@@ -673,8 +682,10 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
             packagingFee: Number(d.packagingFee) || 0,
             giftItems,
             giftCost,
+            giftInvoiceFee,
             giftQty: totalGiftUnits,
             dealCost,
+            dealInvoiceFee,
             totalUnits: dealUnits,
             dealDesc,
             giftPartsDesc: giftParts.join(' + ')
@@ -688,20 +699,26 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
     const primaryGiftQty = activeDeal ? activeDeal.giftQty : 0;
     const primaryGiftItems = activeDeal ? activeDeal.giftItems : [];
     const primaryGiftCost = activeDeal ? activeDeal.giftCost : 0;
+    const primaryGiftInvoiceFee = activeDeal ? activeDeal.giftInvoiceFee : 0;
     const primaryDealCost = activeDeal ? activeDeal.dealCost : baseCost;
+    const primaryDealInvoiceFee = activeDeal ? activeDeal.dealInvoiceFee : baseInvoiceFee;
     const primaryTotalUnits = activeDeal ? activeDeal.totalUnits : baseUnits;
     const primaryDealPrice = activeDeal ? activeDeal.dealPrice : singlePrice;
     const primaryDealDesc = activeDeal ? activeDeal.dealDesc : '';
 
     return {
         baseCost,
+        baseInvoiceFee,
         baseUnits,
         buyQty: primaryBuyQty,
         giftQty: primaryGiftQty,
         giftItems: primaryGiftItems,
         giftCost: primaryGiftCost,
+        giftInvoiceFee: primaryGiftInvoiceFee,
         dealCost: primaryDealCost,
+        dealInvoiceFee: primaryDealInvoiceFee,
         totalCost: primaryDealCost,
+        totalInvoiceFee: primaryDealInvoiceFee,
         totalUnits: primaryTotalUnits,
         singlePrice,
         dealPrice: primaryDealPrice,

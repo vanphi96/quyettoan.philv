@@ -706,9 +706,6 @@
                 <button type="button" class="btn btn-secondary" onclick="loadShopsFromCloud()">
                     🔄 Tải từ Sheet
                 </button>
-                <a href="loi-nhuan-gia-ban.html" class="btn btn-secondary">
-                    📈 Bảng Tính Lợi Nhuận
-                </a>
                 <a href="index.html" class="btn btn-secondary">
                     🏠 Home
                 </a>
@@ -751,24 +748,33 @@
         <div class="card">
             <div class="card-header">
                 <h2 class="card-title">
-                    <span>📦</span> 1. Danh Mục Mặt Hàng Trong Kho (Đọc từ Tab "products" trên Google Sheet)
+                    <span>📦</span> 1. Danh Mục Mặt Hàng Trong Kho (Đọc & Ghi vào Tab "products" trên Google Sheet)
                 </h2>
-                <div>
-                    <button type="button" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;" onclick="loadWarehouseProductsFromSheet(true)">
-                        🔄 Tải lại từ tab products
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.82rem;" onclick="openAddWarehouseProductModal()">
+                        + Thêm Mặt Hàng Kho
+                    </button>
+                    <button type="button" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.82rem;" onclick="loadWarehouseProductsFromSheet(true)">
+                        🔄 Tải lại từ Sheet
+                    </button>
+                    <button type="button" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.82rem; border-color: #10b981; color: #047857; font-weight: 700;" onclick="syncWarehouseProductsToCloud()">
+                        💾 Lưu lên Sheet (tab products)
                     </button>
                 </div>
             </div>
             <p style="font-size: 0.84rem; color: var(--text-muted); margin-top: -8px;">
-                Bảng danh mục các nguyên liệu / hàng nhập kho dùng để chọn thành phần cấu tạo và quà tặng khi tạo sản phẩm bán cho từng Shop.
+                Bảng danh mục các nguyên liệu / hàng nhập kho dùng để chọn thành phần cấu tạo và quà tặng khi tạo sản phẩm bán cho từng Shop. Bạn có thể thêm, sửa, xóa và bấm lưu đồng bộ lên Google Sheet.
             </p>
-            <div class="table-responsive" style="max-height: 240px; overflow-y: auto;">
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
                 <table class="shop-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px; text-align: center;">STT</th>
+                            <th style="width: 45px; text-align: center;">STT</th>
                             <th>Tên Mặt Hàng Trong Kho</th>
-                            <th style="width: 200px; text-align: right;">Đơn Giá Nhập Kho (VNĐ)</th>
+                            <th style="width: 220px;">Từ Khóa Nhận Diện (Aliases)</th>
+                            <th style="width: 160px; text-align: right;">Đơn Giá Nhập Kho</th>
+                            <th style="width: 170px; text-align: right;">Chi Phí Xuất Hóa Đơn</th>
+                            <th style="width: 85px; text-align: center;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody id="warehouseTableBody">
@@ -845,13 +851,13 @@
                     <thead>
                         <tr>
                             <th style="width: 40px; text-align: center;">STT</th>
-                            <th style="width: 170px;">Tên Sản Phẩm Bán</th>
-                            <th style="width: 130px;">Phân Loại / Gói</th>
+                            <th style="width: 180px;">Tên Sản Phẩm Bán</th>
+                            <th style="width: 140px;">Phân Loại / Gói</th>
                             <th>Thành Phần Xuất Kho (BOM)</th>
-                            <th style="width: 150px;">Khuyến Mãi (Deal)</th>
-                            <th style="width: 130px; text-align: right;">Giá Vốn Xuất Kho</th>
-                            <th style="width: 150px; text-align: right;">Bán Lẻ (1 SP) & Lãi</th>
-                            <th style="width: 160px; text-align: right;">Bán Theo Deal & Lãi</th>
+                            <th style="width: 180px;">Khuyến Mãi (Deal)</th>
+                            <th style="width: 130px; text-align: right;">Giá Vốn Kho</th>
+                            <th style="width: 140px; text-align: right;">Giá Bán</th>
+                            <th style="width: 130px; text-align: right;">Phí Đóng Gói</th>
                             <th style="width: 80px; text-align: center;">Thao tác</th>
                         </tr>
                     </thead>
@@ -860,6 +866,44 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL 0: THÊM / SỬA MẶT HÀNG KHO (TAB PRODUCTS) -->
+    <div id="warehouseProductModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="warehouseProductModalTitle" class="modal-title">📦 + Thêm Mặt Hàng Kho Mới</h3>
+                <button type="button" class="btn-close-modal" onclick="closeWarehouseProductModal()">✕</button>
+            </div>
+            <form id="warehouseProductForm" class="modal-form" onsubmit="handleWarehouseProductModalSubmit(event)">
+                <input type="hidden" id="wpModalId">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Tên mặt hàng trong kho <span style="color:red">*</span></label>
+                        <input type="text" id="wpModalName" class="form-control" placeholder="Ví dụ: Trà ba kích, Hộp quà tết, Bút bi..." required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Từ khóa / Tên phụ nhận diện (Aliases)</label>
+                        <input type="text" id="wpModalAliases" class="form-control" placeholder="Ví dụ: tra ba kich, ba kich (phân cách bằng dấu phẩy)">
+                        <small style="color: var(--text-muted); font-size: 0.75rem;">Dùng để tự động nhận diện mặt hàng khi đọc file quyết toán.</small>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                        <div class="form-group">
+                            <label class="form-label">Đơn giá nhập kho (VNĐ) <span style="color:red">*</span></label>
+                            <input type="text" id="wpModalPrice" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" onblur="formatMoneyInput(this)" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Chi phí xuất hóa đơn (VNĐ)</label>
+                            <input type="text" id="wpModalInvoiceFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" onblur="formatMoneyInput(this)">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeWarehouseProductModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary">💾 Lưu Mặt Hàng Kho</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -919,8 +963,8 @@
                             <input type="text" id="spEditName" class="form-control" placeholder="Ví dụ: Combo Học Sinh, Trà Ba Kích Hộp 20 Gói..." required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Tên phân loại / Gói bán <span style="color:red">*</span></label>
-                            <input type="text" id="spEditVariation" class="form-control" placeholder="Ví dụ: Set 2 Bút + 1 Thước, Deal Mua 2 Tặng 1, Hộp 20 Gói..." required>
+                            <label class="form-label">Tên phân loại / Gói bán <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Tùy chọn, có thể để trống)</span></label>
+                            <input type="text" id="spEditVariation" class="form-control" placeholder="Ví dụ: Set 2 Hộp, Hộp 20 Gói, 500g...">
                         </div>
                     </div>
 
@@ -1013,13 +1057,13 @@
 
         // 1. Danh mục mặt hàng nhập kho (Đọc từ tab products trên Sheet)
         let warehouseProducts = [
-            { id: 1, name: 'Trà ba kích', price: 21000 },
-            { id: 2, name: 'Dây thìa canh', price: 20000 },
-            { id: 3, name: 'Cà gai leo', price: 20000 },
-            { id: 4, name: 'Kim tiền thảo râu mèo', price: 21000 },
-            { id: 5, name: 'Cây rau mương', price: 21000 },
-            { id: 6, name: 'Bút bi', price: 5000 },
-            { id: 7, name: 'Thước kẻ', price: 8000 }
+            { id: 1, name: 'Trà ba kích', price: 21000, invoiceFee: 0 },
+            { id: 2, name: 'Dây thìa canh', price: 20000, invoiceFee: 0 },
+            { id: 3, name: 'Cà gai leo', price: 20000, invoiceFee: 0 },
+            { id: 4, name: 'Kim tiền thảo râu mèo', price: 21000, invoiceFee: 0 },
+            { id: 5, name: 'Cây rau mương', price: 21000, invoiceFee: 0 },
+            { id: 6, name: 'Bút bi', price: 5000, invoiceFee: 0 },
+            { id: 7, name: 'Thước kẻ', price: 8000, invoiceFee: 0 }
         ];
 
         let currentModalItems = [];
@@ -1043,6 +1087,23 @@
         });
 
         /* BẢNG 1: TẢI & HIỂN THỊ DANH MỤC MẶT HÀNG KHO (TAB PRODUCTS) */
+        function getCachedWarehouseProducts() {
+            try {
+                const raw = localStorage.getItem('app_warehouse_products');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch (e) {}
+            return warehouseProducts;
+        }
+
+        function saveCachedWarehouseProducts(productsList) {
+            try {
+                localStorage.setItem('app_warehouse_products', JSON.stringify(productsList));
+            } catch (e) {}
+        }
+
         async function loadWarehouseProductsFromSheet(showFeedback = false) {
             if (showFeedback) {
                 showGlobalLoading('⏳ Đang tải danh mục mặt hàng từ tab "products"...', 'Đang đọc dữ liệu từ Google Sheet...');
@@ -1051,23 +1112,42 @@
                 const data = await fetchGvizJsonp('products');
                 if (data && data.status === 'ok' && data.table && data.table.rows) {
                     const parsed = [];
-                    data.table.rows.forEach(r => {
+                    data.table.rows.forEach((r, idx) => {
                         const c = r.c || [];
                         if (!c[0] || !c[0].v) return;
                         const name = String(c[0].v).trim();
                         if (name.toLowerCase().includes('san pham') || name.toLowerCase().includes('sản phẩm')) return;
+                        
+                        // Từ khóa nhận diện
+                        const aliasesRaw = c[1] && c[1].v ? String(c[1].v).trim() : '';
+                        const aliases = aliasesRaw ? aliasesRaw.split(/[\n,;]+/).map(a => a.trim()).filter(Boolean) : [];
+
+                        // Giá nhập
                         const priceVal = c[2] ? c[2].v : (c[1] ? c[1].v : 0);
                         const digits = String(priceVal || '').replace(/[^0-9]/g, '');
                         const price = parseInt(digits, 10) || 0;
+
+                        // Chi phí xuất hóa đơn (Cột 4 trong sheet, tức c[3])
+                        let invoiceFee = 0;
+                        if (c[3] && c[3].v !== undefined && c[3].v !== null) {
+                            const invDigits = String(c[3].v || '').replace(/[^0-9]/g, '');
+                            invoiceFee = parseInt(invDigits, 10) || 0;
+                        }
+
                         parsed.push({
-                            id: parsed.length + 1,
+                            id: idx + 1,
                             name: name,
-                            price: price
+                            aliases: aliases,
+                            price: price,
+                            invoiceFee: invoiceFee
                         });
                     });
                     if (parsed.length > 0) {
                         warehouseProducts = parsed;
+                        saveCachedWarehouseProducts(warehouseProducts);
                     }
+                } else {
+                    warehouseProducts = getCachedWarehouseProducts();
                 }
                 renderWarehouseTable();
                 if (showFeedback) {
@@ -1075,9 +1155,11 @@
                     showToast(`✅ Đã tải ${warehouseProducts.length} mặt hàng kho từ tab "products"!`);
                 }
             } catch (e) {
+                warehouseProducts = getCachedWarehouseProducts();
+                renderWarehouseTable();
                 if (showFeedback) {
                     hideGlobalLoading();
-                    showToast('❌ Lỗi khi đọc tab products.');
+                    showToast('❌ Lỗi khi đọc tab products. Đang dùng dữ liệu đã lưu.');
                 }
             }
         }
@@ -1091,21 +1173,140 @@
             if (warehouseProducts.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3" style="text-align:center; color: var(--text-muted); padding: 20px;">
-                            Chưa có dữ liệu mặt hàng trong kho.
+                        <td colspan="6" style="text-align:center; color: var(--text-muted); padding: 25px;">
+                            Chưa có mặt hàng nào trong kho. Bấm <strong>+ Thêm Mặt Hàng Kho</strong> để tạo.
                         </td>
                     </tr>
                 `;
                 return;
             }
 
-            tbody.innerHTML = warehouseProducts.map((wp, i) => `
-                <tr>
-                    <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${i + 1}</td>
-                    <td><strong style="color: #0f172a;">${escapeHtml(wp.name)}</strong></td>
-                    <td style="text-align: right; font-weight: 800; color: #1e3a8a;">${formatMoney(wp.price)}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = warehouseProducts.map((wp, i) => {
+                const aliasStr = Array.isArray(wp.aliases) && wp.aliases.length > 0 
+                    ? wp.aliases.join(', ') 
+                    : (typeof wp.aliases === 'string' && wp.aliases ? wp.aliases : '<span style="color:#94a3b8; font-size:12px;">(Không có)</span>');
+
+                return `
+                    <tr>
+                        <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${i + 1}</td>
+                        <td><strong style="color: #0f172a; font-size: 0.92rem;">${escapeHtml(wp.name)}</strong></td>
+                        <td style="color: #475569; font-size: 0.82rem;">${escapeHtml(aliasStr)}</td>
+                        <td style="text-align: right; font-weight: 800; color: #1e3a8a;">${formatMoney(wp.price)}</td>
+                        <td style="text-align: right; font-weight: 700; color: #b45309;">${formatMoney(wp.invoiceFee || 0)}</td>
+                        <td style="text-align: center;">
+                            <div class="action-btns" style="justify-content: center;">
+                                <button type="button" class="btn-icon" onclick="openEditWarehouseProductModal(${wp.id})" title="Sửa mặt hàng này">✏️</button>
+                                <button type="button" class="btn-icon delete" onclick="handleDeleteWarehouseProduct(${wp.id})" title="Xóa mặt hàng này">🗑️</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        /* MODAL CRUD MẶT HÀNG KHO */
+        function openAddWarehouseProductModal() {
+            document.getElementById('warehouseProductModalTitle').textContent = '📦 + Thêm Mặt Hàng Kho Mới';
+            document.getElementById('wpModalId').value = '';
+            document.getElementById('wpModalName').value = '';
+            document.getElementById('wpModalAliases').value = '';
+            document.getElementById('wpModalPrice').value = '';
+            document.getElementById('wpModalInvoiceFee').value = '';
+            document.getElementById('warehouseProductModal').style.display = 'flex';
+        }
+
+        function openEditWarehouseProductModal(productId) {
+            const wp = warehouseProducts.find(p => p.id === Number(productId));
+            if (!wp) return;
+
+            document.getElementById('warehouseProductModalTitle').innerHTML = `✏️ Chỉnh Sửa Mặt Hàng: <strong>${escapeHtml(wp.name)}</strong>`;
+            document.getElementById('wpModalId').value = wp.id;
+            document.getElementById('wpModalName').value = wp.name || '';
+            document.getElementById('wpModalAliases').value = Array.isArray(wp.aliases) ? wp.aliases.join(', ') : (wp.aliases || '');
+            document.getElementById('wpModalPrice').value = formatInputNumber(wp.price || 0);
+            document.getElementById('wpModalInvoiceFee').value = formatInputNumber(wp.invoiceFee || 0);
+            document.getElementById('warehouseProductModal').style.display = 'flex';
+        }
+
+        function closeWarehouseProductModal() {
+            document.getElementById('warehouseProductModal').style.display = 'none';
+        }
+
+        function handleWarehouseProductModalSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('wpModalId').value;
+            const name = document.getElementById('wpModalName').value.trim();
+            const aliasesRaw = document.getElementById('wpModalAliases').value.trim();
+            const price = parseNumberText(document.getElementById('wpModalPrice').value);
+            const invoiceFee = parseNumberText(document.getElementById('wpModalInvoiceFee').value);
+
+            if (!name) {
+                alert('Vui lòng nhập tên mặt hàng trong kho.');
+                return;
+            }
+
+            const aliases = aliasesRaw ? aliasesRaw.split(/[\n,;]+/).map(a => a.trim()).filter(Boolean) : [];
+
+            if (id) {
+                // Update
+                const pIdx = warehouseProducts.findIndex(p => p.id === Number(id));
+                if (pIdx >= 0) {
+                    warehouseProducts[pIdx] = {
+                        ...warehouseProducts[pIdx],
+                        name,
+                        aliases,
+                        price,
+                        invoiceFee
+                    };
+                }
+            } else {
+                // Insert new
+                warehouseProducts.push({
+                    id: Date.now(),
+                    name,
+                    aliases,
+                    price,
+                    invoiceFee
+                });
+            }
+
+            saveCachedWarehouseProducts(warehouseProducts);
+            closeWarehouseProductModal();
+            renderWarehouseTable();
+            renderSelectedShopProducts();
+            renderModalWarehouseItems();
+            showToast(`✅ Đã lưu mặt hàng kho "${name}"! Nhớ bấm "💾 Lưu lên Sheet" để đồng bộ lên Google Sheet.`);
+        }
+
+        function handleDeleteWarehouseProduct(productId) {
+            const wp = warehouseProducts.find(p => p.id === Number(productId));
+            if (!wp) return;
+
+            if (!confirm(`Bạn có chắc chắn muốn xóa mặt hàng kho "${wp.name}" khỏi danh mục?`)) return;
+
+            warehouseProducts = warehouseProducts.filter(p => p.id !== Number(productId));
+            saveCachedWarehouseProducts(warehouseProducts);
+            renderWarehouseTable();
+            renderSelectedShopProducts();
+            renderModalWarehouseItems();
+            showToast(`🗑️ Đã xóa mặt hàng "${wp.name}". Bấm "💾 Lưu lên Sheet" nếu muốn cập nhật lên Cloud.`);
+        }
+
+        async function syncWarehouseProductsToCloud() {
+            if (warehouseProducts.length === 0) {
+                alert('Danh sách mặt hàng kho đang trống.');
+                return;
+            }
+
+            showGlobalLoading('⏳ Đang lưu danh mục mặt hàng kho lên Google Sheet...', 'Đang cập nhật tab "products"...');
+            try {
+                await syncProductsToGoogleSheet(warehouseProducts, { isManual: true, source: 'Quản Lý Shop' });
+                hideGlobalLoading();
+                showToast(`✅ Đã lưu ${warehouseProducts.length} mặt hàng kho lên Google Sheet (tab products)!`);
+            } catch (err) {
+                hideGlobalLoading();
+                showToast('❌ Lỗi khi lưu tab products lên Google Sheet.');
+            }
         }
 
         /* BẢNG 2: SHOP MANAGEMENT */
@@ -1281,12 +1482,7 @@
             tbody.innerHTML = products.map((p, idx) => {
                 const costInfo = calcShopProductCost(p, warehouseProducts);
                 const pkgFee = Number(p.packagingFee) || 0;
-
-                // 1. Mua Lẻ (1 SP)
                 const singlePrice = Number(p.price) || 0;
-                const singlePlatformFee = singlePrice * (feePercent / 100);
-                const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - pkgFee;
-                const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
 
                 // 2. Danh sách khuyến mãi (Deals)
                 const dealsInfo = costInfo.dealsInfo && costInfo.dealsInfo.length > 0 ? costInfo.dealsInfo : [];
@@ -1315,31 +1511,20 @@
                 let dealCostHtml = '';
                 if (hasDeals) {
                     dealCostHtml = dealsInfo.map(d => `
-                        <div style="font-size: 10.5px; font-weight: 700; color: #92400e; margin-top: 3px;">
+                        <div style="font-size: 10.5px; font-weight: 600; color: #92400e; margin-top: 3px;">
                             ${escapeHtml(d.name)}: ${formatMoney(d.dealCost)}
                         </div>
                     `).join('');
                 }
 
-                // Bán theo deal & Lãi HTML
-                let dealProfitHtml = '<span style="color: #94a3b8; font-size: 12px;">(Không cài deal)</span>';
+                // Giá bán Deal HTML
+                let dealPriceHtml = '';
                 if (hasDeals) {
-                    dealProfitHtml = dealsInfo.map(d => {
+                    dealPriceHtml = dealsInfo.map(d => {
                         const dPrice = Number(d.dealPrice) || (singlePrice * (d.buyQty || 1));
-                        const dFee = dPrice * (feePercent / 100);
-                        const dPkg = Number(d.packagingFee) > 0 ? Number(d.packagingFee) : pkgFee;
-                        const dProfit = dPrice - d.dealCost - dFee - dPkg;
-                        const dMargin = dPrice > 0 ? ((dProfit / dPrice) * 100).toFixed(1) : '0.0';
-
                         return `
-                            <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #fde68a;">
-                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
-                                    <strong style="color: #92400e; font-size: 0.88rem;">${formatMoney(dPrice)}</strong>
-                                    <span style="font-size: 10px; color: #64748b;">(Gói: ${formatMoney(dPkg)})</span>
-                                </div>
-                                <div style="font-size: 11px; font-weight: 800; color: ${dProfit >= 0 ? '#16a34a' : '#dc2626'}; margin-top: 1px;">
-                                    Lãi: ${formatMoney(dProfit)} (${dMargin}%)
-                                </div>
+                            <div style="font-size: 10.5px; font-weight: 700; color: #92400e; margin-top: 3px;">
+                                ${escapeHtml(d.name)}: ${formatMoney(dPrice)}
                             </div>
                         `;
                     }).join('');
@@ -1349,7 +1534,7 @@
                     <tr>
                         <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
                         <td><strong style="color: #0f172a;">${escapeHtml(p.name)}</strong></td>
-                        <td><span style="color: #2563eb; font-weight: 600;">${escapeHtml(p.variation || 'Mặc định')}</span></td>
+                        <td><span style="color: #2563eb; font-weight: 600;">${escapeHtml(p.variation || '-')}</span></td>
                         <td>
                             <div style="font-size: 0.82rem; color: #334155; line-height: 1.35;">
                                 ${escapeHtml(costInfo.partsDesc || '(Chưa chọn món kho)')}
@@ -1358,18 +1543,16 @@
                         <td>${dealBadgeHtml}</td>
                         <td style="text-align: right;">
                             <div class="cost-badge">${formatMoney(costInfo.baseCost)}</div>
-                            <div style="font-size: 10px; color: #64748b;">(Vốn 1 SP lẻ)</div>
+                            <div style="font-size: 10px; color: #64748b;">(Vốn 1 SP)</div>
                             ${dealCostHtml}
                         </td>
                         <td style="text-align: right;">
                             <strong style="color: #0f172a; font-size: 0.9rem;">${formatMoney(singlePrice)}</strong>
-                            <div style="font-size: 10.5px; color: #64748b;">(Gói: ${formatMoney(pkgFee)})</div>
-                            <div style="font-size: 11px; font-weight: 700; color: ${singleProfit >= 0 ? '#16a34a' : '#dc2626'};">
-                                Lãi: ${formatMoney(singleProfit)} (${singleMargin}%)
-                            </div>
+                            <div style="font-size: 10px; color: #64748b;">(Giá lẻ)</div>
+                            ${dealPriceHtml}
                         </td>
                         <td style="text-align: right;">
-                            ${dealProfitHtml}
+                            <div style="font-weight: 700; color: #334155;">${formatMoney(pkgFee)}</div>
                         </td>
                         <td style="text-align: center;">
                             <div class="action-btns" style="justify-content: center;">
@@ -1477,7 +1660,7 @@
             document.getElementById('productEditModalTitle').innerHTML = `🧩 Thêm Sản Phẩm Mới Cho Shop: <strong>${escapeHtml(shopName)}</strong>`;
             document.getElementById('productEditId').value = '';
             document.getElementById('spEditName').value = '';
-            document.getElementById('spEditVariation').value = 'Mặc định';
+            document.getElementById('spEditVariation').value = '';
             document.getElementById('spEditPrice').value = '0';
             document.getElementById('spEditPackagingFee').value = '0';
 
@@ -1505,7 +1688,7 @@
             document.getElementById('productEditModalTitle').innerHTML = `✏️ Chỉnh Sửa Sản Phẩm: <strong>${escapeHtml(p.name)}</strong> (${escapeHtml(shopName)})`;
             document.getElementById('productEditId').value = p.id;
             document.getElementById('spEditName').value = p.name || '';
-            document.getElementById('spEditVariation').value = p.variation || 'Mặc định';
+            document.getElementById('spEditVariation').value = p.variation || '';
             document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
             document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
 
@@ -2149,7 +2332,7 @@
             const productData = {
                 id: id || undefined,
                 name: name,
-                variation: variation || 'Mặc định',
+                variation: variation || '',
                 items: cleanItems,
                 deals: cleanDeals,
                 deal: cleanDeals[0] || { buyQty: 1, giftQty: 0, giftProductId: 'self' },
@@ -2163,7 +2346,7 @@
             closeProductEditModal();
             renderSelectedShopProducts();
             renderShopTable();
-            showToast(`✅ Đã lưu sản phẩm "${name}" (${variation}) với ${cleanDeals.length} khuyến mãi!`);
+            showToast(`✅ Đã lưu sản phẩm "${name}"${variation ? ` (${variation})` : ''} với ${cleanDeals.length} khuyến mãi!`);
         }
 
         function handleDeleteProduct(productId) {
