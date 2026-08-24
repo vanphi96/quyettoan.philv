@@ -452,14 +452,50 @@ function addOrUpdateShopProduct(shopId, productData) {
 
     if (!Array.isArray(shop.products)) shop.products = [];
 
+    // Chuẩn hóa danh sách deals
+    let rawDeals = [];
+    if (Array.isArray(productData.deals)) {
+        rawDeals = productData.deals;
+    } else if (productData.deal && typeof productData.deal === 'object') {
+        rawDeals = [productData.deal];
+    }
+
+    const cleanDeals = rawDeals.map((d, idx) => {
+        let gifts = [];
+        if (Array.isArray(d.giftItems)) {
+            gifts = d.giftItems;
+        } else if (d.giftQty > 0) {
+            gifts = [{
+                productId: d.giftProductId || 1,
+                quantity: Number(d.giftQty) || 1
+            }];
+        }
+        return {
+            id: d.id || `deal_${Date.now()}_${idx}`,
+            name: String(d.name || '').trim(),
+            timeType: d.timeType || 'always', // 'always' | 'range' | 'from_only'
+            startDate: String(d.startDate || '').trim(),
+            endDate: String(d.endDate || '').trim(),
+            buyQty: Math.max(1, Number(d.buyQty) || 1),
+            dealPrice: Number(d.dealPrice) || 0,
+            packagingFee: Number(d.packagingFee) || 0,
+            giftItems: gifts
+        };
+    });
+
+    const primaryDeal = cleanDeals[0] || productData.deal || { buyQty: 1, giftQty: 0, giftProductId: 'self' };
+
     const cleanProduct = {
         id: productData.id || `SP_${shop.id}_${Date.now()}`,
         name: String(productData.name).trim(),
         variation: String(productData.variation || 'Mặc định').trim(),
         items: Array.isArray(productData.items) ? productData.items : [],
-        deal: productData.deal || { buyQty: 1, giftQty: 0, giftProductId: 'self' },
+        deals: cleanDeals,
+        deal: primaryDeal, // backward compatibility
         price: Number(productData.price) || 0,
+        dealPrice: Number(productData.dealPrice) || Number(primaryDeal?.dealPrice) || 0,
         packagingFee: Number(productData.packagingFee) || 0,
+        dealPackagingFee: Number(productData.dealPackagingFee) || Number(primaryDeal?.packagingFee) || Number(productData.packagingFee) || 0,
         note: String(productData.note || '').trim()
     };
 
@@ -506,7 +542,8 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
             dealPrice: 0,
             partsDesc: '',
             dealDesc: '',
-            breakdown: ''
+            breakdown: '',
+            dealsInfo: []
         };
     }
 
@@ -532,63 +569,229 @@ function calcShopProductCost(shopProduct, warehouseProducts = []) {
         parts.push(`${qty}x ${wp?.name || it.productName || 'SP kho'}`);
     });
 
-    const deal = shopProduct.deal || {};
-    const buyQty = Math.max(1, Number(deal.buyQty) || 1);
+    const singlePrice = Number(shopProduct.price) || 0;
+    const partsDesc = parts.join(' + ');
 
-    // Chuẩn hóa danh sách quà tặng kèm
-    let giftItems = [];
-    if (Array.isArray(deal.giftItems)) {
-        giftItems = deal.giftItems;
-    } else if (deal.giftQty > 0) {
-        // Tương thích ngược phiên bản cũ
-        giftItems = [{
-            productId: (deal.giftProductId && deal.giftProductId !== 'self') ? deal.giftProductId : (items[0]?.productId || 1),
-            quantity: Number(deal.giftQty) || 1
-        }];
+    // Chuẩn hóa danh sách deals
+    let rawDeals = [];
+    if (Array.isArray(shopProduct.deals) && shopProduct.deals.length > 0) {
+        rawDeals = shopProduct.deals;
+    } else if (shopProduct.deal && typeof shopProduct.deal === 'object') {
+        rawDeals = [shopProduct.deal];
     }
 
-    let giftCost = 0;
-    let totalGiftUnits = 0;
-    let giftParts = [];
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    giftItems.forEach(g => {
-        const wp = wMap.get(String(g.productId)) || wMap.get(String(g.productName || '').toLowerCase());
-        const price = wp ? Number(wp.price) || 0 : 0;
-        const qty = Number(g.quantity) || 1;
-        giftCost += qty * price;
-        totalGiftUnits += qty;
-        giftParts.push(`${qty}x ${wp?.name || g.productName || 'Quà'}`);
+    const formatVnDate = (dt) => {
+        if (!dt) return '';
+        const p = dt.split('-');
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dt;
+    };
+
+    const dealsInfo = rawDeals.map((d, dIdx) => {
+        const buyQty = Math.max(1, Number(d.buyQty) || 1);
+        let giftItems = [];
+        if (Array.isArray(d.giftItems)) {
+            giftItems = d.giftItems;
+        } else if (d.giftQty > 0) {
+            giftItems = [{
+                productId: d.giftProductId || (items[0]?.productId || 1),
+                quantity: Number(d.giftQty) || 1
+            }];
+        }
+
+        let giftCost = 0;
+        let totalGiftUnits = 0;
+        let giftParts = [];
+
+        giftItems.forEach(g => {
+            const wp = wMap.get(String(g.productId)) || wMap.get(String(g.productName || '').toLowerCase());
+            const price = wp ? Number(wp.price) || 0 : 0;
+            const qty = Number(g.quantity) || 1;
+            giftCost += qty * price;
+            totalGiftUnits += qty;
+            giftParts.push(`${qty}x ${wp?.name || g.productName || 'Quà'}`);
+        });
+
+        const dealCost = (baseCost * buyQty) + giftCost;
+        const dealUnits = (baseUnits * buyQty) + totalGiftUnits;
+        const dealPrice = Number(d.dealPrice) > 0 ? Number(d.dealPrice) : (singlePrice * buyQty);
+
+        let dealDesc = '';
+        if (giftParts.length > 0) {
+            dealDesc = `Mua ${buyQty} tặng ${giftParts.join(' + ')}`;
+        } else if (buyQty > 1) {
+            dealDesc = `Mua ${buyQty}`;
+        } else {
+            dealDesc = `Mua 1 SP`;
+        }
+
+        // Tính trạng thái thời gian
+        const timeType = d.timeType || 'always';
+        let status = { code: 'active', label: '⚡ Luôn hoạt động', badgeClass: 'badge-always' };
+        let timeLabel = '⚡ Luôn hoạt động';
+
+        if (timeType === 'always') {
+            status = { code: 'active', label: '⚡ Luôn hoạt động', badgeClass: 'badge-always' };
+            timeLabel = '⚡ Luôn hoạt động';
+        } else if (timeType === 'from_only') {
+            const startVn = formatVnDate(d.startDate);
+            if (!d.startDate || todayStr >= d.startDate) {
+                status = { code: 'active', label: `🟢 Đang áp dụng (Từ ${startVn})`, badgeClass: 'badge-active' };
+            } else {
+                status = { code: 'upcoming', label: `🟡 Sắp diễn ra (Từ ${startVn})`, badgeClass: 'badge-upcoming' };
+            }
+            timeLabel = `Từ ${startVn || '...'} (Không giới hạn)`;
+        } else if (timeType === 'range') {
+            const startVn = formatVnDate(d.startDate);
+            const endVn = formatVnDate(d.endDate);
+            if (!d.startDate && !d.endDate) {
+                status = { code: 'active', label: '⚡ Luôn hoạt động', badgeClass: 'badge-always' };
+                timeLabel = '⚡ Luôn hoạt động';
+            } else if (d.startDate && todayStr < d.startDate) {
+                status = { code: 'upcoming', label: `🟡 Sắp diễn ra (${startVn} - ${endVn})`, badgeClass: 'badge-upcoming' };
+                timeLabel = `${startVn} - ${endVn}`;
+            } else if (d.endDate && todayStr > d.endDate) {
+                status = { code: 'expired', label: `⚪ Đã kết thúc (${startVn} - ${endVn})`, badgeClass: 'badge-expired' };
+                timeLabel = `${startVn} - ${endVn}`;
+            } else {
+                status = { code: 'active', label: `🟢 Đang áp dụng (${startVn} - ${endVn})`, badgeClass: 'badge-active' };
+                timeLabel = `${startVn} - ${endVn}`;
+            }
+        }
+
+        return {
+            id: d.id || `deal_${dIdx}`,
+            name: d.name || dealDesc,
+            timeType,
+            startDate: d.startDate || '',
+            endDate: d.endDate || '',
+            timeLabel,
+            status,
+            buyQty,
+            dealPrice,
+            packagingFee: Number(d.packagingFee) || 0,
+            giftItems,
+            giftCost,
+            giftQty: totalGiftUnits,
+            dealCost,
+            totalUnits: dealUnits,
+            dealDesc,
+            giftPartsDesc: giftParts.join(' + ')
+        };
     });
 
-    const dealCost = (baseCost * buyQty) + giftCost;
-    const dealUnits = (baseUnits * buyQty) + totalGiftUnits;
+    // Chọn primary deal (ưu tiên deal đang active, hoặc deal đầu tiên)
+    const activeDeal = dealsInfo.find(di => di.status.code === 'active') || dealsInfo[0] || null;
 
-    let dealDesc = '';
-    if (giftParts.length > 0) {
-        dealDesc = `Mua ${buyQty} tặng ${giftParts.join(' + ')}`;
-    } else if (buyQty > 1) {
-        dealDesc = `Mua ${buyQty}`;
-    }
-
-    const singlePrice = Number(shopProduct.price) || 0;
-    const dealPrice = Number(shopProduct.dealPrice) || (singlePrice * buyQty);
+    const primaryBuyQty = activeDeal ? activeDeal.buyQty : 1;
+    const primaryGiftQty = activeDeal ? activeDeal.giftQty : 0;
+    const primaryGiftItems = activeDeal ? activeDeal.giftItems : [];
+    const primaryGiftCost = activeDeal ? activeDeal.giftCost : 0;
+    const primaryDealCost = activeDeal ? activeDeal.dealCost : baseCost;
+    const primaryTotalUnits = activeDeal ? activeDeal.totalUnits : baseUnits;
+    const primaryDealPrice = activeDeal ? activeDeal.dealPrice : singlePrice;
+    const primaryDealDesc = activeDeal ? activeDeal.dealDesc : '';
 
     return {
         baseCost,
         baseUnits,
-        buyQty,
-        giftQty: totalGiftUnits,
-        giftItems,
-        giftCost,
-        dealCost,
-        totalCost: dealCost, // Alias for backward compatibility
-        totalUnits: dealUnits,
+        buyQty: primaryBuyQty,
+        giftQty: primaryGiftQty,
+        giftItems: primaryGiftItems,
+        giftCost: primaryGiftCost,
+        dealCost: primaryDealCost,
+        totalCost: primaryDealCost,
+        totalUnits: primaryTotalUnits,
         singlePrice,
-        dealPrice,
-        partsDesc: parts.join(' + '),
-        dealDesc,
-        breakdown: giftParts.length > 0 ? `${parts.join(' + ')} (${dealDesc})` : (parts.join(' + ') || `${shopProduct.name}`)
+        dealPrice: primaryDealPrice,
+        partsDesc,
+        dealDesc: primaryDealDesc,
+        breakdown: partsDesc ? `${partsDesc}${primaryDealDesc ? ` (${primaryDealDesc})` : ''}` : (shopProduct.name || ''),
+        dealsInfo
     };
+}
+
+/**
+ * Kiểm tra xem các khoảng thời gian khuyến mãi có bị giao/trùng lặp nhau hay không
+ * @param {Array} deals Danh sách khuyến mãi [{timeType, startDate, endDate, name, ...}]
+ * @returns {Object} { isValid: boolean, message: string, conflictIndices: [i, j] }
+ */
+function validateShopDealsOverlap(deals = []) {
+    if (!Array.isArray(deals) || deals.length <= 1) {
+        return { isValid: true, message: '', conflictIndices: [] };
+    }
+
+    const formatVnDate = (dt) => {
+        if (!dt) return '';
+        const parts = dt.split('-');
+        return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : dt;
+    };
+
+    // Kiểm tra hợp lệ từng deal trước
+    for (let i = 0; i < deals.length; i++) {
+        const d = deals[i];
+        if (d.timeType === 'range') {
+            if (!d.startDate || !d.endDate) {
+                return {
+                    isValid: false,
+                    message: `Khuyến mãi #${i + 1} (${d.name || 'Deal'}) chưa chọn đủ ngày bắt đầu và kết thúc.`,
+                    conflictIndices: [i]
+                };
+            }
+            if (d.startDate > d.endDate) {
+                return {
+                    isValid: false,
+                    message: `Khuyến mãi #${i + 1} (${d.name || 'Deal'}) có ngày kết thúc (${formatVnDate(d.endDate)}) trước ngày bắt đầu (${formatVnDate(d.startDate)}).`,
+                    conflictIndices: [i]
+                };
+            }
+        } else if (d.timeType === 'from_only') {
+            if (!d.startDate) {
+                return {
+                    isValid: false,
+                    message: `Khuyến mãi #${i + 1} (${d.name || 'Deal'}) chưa chọn ngày bắt đầu.`,
+                    conflictIndices: [i]
+                };
+            }
+        }
+    }
+
+    // Kiểm tra giao nhau giữa từng cặp deal (i, j)
+    for (let i = 0; i < deals.length; i++) {
+        for (let j = i + 1; j < deals.length; j++) {
+            const a = deals[i];
+            const b = deals[j];
+
+            // Nếu 1 trong 2 deal là 'always' (luôn hoạt động), nó sẽ trùng với deal còn lại
+            if (a.timeType === 'always' || b.timeType === 'always') {
+                return {
+                    isValid: false,
+                    message: `Khuyến mãi #${i + 1} và Khuyến mãi #${j + 1} bị trùng thời gian vì có chương trình cài đặt "Luôn luôn hoạt động". Khi có nhiều khuyến mãi, hãy chọn khoảng thời gian cụ thể cho từng khuyến mãi.`,
+                    conflictIndices: [i, j]
+                };
+            }
+
+            const startA = a.startDate || '1970-01-01';
+            const endA = (a.timeType === 'from_only' || !a.endDate) ? '9999-12-31' : a.endDate;
+
+            const startB = b.startDate || '1970-01-01';
+            const endB = (b.timeType === 'from_only' || !b.endDate) ? '9999-12-31' : b.endDate;
+
+            const maxStart = startA > startB ? startA : startB;
+            const minEnd = endA < endB ? endA : endB;
+
+            if (maxStart <= minEnd) {
+                return {
+                    isValid: false,
+                    message: `Khuyến mãi #${i + 1} (${a.name || 'Deal'} : ${a.startDate ? formatVnDate(a.startDate) : ''} - ${a.endDate ? formatVnDate(a.endDate) : 'Vô hạn'}) bị trùng khoảng thời gian với Khuyến mãi #${j + 1} (${b.name || 'Deal'} : ${b.startDate ? formatVnDate(b.startDate) : ''} - ${b.endDate ? formatVnDate(b.endDate) : 'Vô hạn'}).`,
+                    conflictIndices: [i, j]
+                };
+            }
+        }
+    }
+
+    return { isValid: true, message: '', conflictIndices: [] };
 }
 
 /**

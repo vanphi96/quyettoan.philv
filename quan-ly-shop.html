@@ -508,16 +508,90 @@
             gap: 8px;
         }
 
-        /* GRID-BASED BOM ITEM ROW (KHÔNG BỊ ĐÈ CHỮ) */
+        /* GRID-BASED BOM ITEM ROW (KHÔNG BỊ ĐÈ CHỮ VÀ VIEW) */
         .bom-item-row {
             display: grid;
-            grid-template-columns: 1fr 100px 130px 34px;
+            grid-template-columns: minmax(180px, 1fr) 110px 145px 36px;
             align-items: center;
             gap: 10px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             padding: 8px 12px;
             border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .bom-item-row > div {
+            min-width: 0;
+        }
+
+        .bom-qty-box {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 2px 6px;
+            height: 36px;
+            box-sizing: border-box;
+        }
+
+        .bom-qty-label {
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: #64748b;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .bom-qty-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-weight: 800;
+            font-size: 0.88rem;
+            color: #0f172a;
+            outline: none;
+            padding: 2px;
+        }
+
+        /* DEAL / PROMOTION CARDS */
+        .deal-card {
+            background: #fffdf5;
+            border: 1.5px solid #fde68a;
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .deal-card.has-conflict {
+            border-color: #ef4444 !important;
+            background: #fef2f2 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+
+        .deal-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #fde68a;
+        }
+
+        .deal-card-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #92400e;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .deal-badge {
@@ -526,11 +600,77 @@
             gap: 4px;
             font-size: 11px;
             font-weight: 800;
-            background: #fffbeb;
-            color: #b45309;
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+
+        .deal-badge.badge-active {
+            background: #dcfce7;
+            color: #15803d;
+            border-color: #86efac;
+        }
+
+        .deal-badge.badge-upcoming {
+            background: #fef9c3;
+            color: #a16207;
+            border-color: #fde047;
+        }
+
+        .deal-badge.badge-expired {
+            background: #f1f5f9;
+            color: #64748b;
+            border-color: #cbd5e1;
+        }
+
+        .deal-badge.badge-always {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .deal-alert {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            line-height: 1.4;
+        }
+
+        .deal-profit-bar {
+            background: #ffffff;
             border: 1px solid #fde68a;
-            padding: 3px 7px;
-            border-radius: 5px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+            font-size: 0.78rem;
+            color: #78350f;
+            align-items: center;
+        }
+
+        .deal-profit-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .deal-profit-label {
+            font-size: 0.7rem;
+            color: #92400e;
+        }
+
+        .deal-profit-val {
+            font-weight: 800;
+            font-size: 0.88rem;
         }
 
         .cost-badge {
@@ -772,6 +912,7 @@
             <form id="productEditForm" class="modal-form" onsubmit="handleProductEditSubmit(event)">
                 <input type="hidden" id="productEditId">
                 <div class="modal-body">
+                    <!-- THÔNG TIN TÊN SẢN PHẨM & PHÂN LOẠI -->
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
                         <div class="form-group">
                             <label class="form-label">Tên sản phẩm đăng bán trên sàn <span style="color:red">*</span></label>
@@ -783,13 +924,13 @@
                         </div>
                     </div>
 
-                    <!-- 1. THÀNH PHẦN TỪ KHO -->
+                    <!-- 1. THÀNH PHẦN TỪ KHO (BOM CHO 1 SẢN PHẨM BÁN LẺ) -->
                     <div class="section-box">
                         <div class="section-box-title">
                             <span>📦 1. Chọn các mặt hàng nhập kho cấu thành nên 1 sản phẩm bán</span>
                             <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" onclick="addWarehouseItemToProduct()">+ Thêm món từ kho</button>
                         </div>
-                        <div id="spWarehouseItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                        <div id="spWarehouseItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
                             <!-- Dynamic BOM items rendered by JS -->
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border);">
@@ -798,127 +939,69 @@
                         </div>
                     </div>
 
-                    <!-- 2. CẤU HÌNH KHUYẾN MÃI & QUÀ TẶNG KÈM (MUA X TẶNG NHIỀU QUÀ) -->
-                    <div class="section-box" style="background: #fffbeb; border-color: #fde68a;">
-                        <div class="section-box-title" style="color: #92400e;">
-                            <span>🎁 2. Cài đặt khuyến mãi & Danh sách quà tặng kèm (Mua X Tặng Quà)</span>
-                            <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; border-color: #f59e0b; color: #b45309;" onclick="addGiftItemToProduct()">+ Thêm quà tặng từ kho</button>
+                    <!-- 2. GIÁ BÁN LẺ & LỢI NHUẬN GỐC (1 SẢN PHẨM) -->
+                    <div class="section-box" style="background: #f8fafc; border-color: #cbd5e1;">
+                        <div class="section-box-title" style="color: #1e293b;">
+                            <span>🛒 2. Giá bán lẻ & Dự toán lợi nhuận bán lẻ (1 Sản Phẩm - Không kèm quà)</span>
                         </div>
-                        
-                        <!-- Ô SỐ LƯỢNG MUA ĐỂ ĐƯỢC DEAL -->
-                        <div style="display: grid; grid-template-columns: 140px 1fr; gap: 12px; align-items: center;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                             <div class="form-group">
-                                <label class="form-label" style="color: #92400e;">Khách mua số lượng</label>
-                                <input type="number" id="spDealBuyQty" class="form-control" min="1" value="1" oninput="onDealQtyChange()" required>
+                                <label class="form-label">Giá bán lẻ (VNĐ) <span style="color:red">*</span></label>
+                                <input type="text" id="spEditPrice" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="onSinglePriceInput(this)" onblur="formatMoneyInput(this)" required>
                             </div>
-                            <div style="font-size: 0.82rem; color: #92400e; padding-top: 14px;">
-                                👉 Khi khách mua đúng số lượng trên sẽ được tặng kèm danh sách quà bên dưới:
+                            <div class="form-group">
+                                <label class="form-label">Phí đóng gói lẻ (VNĐ)</label>
+                                <input type="text" id="spEditPackagingFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
                             </div>
                         </div>
 
-                        <!-- DANH SÁCH QUÀ TẶNG KÈM TỪ KHO -->
-                        <div id="spGiftItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
-                            <!-- Dynamic Gift items rendered by JS -->
-                        </div>
-
-                        <div id="spDealSummaryText" style="font-size: 0.82rem; font-weight: 700; color: #b45309; padding-top: 4px;">
-                            ⚡ Mua 1 SP (Không có quà tặng kèm)
+                        <!-- BẢNG CHI TIẾT TÍNH TOÁN LẺ -->
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; font-size: 0.8rem; color: #475569;">
+                            <div>
+                                <div style="font-size: 0.72rem; color: #64748b;">Doanh thu lẻ:</div>
+                                <strong id="spSingleRevDisplay" style="color: #0f172a; font-size: 0.9rem;">0 đ</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: #64748b;">Vốn xuất kho (1 SP):</div>
+                                <strong id="spSingleCostDisplay" style="color: #0f172a; font-size: 0.9rem;">0 đ</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: #64748b;">Phí sàn (<span id="spSingleFeePercentLabel">14.5%</span>):</div>
+                                <span id="spSingleFeeDisplay" style="font-weight: 700; color: #b45309;">0 đ</span>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: #64748b;">Phí đóng gói:</div>
+                                <span id="spSinglePkgDisplay" style="font-weight: 700;">0 đ</span>
+                            </div>
+                            <div style="border-left: 1.5px dashed #cbd5e1; padding-left: 10px;">
+                                <div style="font-size: 0.72rem; color: #64748b; font-weight: 700;">Lợi Nhuận Bán Lẻ:</div>
+                                <strong id="spSingleProfitDisplay" style="font-size: 1.05rem;" class="profit-positive">0 đ (0%)</strong>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 3. GIÁ BÁN & DỰ TOÁN LỢI NHUẬN GỘP (HIỂN THỊ SONG SONG RÕ RÀNG) -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px;">
-                        <!-- CARD 1: MUA LẺ -->
-                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
-                                <strong style="color: #1e293b; font-size: 0.92rem;">🛒 Bán Lẻ (1 Sản Phẩm)</strong>
-                                <span style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 7px; border-radius: 5px; font-weight: 700;">Không Quà</span>
-                            </div>
-
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="form-group">
-                                    <label class="form-label">Giá bán lẻ (VNĐ) <span style="color:red">*</span></label>
-                                    <input type="text" id="spEditPrice" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="onSinglePriceInput(this)" onblur="formatMoneyInput(this)" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Phí đóng gói lẻ (VNĐ)</label>
-                                    <input type="text" id="spEditPackagingFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
-                                </div>
-                            </div>
-
-                            <!-- BẢNG CHI TIẾT TÍNH TOÁN LẺ -->
-                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: #475569;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Doanh thu lẻ (1 SP):</span>
-                                    <strong id="spSingleRevDisplay">0 đ</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Vốn xuất kho (1 SP):</span>
-                                    <strong id="spSingleCostDisplay">0 đ</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Phí sàn (<span id="spSingleFeePercentLabel">14.5%</span>):</span>
-                                    <span id="spSingleFeeDisplay">0 đ</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Phí đóng gói lẻ:</span>
-                                    <span id="spSinglePkgDisplay">0 đ</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px dashed #cbd5e1; padding-top: 6px; margin-top: 2px;">
-                                    <span style="font-weight: 700; color: #0f172a;">Lợi Nhuận Bán Lẻ:</span>
-                                    <strong id="spSingleProfitDisplay" style="font-size: 1.05rem;" class="profit-positive">0 đ (0%)</strong>
-                                </div>
-                            </div>
+                    <!-- 3. CẤU HÌNH KHUYẾN MÃI & QUÀ TẶNG KÈM (MUA X TẶNG NHIỀU QUÀ THEO THỜI GIAN) -->
+                    <div class="section-box" style="background: #fffbeb; border-color: #fde68a;">
+                        <div class="section-box-title" style="color: #92400e;">
+                            <span>🎁 3. Cài đặt các chương trình Khuyến Mãi / Quà Tặng Kèm (Mua X Tặng Quà)</span>
+                            <button type="button" class="btn btn-secondary" style="padding: 4px 12px; font-size: 12px; border-color: #f59e0b; color: #b45309; font-weight: 700;" onclick="addDealToProduct()">+ Thêm Khuyến Mãi Mới</button>
                         </div>
 
-                        <!-- CARD 2: MUA THEO DEAL -->
-                        <div style="background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #fef3c7; padding-bottom: 8px;">
-                                <strong style="color: #92400e; font-size: 0.92rem;">🎁 Bán Theo Deal (Ưu Đãi)</strong>
-                                <span class="deal-badge" id="spDealBadgeDisplay">Mua 1 SP</span>
-                            </div>
+                        <!-- CẢNH BÁO TRÙNG THỜI GIAN KHUYẾN MÃI -->
+                        <div id="dealValidationAlert" class="deal-alert">
+                            <span>⚠️</span>
+                            <span id="dealValidationAlertMsg"></span>
+                        </div>
 
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                                <div class="form-group">
-                                    <label class="form-label" style="color: #92400e;">Giá trọn gói Deal (VNĐ)</label>
-                                    <input type="text" id="spEditDealPrice" class="form-control" placeholder="Tự tính = Mua X x Giá lẻ" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
-                                    <small style="color: #92400e; font-size: 0.72rem;" id="spDealPriceNote">Mặc định = Mua X x Giá lẻ</small>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label" style="color: #92400e;">Phí đóng gói Deal (VNĐ)</label>
-                                    <input type="text" id="spEditDealPackagingFee" class="form-control" placeholder="0" onfocus="prepareNumberInput(this)" oninput="recalcProductModalCost()" onblur="formatMoneyInput(this)">
-                                </div>
-                            </div>
-
-                            <!-- BẢNG CHI TIẾT TÍNH TOÁN DEAL -->
-                            <div style="background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 0.8rem; color: #78350f;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Doanh thu Deal (Khách trả):</span>
-                                    <strong id="spDealRevDisplay">0 đ</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span id="spDealCostLabel">Vốn xuất kho (Hàng bán + Quà):</span>
-                                    <strong id="spDealCostDisplay">0 đ</strong>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Phí sàn (<span id="spDealFeePercentLabel">14.5%</span>):</span>
-                                    <span id="spDealFeeDisplay">0 đ</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span>Phí đóng gói Deal:</span>
-                                    <span id="spDealPkgDisplay">0 đ</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1.5px dashed #fde68a; padding-top: 6px; margin-top: 2px;">
-                                    <span style="font-weight: 700; color: #92400e;">Lợi Nhuận Theo Deal:</span>
-                                    <strong id="spDealProfitDisplay" style="font-size: 1.05rem;" class="profit-positive">0 đ (0%)</strong>
-                                </div>
-                            </div>
+                        <!-- DANH SÁCH CÁC CHƯƠNG TRÌNH KHUYẾN MÃI / DEALS -->
+                        <div id="spDealsContainer" style="display: flex; flex-direction: column; gap: 14px;">
+                            <!-- Dynamic Deal Cards rendered by JS -->
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeProductEditModal()">Hủy</button>
-                    <button type="submit" class="btn btn-primary">💾 Lưu Sản Phẩm Vào Shop</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveProductModal">💾 Lưu Sản Phẩm Vào Shop</button>
                 </div>
             </form>
         </div>
@@ -940,7 +1023,7 @@
         ];
 
         let currentModalItems = [];
-        let currentModalGiftItems = [];
+        let currentModalDeals = [];
 
         window.addEventListener('DOMContentLoaded', async () => {
             await loadWarehouseProductsFromSheet(false);
@@ -1198,7 +1281,6 @@
             tbody.innerHTML = products.map((p, idx) => {
                 const costInfo = calcShopProductCost(p, warehouseProducts);
                 const pkgFee = Number(p.packagingFee) || 0;
-                const dealPkgFee = Number(p.dealPackagingFee) || pkgFee;
 
                 // 1. Mua Lẻ (1 SP)
                 const singlePrice = Number(p.price) || 0;
@@ -1206,20 +1288,61 @@
                 const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - pkgFee;
                 const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
 
-                // 2. Mua Theo Deal
-                const deal = p.deal || {};
-                const buyQty = Number(deal.buyQty) || 1;
-                const giftCount = costInfo.giftQty || 0;
-                const hasDeal = giftCount > 0 || buyQty > 1;
+                // 2. Danh sách khuyến mãi (Deals)
+                const dealsInfo = costInfo.dealsInfo && costInfo.dealsInfo.length > 0 ? costInfo.dealsInfo : [];
+                const hasDeals = dealsInfo.length > 0;
 
-                const dealPrice = Number(p.dealPrice) || (singlePrice * buyQty);
-                const dealPlatformFee = dealPrice * (feePercent / 100);
-                const dealProfit = dealPrice - costInfo.dealCost - dealPlatformFee - dealPkgFee;
-                const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
+                // Badge & Deal summary HTML
+                let dealBadgeHtml = '<span style="color:#94a3b8; font-size:12px;">(Không cài deal)</span>';
+                if (hasDeals) {
+                    dealBadgeHtml = dealsInfo.map(d => {
+                        const statusObj = d.status || { label: 'Luôn hoạt động', badgeClass: 'badge-always' };
+                        return `
+                            <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #fde68a;">
+                                <div style="display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-bottom: 3px;">
+                                    <span class="deal-badge ${statusObj.badgeClass}">${escapeHtml(statusObj.label)}</span>
+                                </div>
+                                <div style="font-size: 11.5px; font-weight: 700; color: #92400e; line-height: 1.3;">
+                                    ⚡ ${escapeHtml(d.name || d.dealDesc)} <br>
+                                    <span style="font-size: 10.5px; color: #78350f; font-weight: 600;">(Xuất ${d.totalUnits} món: ${escapeHtml(d.dealDesc)})</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
 
-                let dealBadge = '<span style="color:#94a3b8; font-size:12px;">Không quà tặng</span>';
-                if (hasDeal) {
-                    dealBadge = `<span class="deal-badge">⚡ ${escapeHtml(costInfo.dealDesc)} (Xuất ${costInfo.totalUnits} món)</span>`;
+                // Vốn Deal HTML
+                let dealCostHtml = '';
+                if (hasDeals) {
+                    dealCostHtml = dealsInfo.map(d => `
+                        <div style="font-size: 10.5px; font-weight: 700; color: #92400e; margin-top: 3px;">
+                            ${escapeHtml(d.name)}: ${formatMoney(d.dealCost)}
+                        </div>
+                    `).join('');
+                }
+
+                // Bán theo deal & Lãi HTML
+                let dealProfitHtml = '<span style="color: #94a3b8; font-size: 12px;">(Không cài deal)</span>';
+                if (hasDeals) {
+                    dealProfitHtml = dealsInfo.map(d => {
+                        const dPrice = Number(d.dealPrice) || (singlePrice * (d.buyQty || 1));
+                        const dFee = dPrice * (feePercent / 100);
+                        const dPkg = Number(d.packagingFee) > 0 ? Number(d.packagingFee) : pkgFee;
+                        const dProfit = dPrice - d.dealCost - dFee - dPkg;
+                        const dMargin = dPrice > 0 ? ((dProfit / dPrice) * 100).toFixed(1) : '0.0';
+
+                        return `
+                            <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed #fde68a;">
+                                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                                    <strong style="color: #92400e; font-size: 0.88rem;">${formatMoney(dPrice)}</strong>
+                                    <span style="font-size: 10px; color: #64748b;">(Gói: ${formatMoney(dPkg)})</span>
+                                </div>
+                                <div style="font-size: 11px; font-weight: 800; color: ${dProfit >= 0 ? '#16a34a' : '#dc2626'}; margin-top: 1px;">
+                                    Lãi: ${formatMoney(dProfit)} (${dMargin}%)
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                 }
 
                 return `
@@ -1232,11 +1355,11 @@
                                 ${escapeHtml(costInfo.partsDesc || '(Chưa chọn món kho)')}
                             </div>
                         </td>
-                        <td>${dealBadge}</td>
+                        <td>${dealBadgeHtml}</td>
                         <td style="text-align: right;">
                             <div class="cost-badge">${formatMoney(costInfo.baseCost)}</div>
-                            <div style="font-size: 10.5px; color: #64748b;">(Vốn 1 SP lẻ)</div>
-                            ${hasDeal ? `<div style="font-size: 11px; font-weight: 700; color: #92400e; margin-top: 2px;">Vốn Deal: ${formatMoney(costInfo.dealCost)}</div>` : ''}
+                            <div style="font-size: 10px; color: #64748b;">(Vốn 1 SP lẻ)</div>
+                            ${dealCostHtml}
                         </td>
                         <td style="text-align: right;">
                             <strong style="color: #0f172a; font-size: 0.9rem;">${formatMoney(singlePrice)}</strong>
@@ -1246,15 +1369,7 @@
                             </div>
                         </td>
                         <td style="text-align: right;">
-                            ${hasDeal ? `
-                                <strong style="color: #92400e; font-size: 0.9rem;">${formatMoney(dealPrice)}</strong>
-                                <div style="font-size: 10.5px; color: #64748b;">(Gói: ${formatMoney(dealPkgFee)})</div>
-                                <div style="font-size: 11px; font-weight: 700; color: ${dealProfit >= 0 ? '#16a34a' : '#dc2626'};">
-                                    Lãi Deal: ${formatMoney(dealProfit)} (${dealMargin}%)
-                                </div>
-                            ` : `
-                                <span style="color: #94a3b8; font-size: 12px;">(Không cài deal)</span>
-                            `}
+                            ${dealProfitHtml}
                         </td>
                         <td style="text-align: center;">
                             <div class="action-btns" style="justify-content: center;">
@@ -1363,19 +1478,16 @@
             document.getElementById('productEditId').value = '';
             document.getElementById('spEditName').value = '';
             document.getElementById('spEditVariation').value = 'Mặc định';
-            document.getElementById('spDealBuyQty').value = '1';
             document.getElementById('spEditPrice').value = '0';
-            document.getElementById('spEditDealPrice').value = '';
             document.getElementById('spEditPackagingFee').value = '0';
-            document.getElementById('spEditDealPackagingFee').value = '0';
 
             currentModalItems = [
                 { productId: warehouseProducts[0]?.id || 1, quantity: 1 }
             ];
-            currentModalGiftItems = [];
+            currentModalDeals = [];
 
             renderModalWarehouseItems();
-            renderModalGiftItems();
+            renderModalDeals();
             recalcProductModalCost();
             document.getElementById('productEditModal').style.display = 'flex';
         }
@@ -1394,31 +1506,43 @@
             document.getElementById('productEditId').value = p.id;
             document.getElementById('spEditName').value = p.name || '';
             document.getElementById('spEditVariation').value = p.variation || 'Mặc định';
-            
-            const deal = p.deal || {};
-            document.getElementById('spDealBuyQty').value = deal.buyQty || 1;
             document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
-            document.getElementById('spEditDealPrice').value = p.dealPrice ? formatInputNumber(p.dealPrice) : '';
             document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
-            document.getElementById('spEditDealPackagingFee').value = formatInputNumber(p.dealPackagingFee || p.packagingFee || 0);
 
             currentModalItems = (p.items && p.items.length > 0)
                 ? JSON.parse(JSON.stringify(p.items))
                 : [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }];
 
-            if (Array.isArray(deal.giftItems) && deal.giftItems.length > 0) {
-                currentModalGiftItems = JSON.parse(JSON.stringify(deal.giftItems));
-            } else if (deal.giftQty > 0) {
-                currentModalGiftItems = [{
-                    productId: (deal.giftProductId && deal.giftProductId !== 'self') ? deal.giftProductId : (currentModalItems[0]?.productId || 1),
-                    quantity: Number(deal.giftQty) || 1
+            // Chuẩn hóa danh sách deals của sản phẩm
+            if (Array.isArray(p.deals) && p.deals.length > 0) {
+                currentModalDeals = JSON.parse(JSON.stringify(p.deals));
+            } else if (p.deal && (p.deal.giftQty > 0 || p.deal.buyQty > 1 || (Array.isArray(p.deal.giftItems) && p.deal.giftItems.length > 0))) {
+                let gifts = [];
+                if (Array.isArray(p.deal.giftItems)) {
+                    gifts = JSON.parse(JSON.stringify(p.deal.giftItems));
+                } else if (p.deal.giftQty > 0) {
+                    gifts = [{
+                        productId: p.deal.giftProductId || currentModalItems[0]?.productId || 1,
+                        quantity: Number(p.deal.giftQty) || 1
+                    }];
+                }
+                currentModalDeals = [{
+                    id: 'deal_1',
+                    name: p.deal.name || 'Deal Mua X Tặng Quà',
+                    timeType: 'always',
+                    startDate: '',
+                    endDate: '',
+                    buyQty: Number(p.deal.buyQty) || 1,
+                    dealPrice: Number(p.dealPrice) || 0,
+                    packagingFee: Number(p.dealPackagingFee) || Number(p.packagingFee) || 0,
+                    giftItems: gifts
                 }];
             } else {
-                currentModalGiftItems = [];
+                currentModalDeals = [];
             }
 
             renderModalWarehouseItems();
-            renderModalGiftItems();
+            renderModalDeals();
             recalcProductModalCost();
             document.getElementById('productEditModal').style.display = 'flex';
         }
@@ -1427,7 +1551,7 @@
             document.getElementById('productEditModal').style.display = 'none';
         }
 
-        /* 1. THÀNH PHẦN KHO CHÍNH (BOM) */
+        /* 1. THÀNH PHẦN KHO CHÍNH (BOM CHO 1 SP BÁN LẺ) */
         function renderModalWarehouseItems() {
             const container = document.getElementById('spWarehouseItemsContainer');
             if (!container) return;
@@ -1435,12 +1559,13 @@
             container.innerHTML = currentModalItems.map((item, index) => {
                 const wp = warehouseProducts.find(p => p.id === Number(item.productId)) || warehouseProducts[0];
                 const price = wp ? wp.price : 0;
-                const totalItemCost = (Number(item.quantity) || 1) * price;
+                const qty = Number(item.quantity) || 1;
+                const totalItemCost = qty * price;
 
                 return `
                     <div class="bom-item-row" id="bomItemRow_${index}">
                         <div>
-                            <select class="form-control" style="padding: 7px 10px;" onchange="onModalItemProductChange(${index}, this.value)">
+                            <select class="form-control" style="padding: 7px 10px; font-weight: 600;" onchange="onModalItemProductChange(${index}, this.value)">
                                 ${warehouseProducts.map(p => `
                                     <option value="${p.id}" ${p.id === Number(item.productId) ? 'selected' : ''}>
                                         ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
@@ -1449,21 +1574,23 @@
                             </select>
                         </div>
                         <div>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                min="1" 
-                                value="${item.quantity || 1}" 
-                                style="text-align: center; font-weight: 700; padding: 7px 4px;"
-                                placeholder="SL"
-                                oninput="onModalItemQtyInput(${index}, this.value)"
-                            >
+                            <div class="bom-qty-box">
+                                <span class="bom-qty-label">SL:</span>
+                                <input 
+                                    type="number" 
+                                    class="bom-qty-input" 
+                                    min="1" 
+                                    value="${qty}" 
+                                    placeholder="1"
+                                    oninput="onModalItemQtyInput(${index}, this.value)"
+                                >
+                            </div>
                         </div>
-                        <div id="bomItemCost_${index}" style="text-align: right; font-weight: 800; color: #0f172a; font-size: 13.5px; white-space: nowrap;">
-                            ${formatMoney(totalItemCost)}
+                        <div id="bomItemCost_${index}" style="text-align: right; font-weight: 800; color: #1e3a8a; font-size: 13px; white-space: nowrap;">
+                            ${formatMoney(price)} x ${qty} = <span style="color:#0f172a;">${formatMoney(totalItemCost)}</span>
                         </div>
-                        <div>
-                            <button type="button" class="btn-icon delete" style="width: 30px; height: 30px;" onclick="removeModalItem(${index})">✕</button>
+                        <div style="text-align: center;">
+                            <button type="button" class="btn-icon delete" style="width: 32px; height: 32px;" onclick="removeModalItem(${index})" title="Xóa món này">✕</button>
                         </div>
                     </div>
                 `;
@@ -1496,9 +1623,10 @@
             if (wp) currentModalItems[index].productName = wp.name;
             
             const price = wp ? wp.price : 0;
-            const totalItemCost = (Number(currentModalItems[index].quantity) || 1) * price;
+            const qty = Number(currentModalItems[index].quantity) || 1;
+            const totalItemCost = qty * price;
             const costEl = document.getElementById(`bomItemCost_${index}`);
-            if (costEl) costEl.textContent = formatMoney(totalItemCost);
+            if (costEl) costEl.innerHTML = `${formatMoney(price)} x ${qty} = <span style="color:#0f172a;">${formatMoney(totalItemCost)}</span>`;
             
             recalcProductModalCost();
         }
@@ -1512,137 +1640,358 @@
             const price = wp ? wp.price : 0;
             const totalItemCost = qty * price;
             const costEl = document.getElementById(`bomItemCost_${index}`);
-            if (costEl) costEl.textContent = formatMoney(totalItemCost);
-
-            recalcProductModalCost();
-        }
-
-        /* 2. QUÀ TẶNG KÈM TỪ KHO (GIFT ITEMS LIST) */
-        function renderModalGiftItems() {
-            const container = document.getElementById('spGiftItemsContainer');
-            if (!container) return;
-
-            if (currentModalGiftItems.length === 0) {
-                container.innerHTML = `
-                    <div style="font-size: 0.8rem; color: #b45309; padding: 6px 10px; background: rgba(254, 243, 199, 0.5); border-radius: 6px;">
-                        (Chưa có quà tặng kèm nào. Bấm <strong>+ Thêm quà tặng từ kho</strong> nếu muốn tặng kèm khi khách mua deal)
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = currentModalGiftItems.map((gift, index) => {
-                const wp = warehouseProducts.find(p => p.id === Number(gift.productId)) || warehouseProducts[0];
-                const price = wp ? wp.price : 0;
-                const totalGiftItemCost = (Number(gift.quantity) || 1) * price;
-
-                return `
-                    <div class="bom-item-row" id="giftItemRow_${index}" style="border-color: #fde68a; background: #fffdf5;">
-                        <div>
-                            <select class="form-control" style="padding: 7px 10px;" onchange="onModalGiftProductChange(${index}, this.value)">
-                                ${warehouseProducts.map(p => `
-                                    <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
-                                        🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
-                                    </option>
-                                `).join('')}
-                            </select>
-                        </div>
-                        <div>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                min="1" 
-                                value="${gift.quantity || 1}" 
-                                style="text-align: center; font-weight: 700; padding: 7px 4px;"
-                                placeholder="SL quà"
-                                oninput="onModalGiftQtyInput(${index}, this.value)"
-                            >
-                        </div>
-                        <div id="giftItemCost_${index}" style="text-align: right; font-weight: 800; color: #92400e; font-size: 13.5px; white-space: nowrap;">
-                            ${formatMoney(totalGiftItemCost)}
-                        </div>
-                        <div>
-                            <button type="button" class="btn-icon delete" style="width: 30px; height: 30px;" onclick="removeGiftItem(${index})">✕</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function addGiftItemToProduct() {
-            currentModalGiftItems.push({
-                productId: warehouseProducts[0]?.id || 1,
-                quantity: 1
-            });
-            renderModalGiftItems();
-            recalcProductModalCost();
-        }
-
-        function removeGiftItem(index) {
-            currentModalGiftItems.splice(index, 1);
-            renderModalGiftItems();
-            recalcProductModalCost();
-        }
-
-        function onModalGiftProductChange(index, value) {
-            if (!currentModalGiftItems[index]) return;
-            currentModalGiftItems[index].productId = Number(value);
-            const wp = warehouseProducts.find(p => p.id === Number(value));
-            if (wp) currentModalGiftItems[index].productName = wp.name;
-
-            const price = wp ? wp.price : 0;
-            const totalGiftItemCost = (Number(currentModalGiftItems[index].quantity) || 1) * price;
-            const costEl = document.getElementById(`giftItemCost_${index}`);
-            if (costEl) costEl.textContent = formatMoney(totalGiftItemCost);
-
-            recalcProductModalCost();
-        }
-
-        function onModalGiftQtyInput(index, value) {
-            if (!currentModalGiftItems[index]) return;
-            const qty = Math.max(1, parseInt(value, 10) || 1);
-            currentModalGiftItems[index].quantity = qty;
-
-            const wp = warehouseProducts.find(p => p.id === Number(currentModalGiftItems[index].productId)) || warehouseProducts[0];
-            const price = wp ? wp.price : 0;
-            const totalGiftItemCost = qty * price;
-            const costEl = document.getElementById(`giftItemCost_${index}`);
-            if (costEl) costEl.textContent = formatMoney(totalGiftItemCost);
+            if (costEl) costEl.innerHTML = `${formatMoney(price)} x ${qty} = <span style="color:#0f172a;">${formatMoney(totalItemCost)}</span>`;
 
             recalcProductModalCost();
         }
 
         function onSinglePriceInput(input) {
-            const buyQty = parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1;
-            const singlePrice = parseNumberText(input.value);
-            const dealPriceInput = document.getElementById('spEditDealPrice');
-            
-            if (dealPriceInput && !dealPriceInput.value) {
-                dealPriceInput.placeholder = formatMoney(singlePrice * buyQty);
-            }
             recalcProductModalCost();
         }
 
-        function onDealQtyChange() {
-            const buyQty = parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1;
-            const singlePrice = parseNumberText(document.getElementById('spEditPrice')?.value);
-            const dealPriceInput = document.getElementById('spEditDealPrice');
-            if (dealPriceInput && !dealPriceInput.value) {
-                dealPriceInput.placeholder = formatMoney(singlePrice * buyQty);
+        /* 2. CÀI ĐẶT CÁC CHƯƠNG TRÌNH KHUYẾN MÃI (DEALS) */
+        function formatVnDate(dt) {
+            if (!dt) return '';
+            const p = String(dt).split('-');
+            return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : dt;
+        }
+
+        function renderModalDeals() {
+            const container = document.getElementById('spDealsContainer');
+            if (!container) return;
+
+            if (currentModalDeals.length === 0) {
+                container.innerHTML = `
+                    <div style="font-size: 0.84rem; color: #92400e; padding: 14px; background: rgba(254, 243, 199, 0.6); border: 1px dashed #fde68a; border-radius: 10px; text-align: center;">
+                        ✨ Chưa cài đặt khuyến mãi nào (Sản phẩm chỉ bán lẻ).<br>
+                        Bấm nút <strong>+ Thêm Khuyến Mãi Mới</strong> bên trên để cài deal mua X tặng quà hoặc giảm giá combo theo thời gian.
+                    </div>
+                `;
+                validateModalDealsOverlap();
+                return;
             }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            container.innerHTML = currentModalDeals.map((deal, dIdx) => {
+                const timeType = deal.timeType || 'always';
+                const buyQty = Math.max(1, Number(deal.buyQty) || 1);
+                const dealPrice = deal.dealPrice ? formatInputNumber(deal.dealPrice) : '';
+                const packagingFee = deal.packagingFee ? formatInputNumber(deal.packagingFee) : '';
+                const giftItems = Array.isArray(deal.giftItems) ? deal.giftItems : [];
+
+                // Badge trạng thái thời gian
+                let statusBadge = `<span class="deal-badge badge-always">⚡ Luôn hoạt động</span>`;
+                if (timeType === 'from_only') {
+                    if (!deal.startDate || todayStr >= deal.startDate) {
+                        statusBadge = `<span class="deal-badge badge-active">🟢 Đang áp dụng (Từ ${formatVnDate(deal.startDate)})</span>`;
+                    } else {
+                        statusBadge = `<span class="deal-badge badge-upcoming">🟡 Sắp diễn ra (Từ ${formatVnDate(deal.startDate)})</span>`;
+                    }
+                } else if (timeType === 'range') {
+                    if (deal.startDate && todayStr < deal.startDate) {
+                        statusBadge = `<span class="deal-badge badge-upcoming">🟡 Sắp diễn ra (${formatVnDate(deal.startDate)} - ${formatVnDate(deal.endDate)})</span>`;
+                    } else if (deal.endDate && todayStr > deal.endDate) {
+                        statusBadge = `<span class="deal-badge badge-expired">⚪ Đã kết thúc (${formatVnDate(deal.startDate)} - ${formatVnDate(deal.endDate)})</span>`;
+                    } else {
+                        statusBadge = `<span class="deal-badge badge-active">🟢 Đang áp dụng (${formatVnDate(deal.startDate)} - ${formatVnDate(deal.endDate)})</span>`;
+                    }
+                }
+
+                return `
+                    <div class="deal-card" id="dealCard_${dIdx}">
+                        <!-- HEADER CỦA DEAL -->
+                        <div class="deal-card-header">
+                            <div class="deal-card-title">
+                                <span>🎁 Khuyến Mãi #${dIdx + 1}:</span>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    style="padding: 4px 10px; font-weight: 700; font-size: 0.85rem; width: 220px; color: #92400e; border-color: #fde68a;"
+                                    value="${escapeHtml(deal.name || `Deal #${dIdx + 1}`)}"
+                                    placeholder="Tên deal (VD: Mua 2 Tặng 1)..."
+                                    oninput="onDealFieldChange(${dIdx}, 'name', this.value)"
+                                >
+                                ${statusBadge}
+                            </div>
+                            <button type="button" class="btn btn-secondary" style="padding: 3px 10px; font-size: 11.5px; border-color: #fca5a5; color: #dc2626;" onclick="removeDealFromProduct(${dIdx})">
+                                🗑️ Xóa Deal này
+                            </button>
+                        </div>
+
+                        <!-- CÀI ĐẶT THỜI GIAN ÁP DỤNG -->
+                        <div style="background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="font-size: 0.8rem; font-weight: 800; color: #92400e;">
+                                📅 Thời Gian Áp Dụng Khuyến Mãi:
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; align-items: center;">
+                                <div class="form-group">
+                                    <label class="form-label" style="font-size: 0.75rem; color: #78350f;">Kiểu áp dụng thời gian</label>
+                                    <select class="form-control" style="padding: 6px 10px; font-size: 0.85rem;" onchange="onDealFieldChange(${dIdx}, 'timeType', this.value)">
+                                        <option value="always" ${timeType === 'always' ? 'selected' : ''}>⚡ Luôn luôn hoạt động (Mọi lúc)</option>
+                                        <option value="range" ${timeType === 'range' ? 'selected' : ''}>📅 Khoảng thời gian cụ thể (Từ ngày -> Đến ngày)</option>
+                                        <option value="from_only" ${timeType === 'from_only' ? 'selected' : ''}>🚀 Bắt đầu từ ngày... (Không giới hạn kết thúc)</option>
+                                    </select>
+                                </div>
+
+                                ${timeType !== 'always' ? `
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem; color: #78350f;">Từ ngày (Bắt đầu) <span style="color:red">*</span></label>
+                                        <input 
+                                            type="date" 
+                                            class="form-control" 
+                                            style="padding: 5px 8px; font-size: 0.85rem;"
+                                            value="${deal.startDate || ''}"
+                                            onchange="onDealFieldChange(${dIdx}, 'startDate', this.value)"
+                                        >
+                                    </div>
+                                ` : ''}
+
+                                ${timeType === 'range' ? `
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 0.75rem; color: #78350f;">Đến ngày (Kết thúc) <span style="color:red">*</span></label>
+                                        <input 
+                                            type="date" 
+                                            class="form-control" 
+                                            style="padding: 5px 8px; font-size: 0.85rem;"
+                                            value="${deal.endDate || ''}"
+                                            onchange="onDealFieldChange(${dIdx}, 'endDate', this.value)"
+                                        >
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- ĐIỀU KIỆN MUA & GIÁ DEAL -->
+                        <div style="display: grid; grid-template-columns: 130px 1fr 1fr; gap: 10px;">
+                            <div class="form-group">
+                                <label class="form-label" style="color: #92400e;">Khách mua SL (X) <span style="color:red">*</span></label>
+                                <input 
+                                    type="number" 
+                                    class="form-control" 
+                                    min="1" 
+                                    value="${buyQty}" 
+                                    style="text-align: center; font-weight: 700;"
+                                    oninput="onDealFieldChange(${dIdx}, 'buyQty', this.value)"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="color: #92400e;">Giá trọn gói Deal (VNĐ)</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="dealPriceInput_${dIdx}"
+                                    value="${dealPrice}" 
+                                    placeholder="Mặc định = Mua X x Giá lẻ"
+                                    onfocus="prepareNumberInput(this)" 
+                                    oninput="onDealFieldChange(${dIdx}, 'dealPrice', this.value)" 
+                                    onblur="formatMoneyInput(this)"
+                                >
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" style="color: #92400e;">Phí đóng gói Deal (VNĐ)</label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="dealPackagingFeeInput_${dIdx}"
+                                    value="${packagingFee}" 
+                                    placeholder="Mặc định = Phí lẻ"
+                                    onfocus="prepareNumberInput(this)" 
+                                    oninput="onDealFieldChange(${dIdx}, 'packagingFee', this.value)" 
+                                    onblur="formatMoneyInput(this)"
+                                >
+                            </div>
+                        </div>
+
+                        <!-- QUÀ TẶNG KÈM TỪ KHO -->
+                        <div style="background: white; border: 1px solid #fde68a; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                                <span style="font-size: 0.8rem; font-weight: 800; color: #92400e;">
+                                    🎁 Quà Tặng Kèm Từ Kho Khi Mua Đúng ${buyQty} SP:
+                                </span>
+                                <button type="button" class="btn btn-secondary" style="padding: 3px 10px; font-size: 11.5px; border-color: #f59e0b; color: #b45309; font-weight: 700;" onclick="addGiftItemToDeal(${dIdx})">
+                                    + Thêm quà tặng từ kho
+                                </button>
+                            </div>
+
+                            <div id="dealGiftsContainer_${dIdx}" style="display: flex; flex-direction: column; gap: 6px;">
+                                ${giftItems.length === 0 ? `
+                                    <div style="font-size: 0.78rem; color: #b45309; padding: 6px 10px; background: #fffdf5; border-radius: 6px;">
+                                        (Chưa chọn quà tặng kèm. Deal này chỉ áp dụng giảm giá trọn gói khi mua ${buyQty} SP).
+                                    </div>
+                                ` : giftItems.map((gift, gIdx) => {
+                                    const wp = warehouseProducts.find(p => p.id === Number(gift.productId)) || warehouseProducts[0];
+                                    const price = wp ? wp.price : 0;
+                                    const gQty = Number(gift.quantity) || 1;
+                                    const totalCost = gQty * price;
+                                    return `
+                                        <div class="bom-item-row" style="background: #fffdf5; border-color: #fde68a; padding: 6px 10px;">
+                                            <div>
+                                                <select class="form-control" style="padding: 6px 8px; font-size: 0.85rem;" onchange="onGiftFieldChange(${dIdx}, ${gIdx}, 'productId', this.value)">
+                                                    ${warehouseProducts.map(p => `
+                                                        <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
+                                                            🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
+                                                        </option>
+                                                    `).join('')}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <div class="bom-qty-box" style="border-color: #fde68a; background: white;">
+                                                    <span class="bom-qty-label" style="color: #92400e;">SL:</span>
+                                                    <input 
+                                                        type="number" 
+                                                        class="bom-qty-input" 
+                                                        min="1" 
+                                                        value="${gQty}" 
+                                                        placeholder="1"
+                                                        oninput="onGiftFieldChange(${dIdx}, ${gIdx}, 'quantity', this.value)"
+                                                    >
+                                                </div>
+                                            </div>
+                                            <div style="text-align: right; font-weight: 800; color: #92400e; font-size: 12.5px; white-space: nowrap;">
+                                                ${formatMoney(price)} x ${gQty} = <span style="color:#78350f;">${formatMoney(totalCost)}</span>
+                                            </div>
+                                            <div style="text-align: center;">
+                                                <button type="button" class="btn-icon delete" style="width: 28px; height: 28px;" onclick="removeGiftItemFromDeal(${dIdx}, ${gIdx})" title="Xóa quà này">✕</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+
+                        <!-- DỰ TOÁN LỢI NHUẬN CỦA DEAL NÀY -->
+                        <div class="deal-profit-bar" id="dealProfitBar_${dIdx}">
+                            <!-- Rendered by recalcProductModalCost -->
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            validateModalDealsOverlap();
             recalcProductModalCost();
         }
 
-        /* TÍNH TOÁN LỢI NHUẬN GỘP CHÍNH XÁC (MUA LẺ & MUA THEO DEAL) */
+        function addDealToProduct() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const nextMonth = new Date();
+            nextMonth.setDate(nextMonth.getDate() + 30);
+            const nextMonthStr = nextMonth.toISOString().split('T')[0];
+
+            currentModalDeals.push({
+                id: `deal_${Date.now()}_${currentModalDeals.length}`,
+                name: `Deal #${currentModalDeals.length + 1}`,
+                timeType: currentModalDeals.length === 0 ? 'always' : 'range',
+                startDate: todayStr,
+                endDate: nextMonthStr,
+                buyQty: 2,
+                dealPrice: 0,
+                packagingFee: 0,
+                giftItems: [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }]
+            });
+
+            renderModalDeals();
+        }
+
+        function removeDealFromProduct(dealIndex) {
+            currentModalDeals.splice(dealIndex, 1);
+            renderModalDeals();
+        }
+
+        function onDealFieldChange(dealIndex, field, value) {
+            if (!currentModalDeals[dealIndex]) return;
+
+            if (field === 'buyQty') {
+                currentModalDeals[dealIndex].buyQty = Math.max(1, parseInt(value, 10) || 1);
+            } else if (field === 'dealPrice') {
+                currentModalDeals[dealIndex].dealPrice = parseNumberText(value);
+            } else if (field === 'packagingFee') {
+                currentModalDeals[dealIndex].packagingFee = parseNumberText(value);
+            } else {
+                currentModalDeals[dealIndex][field] = value;
+            }
+
+            if (field === 'timeType') {
+                if (value === 'range' && !currentModalDeals[dealIndex].startDate) {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    currentModalDeals[dealIndex].startDate = todayStr;
+                    const nextMonth = new Date();
+                    nextMonth.setDate(nextMonth.getDate() + 30);
+                    currentModalDeals[dealIndex].endDate = nextMonth.toISOString().split('T')[0];
+                }
+                renderModalDeals();
+                return;
+            }
+
+            validateModalDealsOverlap();
+            recalcProductModalCost();
+        }
+
+        function addGiftItemToDeal(dealIndex) {
+            if (!currentModalDeals[dealIndex]) return;
+            if (!Array.isArray(currentModalDeals[dealIndex].giftItems)) {
+                currentModalDeals[dealIndex].giftItems = [];
+            }
+            currentModalDeals[dealIndex].giftItems.push({
+                productId: warehouseProducts[0]?.id || 1,
+                quantity: 1
+            });
+            renderModalDeals();
+        }
+
+        function removeGiftItemFromDeal(dealIndex, giftIndex) {
+            if (!currentModalDeals[dealIndex] || !Array.isArray(currentModalDeals[dealIndex].giftItems)) return;
+            currentModalDeals[dealIndex].giftItems.splice(giftIndex, 1);
+            renderModalDeals();
+        }
+
+        function onGiftFieldChange(dealIndex, giftIndex, field, value) {
+            if (!currentModalDeals[dealIndex] || !currentModalDeals[dealIndex].giftItems[giftIndex]) return;
+            if (field === 'quantity') {
+                currentModalDeals[dealIndex].giftItems[giftIndex].quantity = Math.max(1, parseInt(value, 10) || 1);
+            } else {
+                currentModalDeals[dealIndex].giftItems[giftIndex][field] = Number(value) || value;
+            }
+            renderModalDeals();
+        }
+
+        function validateModalDealsOverlap() {
+            const alertEl = document.getElementById('dealValidationAlert');
+            const alertMsg = document.getElementById('dealValidationAlertMsg');
+            const saveBtn = document.getElementById('btnSaveProductModal');
+
+            if (typeof validateShopDealsOverlap !== 'function') return true;
+
+            const validation = validateShopDealsOverlap(currentModalDeals);
+
+            // Reset conflict highlight on all deal cards
+            document.querySelectorAll('.deal-card').forEach(card => card.classList.remove('has-conflict'));
+
+            if (!validation.isValid) {
+                if (alertEl) alertEl.style.display = 'flex';
+                if (alertMsg) alertMsg.textContent = validation.message;
+                if (saveBtn) saveBtn.disabled = true;
+
+                if (Array.isArray(validation.conflictIndices)) {
+                    validation.conflictIndices.forEach(idx => {
+                        const card = document.getElementById(`dealCard_${idx}`);
+                        if (card) card.classList.add('has-conflict');
+                    });
+                }
+                return false;
+            } else {
+                if (alertEl) alertEl.style.display = 'none';
+                if (alertMsg) alertMsg.textContent = '';
+                if (saveBtn) saveBtn.disabled = false;
+                return true;
+            }
+        }
+
+        /* 3. TÍNH TOÁN LỢI NHUẬN GỘP CHÍNH XÁC (MUA LẺ & TẤT CẢ CÁC DEALS) */
         function recalcProductModalCost() {
-            const buyQty = Math.max(1, parseInt(document.getElementById('spDealBuyQty')?.value, 10) || 1);
-
             const dummyProduct = {
                 items: currentModalItems,
-                deal: {
-                    buyQty: buyQty,
-                    giftItems: currentModalGiftItems
-                }
+                deals: currentModalDeals
             };
 
             const costInfo = calcShopProductCost(dummyProduct, warehouseProducts);
@@ -1650,128 +1999,171 @@
             const feePercent = shop ? Number(shop.feePercent) || 0 : 14.5;
 
             const singlePrice = parseNumberText(document.getElementById('spEditPrice')?.value);
-            const rawDealPrice = parseNumberText(document.getElementById('spEditDealPrice')?.value);
-            const dealPrice = rawDealPrice > 0 ? rawDealPrice : (singlePrice * buyQty);
-
-            // Phí đóng gói riêng biệt
             const singlePkgFee = parseNumberText(document.getElementById('spEditPackagingFee')?.value);
-            const rawDealPkgFee = document.getElementById('spEditDealPackagingFee')?.value;
-            const dealPkgFee = (rawDealPkgFee !== '' && rawDealPkgFee !== undefined) 
-                ? parseNumberText(rawDealPkgFee) 
-                : singlePkgFee;
 
-            // ==========================================
-            // 1. TÍNH TOÁN TRƯỜNG HỢP MUA LẺ (1 SẢN PHẨM)
-            // ==========================================
+            // 1. TÍNH LẺ (1 SP)
             const singlePlatformFee = singlePrice * (feePercent / 100);
             const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - singlePkgFee;
             const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
 
-            // Displays Cột 1 (Mua Lẻ)
             const baseCostEl = document.getElementById('spBaseCostDisplay');
             if (baseCostEl) baseCostEl.textContent = formatMoney(costInfo.baseCost);
 
-            document.getElementById('spSingleRevDisplay').textContent = formatMoney(singlePrice);
-            document.getElementById('spSingleCostDisplay').textContent = formatMoney(costInfo.baseCost);
-            document.getElementById('spSingleFeePercentLabel').textContent = `${feePercent.toFixed(1)}%`;
-            document.getElementById('spSingleFeeDisplay').textContent = formatMoney(singlePlatformFee);
-            document.getElementById('spSinglePkgDisplay').textContent = formatMoney(singlePkgFee);
+            const sRev = document.getElementById('spSingleRevDisplay');
+            if (sRev) sRev.textContent = formatMoney(singlePrice);
+            const sCost = document.getElementById('spSingleCostDisplay');
+            if (sCost) sCost.textContent = formatMoney(costInfo.baseCost);
+            const sFeeLabel = document.getElementById('spSingleFeePercentLabel');
+            if (sFeeLabel) sFeeLabel.textContent = `${feePercent.toFixed(1)}%`;
+            const sFee = document.getElementById('spSingleFeeDisplay');
+            if (sFee) sFee.textContent = formatMoney(singlePlatformFee);
+            const sPkg = document.getElementById('spSinglePkgDisplay');
+            if (sPkg) sPkg.textContent = formatMoney(singlePkgFee);
 
             const singleProfitEl = document.getElementById('spSingleProfitDisplay');
-            singleProfitEl.textContent = `${formatMoney(singleProfit)} (${singleMargin}%)`;
-            singleProfitEl.className = singleProfit >= 0 ? 'profit-positive' : 'profit-negative';
+            if (singleProfitEl) {
+                singleProfitEl.textContent = `${formatMoney(singleProfit)} (${singleMargin}%)`;
+                singleProfitEl.className = singleProfit >= 0 ? 'profit-positive' : 'profit-negative';
+            }
 
-            // ==========================================
-            // 2. TÍNH TOÁN TRƯỜNG HỢP MUA THEO DEAL
-            // ==========================================
-            const hasDeal = costInfo.giftQty > 0 || buyQty > 1;
-            const dealPlatformFee = dealPrice * (feePercent / 100);
-            const dealProfit = dealPrice - costInfo.dealCost - dealPlatformFee - dealPkgFee;
-            const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
+            // 2. TÍNH DỰ TOÁN TỪNG DEAL
+            currentModalDeals.forEach((deal, dIdx) => {
+                const barEl = document.getElementById(`dealProfitBar_${dIdx}`);
+                if (!barEl) return;
 
-            // Cập nhật text deal summary
-            const dealTextEl = document.getElementById('spDealSummaryText');
-            if (dealTextEl) {
-                if (costInfo.giftQty > 0) {
-                    dealTextEl.textContent = `⚡ ${costInfo.dealDesc} (Tổng xuất ${costInfo.totalUnits} món) -> Tổng vốn Deal = ${formatMoney(costInfo.dealCost)}`;
-                } else if (buyQty > 1) {
-                    dealTextEl.textContent = `⚡ Mua gói combo ${buyQty} SP (Tổng xuất ${costInfo.totalUnits} món) -> Tổng vốn Combo = ${formatMoney(costInfo.dealCost)}`;
-                } else {
-                    dealTextEl.textContent = `⚡ Mua 1 SP (Không có quà tặng kèm) -> Xuất ${costInfo.totalUnits} món`;
+                const buyQty = Math.max(1, Number(deal.buyQty) || 1);
+                const rawDealPrice = Number(deal.dealPrice) || 0;
+                const dealPrice = rawDealPrice > 0 ? rawDealPrice : (singlePrice * buyQty);
+                const pkgFee = Number(deal.packagingFee) > 0 ? Number(deal.packagingFee) : singlePkgFee;
+
+                // Vốn deal
+                let giftCost = 0;
+                let giftUnits = 0;
+                (deal.giftItems || []).forEach(g => {
+                    const wp = warehouseProducts.find(p => p.id === Number(g.productId));
+                    const price = wp ? wp.price : 0;
+                    const qty = Number(g.quantity) || 1;
+                    giftCost += qty * price;
+                    giftUnits += qty;
+                });
+
+                const dealCost = (costInfo.baseCost * buyQty) + giftCost;
+                const dealPlatformFee = dealPrice * (feePercent / 100);
+                const dealProfit = dealPrice - dealCost - dealPlatformFee - pkgFee;
+                const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
+
+                // Placeholder update for price inputs
+                const pInput = document.getElementById(`dealPriceInput_${dIdx}`);
+                if (pInput && !pInput.value) {
+                    pInput.placeholder = `Mặc định = ${formatMoney(singlePrice * buyQty)}`;
                 }
-            }
 
-            // Displays Cột 2 (Mua Deal)
-            document.getElementById('spDealBadgeDisplay').textContent = costInfo.giftQty > 0 ? `Mua ${buyQty} Tặng ${costInfo.giftQty} quà` : `Mua ${buyQty} SP`;
-            document.getElementById('spDealRevDisplay').textContent = formatMoney(dealPrice);
-            document.getElementById('spDealCostLabel').textContent = `Vốn xuất kho (Hàng bán + Quà):`;
-            document.getElementById('spDealCostDisplay').textContent = formatMoney(costInfo.dealCost);
-            document.getElementById('spDealFeePercentLabel').textContent = `${feePercent.toFixed(1)}%`;
-            document.getElementById('spDealFeeDisplay').textContent = formatMoney(dealPlatformFee);
-            document.getElementById('spDealPkgDisplay').textContent = formatMoney(dealPkgFee);
-
-            const dealProfitEl = document.getElementById('spDealProfitDisplay');
-            dealProfitEl.textContent = `${formatMoney(dealProfit)} (${dealMargin}%)`;
-            dealProfitEl.className = dealProfit >= 0 ? 'profit-positive' : 'profit-negative';
-
-            const dealPriceNote = document.getElementById('spDealPriceNote');
-            if (dealPriceNote) {
-                dealPriceNote.textContent = rawDealPrice > 0 ? `(Đang dùng giá riêng: ${formatMoney(rawDealPrice)})` : `(Tự tính = ${buyQty} x ${formatMoney(singlePrice)} = ${formatMoney(dealPrice)})`;
-            }
+                barEl.innerHTML = `
+                    <div class="deal-profit-item">
+                        <span class="deal-profit-label">Doanh thu Deal:</span>
+                        <span class="deal-profit-val" style="color: #92400e;">${formatMoney(dealPrice)}</span>
+                    </div>
+                    <div class="deal-profit-item">
+                        <span class="deal-profit-label">Vốn xuất kho (${buyQty} SP + ${giftUnits} quà):</span>
+                        <span class="deal-profit-val" style="color: #0f172a;">${formatMoney(dealCost)}</span>
+                    </div>
+                    <div class="deal-profit-item">
+                        <span class="deal-profit-label">Phí sàn (${feePercent}%):</span>
+                        <span class="deal-profit-val" style="color: #b45309;">${formatMoney(dealPlatformFee)}</span>
+                    </div>
+                    <div class="deal-profit-item">
+                        <span class="deal-profit-label">Phí đóng gói Deal:</span>
+                        <span class="deal-profit-val">${formatMoney(pkgFee)}</span>
+                    </div>
+                    <div class="deal-profit-item" style="border-left: 1.5px dashed #fde68a; padding-left: 10px;">
+                        <span class="deal-profit-label" style="font-weight: 800;">Lợi Nhuận Deal:</span>
+                        <span class="deal-profit-val ${dealProfit >= 0 ? 'profit-positive' : 'profit-negative'}" style="font-size: 1rem;">
+                            ${formatMoney(dealProfit)} (${dealMargin}%)
+                        </span>
+                    </div>
+                `;
+            });
         }
 
         function handleProductEditSubmit(event) {
             event.preventDefault();
             if (!currentSelectedShopId) return;
 
+            // Kiểm tra trùng thời gian các deals
+            if (!validateModalDealsOverlap()) {
+                alert('⚠️ Các chương trình khuyến mãi bị trùng lặp thời gian hoặc chưa điền đủ ngày. Vui lòng kiểm tra lại trước khi lưu!');
+                return;
+            }
+
             const id = document.getElementById('productEditId').value;
             const name = document.getElementById('spEditName').value.trim();
             const variation = document.getElementById('spEditVariation').value.trim();
-            const buyQty = parseInt(document.getElementById('spDealBuyQty').value, 10) || 1;
             const price = parseNumberText(document.getElementById('spEditPrice').value);
-            const dealPrice = parseNumberText(document.getElementById('spEditDealPrice').value);
             const packagingFee = parseNumberText(document.getElementById('spEditPackagingFee').value);
-            const dealPackagingFee = parseNumberText(document.getElementById('spEditDealPackagingFee').value);
 
             if (!name) {
                 alert('Vui lòng nhập tên sản phẩm.');
                 return;
             }
 
+            if (currentModalItems.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 mặt hàng từ kho.');
+                return;
+            }
+
+            const cleanItems = currentModalItems.map(it => {
+                const wp = warehouseProducts.find(p => p.id === Number(it.productId));
+                return {
+                    productId: Number(it.productId),
+                    productName: wp?.name || 'Mặt hàng kho',
+                    quantity: Number(it.quantity) || 1
+                };
+            });
+
+            const cleanDeals = currentModalDeals.map((d, idx) => {
+                const buyQty = Math.max(1, Number(d.buyQty) || 1);
+                const dPrice = Number(d.dealPrice) || 0;
+                const dPkg = Number(d.packagingFee) || 0;
+                const gifts = (d.giftItems || []).map(g => {
+                    const wp = warehouseProducts.find(p => p.id === Number(g.productId));
+                    return {
+                        productId: Number(g.productId),
+                        productName: wp?.name || 'Mặt hàng kho',
+                        quantity: Number(g.quantity) || 1
+                    };
+                });
+
+                return {
+                    id: d.id || `deal_${Date.now()}_${idx}`,
+                    name: String(d.name || `Deal #${idx + 1}`).trim(),
+                    timeType: d.timeType || 'always',
+                    startDate: d.startDate || '',
+                    endDate: d.endDate || '',
+                    buyQty: buyQty,
+                    dealPrice: dPrice > 0 ? dPrice : (price * buyQty),
+                    packagingFee: dPkg > 0 ? dPkg : packagingFee,
+                    giftItems: gifts
+                };
+            });
+
             const productData = {
                 id: id || undefined,
                 name: name,
                 variation: variation || 'Mặc định',
-                items: currentModalItems.map(it => {
-                    const wp = warehouseProducts.find(p => p.id === Number(it.productId));
-                    return {
-                        productId: Number(it.productId),
-                        productName: wp?.name || 'Mặt hàng kho',
-                        quantity: Number(it.quantity) || 1
-                    };
-                }),
-                deal: {
-                    buyQty: buyQty,
-                    giftItems: currentModalGiftItems.map(g => {
-                        const wp = warehouseProducts.find(p => p.id === Number(g.productId));
-                        return {
-                            productId: Number(g.productId),
-                            productName: wp?.name || 'Mặt hàng kho',
-                            quantity: Number(g.quantity) || 1
-                        };
-                    })
-                },
+                items: cleanItems,
+                deals: cleanDeals,
+                deal: cleanDeals[0] || { buyQty: 1, giftQty: 0, giftProductId: 'self' },
                 price: price,
-                dealPrice: dealPrice > 0 ? dealPrice : (price * buyQty),
+                dealPrice: cleanDeals[0]?.dealPrice || (price * (cleanDeals[0]?.buyQty || 1)),
                 packagingFee: packagingFee,
-                dealPackagingFee: dealPackagingFee > 0 ? dealPackagingFee : packagingFee
+                dealPackagingFee: cleanDeals[0]?.packagingFee || packagingFee
             };
 
             addOrUpdateShopProduct(currentSelectedShopId, productData);
             closeProductEditModal();
             renderSelectedShopProducts();
             renderShopTable();
-            showToast(`✅ Đã lưu sản phẩm "${name}" (${variation})!`);
+            showToast(`✅ Đã lưu sản phẩm "${name}" (${variation}) với ${cleanDeals.length} khuyến mãi!`);
         }
 
         function handleDeleteProduct(productId) {

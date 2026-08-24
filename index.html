@@ -728,17 +728,34 @@
         // Kích hoạt đồng bộ Sheet từ iframe
         function triggerFrameSheetSync() {
             try {
-                if (mainContentFrame.contentWindow && typeof mainContentFrame.contentWindow.loadMonthlyReportsFromGoogleSheet === 'function') {
-                    mainContentFrame.contentWindow.loadMonthlyReportsFromGoogleSheet(true);
-                } else if (mainContentFrame.contentWindow && typeof mainContentFrame.contentWindow.syncAllSettlementPeriodsToGoogleSheet === 'function') {
-                    showToast('🔄 Đang đồng bộ dữ liệu từ Google Sheet...');
-                    refreshCurrentFrame();
-                } else {
-                    openGoogleSheetConfigModal();
+                if (mainContentFrame.contentWindow) {
+                    if (typeof mainContentFrame.contentWindow.syncShopsToCloud === 'function') {
+                        mainContentFrame.contentWindow.syncShopsToCloud();
+                    } else if (typeof mainContentFrame.contentWindow.loadMonthlyReportsFromGoogleSheet === 'function') {
+                        mainContentFrame.contentWindow.loadMonthlyReportsFromGoogleSheet(true);
+                    } else if (typeof mainContentFrame.contentWindow.syncAllSettlementPeriodsToGoogleSheet === 'function') {
+                        showToast('🔄 Đang đồng bộ dữ liệu từ Google Sheet...');
+                        refreshCurrentFrame();
+                    } else if (typeof mainContentFrame.contentWindow.loadWarehouseProductsFromSheet === 'function') {
+                        mainContentFrame.contentWindow.loadWarehouseProductsFromSheet(true);
+                    } else {
+                        showToast('🔄 Đang tải lại dữ liệu trang hiện tại...');
+                        refreshCurrentFrame();
+                    }
+                    return;
                 }
             } catch (err) {
-                openGoogleSheetConfigModal();
+                showToast('🔄 Đang tải lại dữ liệu trang hiện tại...');
+                refreshCurrentFrame();
             }
+        }
+
+        function openGoogleSheetConfigModal() {
+            const url = typeof getGoogleAppsScriptUrl === 'function' ? getGoogleAppsScriptUrl() : 'Đang hoạt động';
+            alert('🔗 HỆ THỐNG ĐỒNG BỘ GOOGLE SHEET:\n\n' + 
+                  '• Trạng thái: Đã kết nối tự động trực tiếp với Google Sheet.\n' + 
+                  '• Web App URL: ' + url + '\n\n' + 
+                  'Dữ liệu Shop, Kho, Quyết toán và Báo cáo tháng đang được tự động đồng bộ 2 chiều.');
         }
 
         function showFrameLoader() {

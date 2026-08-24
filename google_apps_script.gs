@@ -287,10 +287,16 @@ function doPost(e) {
             return (it.quantity || 1) + "x " + (it.productName || "SP Kho #" + it.productId);
           }).join(" + ");
           
-          var pDeal = p.deal || {};
+          var pDeals = Array.isArray(p.deals) && p.deals.length > 0 ? p.deals : (p.deal ? [p.deal] : []);
           var pDealStr = "";
-          if (pDeal.buyQty && pDeal.giftQty) {
-            pDealStr = "Mua " + pDeal.buyQty + " tặng " + pDeal.giftQty;
+          if (pDeals.length > 0) {
+            pDealStr = pDeals.map(function(d) {
+              var tStr = d.timeType === 'range' ? (' [' + (d.startDate || '') + ' ~ ' + (d.endDate || '') + ']') : (d.timeType === 'from_only' ? (' [Từ ' + (d.startDate || '') + ']') : ' [Mọi lúc]');
+              var gStr = (Array.isArray(d.giftItems) && d.giftItems.length > 0) 
+                ? (', Tặng: ' + d.giftItems.map(function(g){ return (g.quantity || 1) + 'x ' + (g.productName || 'Quà #' + g.productId); }).join('+')) 
+                : (d.giftQty ? (', Tặng ' + d.giftQty + ' quà') : '');
+              return (d.name || 'Deal') + ' (Mua ' + (d.buyQty || 1) + gStr + ')' + tStr;
+            }).join(' | ');
           } else {
             pDealStr = "Không khuyến mãi";
           }
