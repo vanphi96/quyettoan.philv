@@ -231,6 +231,32 @@
 
         .btn-add { background: #168a4a; }
         .btn-add:hover { background: #0f6f3a; }
+        .btn-manage-shop {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: #ffffff !important;
+            border: 0;
+            border-radius: 8px;
+            padding: 9px 15px;
+            font-size: 13.5px;
+            font-weight: 700;
+            font-family: inherit;
+            line-height: 1.2;
+            cursor: pointer;
+            text-decoration: none !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+            transition: all 0.15s ease;
+        }
+        .btn-manage-shop:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            color: #ffffff !important;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(37, 99, 235, 0.35);
+        }
         .btn-delete { background: #c62828; }
         .btn-delete:hover { background: #9f1f1f; }
 
@@ -584,7 +610,7 @@
             <div class="section-head">
                 <h2 class="section-title">2. Cấu hình Shop & Phí sàn</h2>
                 <div style="display: flex; gap: 8px; align-items: center;">
-                    <a href="quan-ly-shop.html" class="btn-add" style="background:#0f766e; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:12.5px;">🏪 Quản lý shop</a>
+                    <a href="quan-ly-shop.html" class="btn-manage-shop">🏪 Quản lý shop</a>
                     <button type="button" class="btn-add" onclick="addPlatform()">+ Thêm shop</button>
                 </div>
             </div>
