@@ -1006,7 +1006,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Tên sản phẩm đăng bán trên sàn <span style="color:red">*</span></label>
-                                <input type="text" id="spEditName" class="form-control" style="height: 42px;" placeholder="Ví dụ: Trà Ba Kích Hộp 20 Gói, Combo Học Sinh..." required oninput="autoSuggestSkuIfEmpty()">
+                                <input type="text" id="spEditName" class="form-control" style="height: 42px;" placeholder="Ví dụ: Trà Ba Kích Hộp 20 Gói, Combo Học Sinh..." required>
                             </div>
                         </div>
 
@@ -1014,12 +1014,12 @@
                         <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px;">
                             <div class="form-group">
                                 <label class="form-label">Tên phân loại / Gói bán <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Tùy chọn, có thể để trống)</span></label>
-                                <input type="text" id="spEditVariation" class="form-control" style="height: 42px;" placeholder="Ví dụ: Hộp 20 Gói, Set 2 Hộp, 500g..." oninput="autoSuggestSkuIfEmpty()">
+                                <input type="text" id="spEditVariation" class="form-control" style="height: 42px;" placeholder="Ví dụ: Hộp 20 Gói, Set 2 Hộp, 500g...">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Mã SKU phân loại <span style="color:red">*</span></label>
+                                <label class="form-label">Mã SKU phân loại <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Tùy chọn, có thể để trống)</span></label>
                                 <div style="display: flex; gap: 8px;">
-                                    <input type="text" id="spEditSku" class="form-control" style="flex: 1; min-width: 0; height: 42px; font-family: monospace; font-weight: 700; text-transform: uppercase; color: #1e3a8a; letter-spacing: 0.5px; font-size: 0.95rem;" placeholder="VD: SHP1-TBK-20G" required>
+                                    <input type="text" id="spEditSku" class="form-control" style="flex: 1; min-width: 0; height: 42px; font-family: monospace; font-weight: 700; text-transform: uppercase; color: #1e3a8a; letter-spacing: 0.5px; font-size: 0.95rem;" placeholder="VD: SHP1-TBK-20G (hoặc để trống)">
                                     <button type="button" class="btn btn-primary" style="padding: 0 16px; height: 42px; font-size: 13px; white-space: nowrap; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;" onclick="generateSkuForModalProduct(true)" title="Bấm để tạo hoặc đổi sang mã SKU tự động khác">
                                         ⚡ Tạo SKU
                                     </button>
@@ -1037,9 +1037,12 @@
                         <div id="spWarehouseItemsContainer" style="display: flex; flex-direction: column; gap: 8px; max-height: 220px; overflow-y: auto; padding-right: 4px;">
                             <!-- Dynamic BOM items rendered by JS -->
                         </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border);">
-                            <span style="font-size: 0.82rem; color: var(--text-muted);">Giá vốn gốc cho 1 sản phẩm bán lẻ (chưa tính quà tặng kèm):</span>
-                            <strong id="spBaseCostDisplay" style="color: #0f172a; font-size: 0.95rem;">0 đ</strong>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border); flex-wrap: wrap; gap: 8px;">
+                            <span style="font-size: 0.82rem; color: var(--text-muted);">Giá vốn gốc & Phí hóa đơn (1 SP bán lẻ):</span>
+                            <div>
+                                <strong id="spBaseCostDisplay" style="color: #0f172a; font-size: 0.95rem;">0 đ</strong>
+                                <span id="spBaseInvoiceDisplay" style="font-size: 0.82rem; color: #4338ca; font-weight: 700; margin-left: 6px;"></span>
+                            </div>
                         </div>
                     </div>
 
@@ -1060,7 +1063,7 @@
                         </div>
 
                         <!-- BẢNG CHI TIẾT TÍNH TOÁN LẺ -->
-                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; font-size: 0.8rem; color: #475569;">
+                        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; font-size: 0.8rem; color: #475569;">
                             <div>
                                 <div style="font-size: 0.72rem; color: #64748b;">Doanh thu lẻ:</div>
                                 <strong id="spSingleRevDisplay" style="color: #0f172a; font-size: 0.9rem;">0 đ</strong>
@@ -1068,6 +1071,10 @@
                             <div>
                                 <div style="font-size: 0.72rem; color: #64748b;">Vốn xuất kho (1 SP):</div>
                                 <strong id="spSingleCostDisplay" style="color: #0f172a; font-size: 0.9rem;">0 đ</strong>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.72rem; color: #64748b;">Phí hóa đơn (1 SP):</div>
+                                <span id="spSingleInvoiceDisplay" style="font-weight: 700; color: #4338ca;">0 đ</span>
                             </div>
                             <div>
                                 <div style="font-size: 0.72rem; color: #64748b;">Phí sàn (<span id="spSingleFeePercentLabel">14.5%</span>):</div>
@@ -1572,7 +1579,7 @@
                 if (hasDeals) {
                     dealCostHtml = dealsInfo.map(d => `
                         <div style="font-size: 10.5px; font-weight: 600; color: #92400e; margin-top: 3px;">
-                            ${escapeHtml(d.name)}: ${formatMoney(d.dealCost)}
+                            ${escapeHtml(d.name)}: ${formatMoney(d.dealCost)}${d.dealInvoiceFee ? ` (+${formatMoney(d.dealInvoiceFee)} HĐ)` : ''}
                         </div>
                     `).join('');
                 }
@@ -1610,7 +1617,7 @@
                         <td>${dealBadgeHtml}</td>
                         <td style="text-align: right;">
                             <div class="cost-badge">${formatMoney(costInfo.baseCost)}</div>
-                            <div style="font-size: 10px; color: #64748b;">(Vốn 1 SP)</div>
+                            <div style="font-size: 10px; color: #64748b;">(Vốn 1 SP${costInfo.baseInvoiceFee ? ` + ${formatMoney(costInfo.baseInvoiceFee)} HĐ` : ''})</div>
                             ${dealCostHtml}
                         </td>
                         <td style="text-align: right;">
@@ -1796,7 +1803,7 @@
             document.getElementById('productEditId').value = p.id;
             document.getElementById('spEditName').value = p.name || '';
             document.getElementById('spEditVariation').value = p.variation || '';
-            document.getElementById('spEditSku').value = p.sku || '';
+            document.getElementById('spEditSku').value = (p.sku && String(p.sku).trim()) ? String(p.sku).trim() : '';
             document.getElementById('spEditSku').dataset.autoGenerated = 'false';
             document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
             document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
@@ -1914,8 +1921,10 @@
             container.innerHTML = currentModalItems.map((item, index) => {
                 const wp = warehouseProducts.find(p => p.id === Number(item.productId)) || warehouseProducts[0];
                 const price = wp ? wp.price : 0;
+                const invoiceFee = wp ? (Number(wp.invoiceFee) || 0) : 0;
                 const qty = Number(item.quantity) || 1;
                 const totalItemCost = qty * price;
+                const totalItemInvoice = qty * invoiceFee;
 
                 return `
                     <div class="bom-item-row" id="bomItemRow_${index}">
@@ -1923,7 +1932,7 @@
                             <select class="form-control" style="padding: 7px 10px; font-weight: 600;" onchange="onModalItemProductChange(${index}, this.value)">
                                 ${warehouseProducts.map(p => `
                                     <option value="${p.id}" ${p.id === Number(item.productId) ? 'selected' : ''}>
-                                        ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
+                                        ${escapeHtml(p.name)} (${formatMoney(p.price)}/món${p.invoiceFee ? ` + ${formatMoney(p.invoiceFee)} HĐ` : ''})
                                     </option>
                                 `).join('')}
                             </select>
@@ -1941,8 +1950,9 @@
                                 >
                             </div>
                         </div>
-                        <div id="bomItemCost_${index}" style="text-align: right; font-weight: 800; color: #1e3a8a; font-size: 13px; white-space: nowrap;">
-                            ${formatMoney(price)} x ${qty} = <span style="color:#0f172a;">${formatMoney(totalItemCost)}</span>
+                        <div id="bomItemCost_${index}" style="text-align: right; font-weight: 800; color: #1e3a8a; font-size: 12.5px; white-space: nowrap;">
+                            <div>${formatMoney(price)} x ${qty} = <span style="color:#0f172a;">${formatMoney(totalItemCost)}</span></div>
+                            ${totalItemInvoice > 0 ? `<div style="font-size: 11px; color: #4338ca; font-weight: 600;">+ ${formatMoney(totalItemInvoice)} HĐ</div>` : ''}
                         </div>
                         <div style="text-align: center;">
                             <button type="button" class="btn-icon delete" style="width: 32px; height: 32px;" onclick="removeModalItem(${index})" title="Xóa món này">✕</button>
@@ -2345,15 +2355,17 @@
                                 ` : giftItems.map((gift, gIdx) => {
                                     const wp = warehouseProducts.find(p => p.id === Number(gift.productId)) || warehouseProducts[0];
                                     const price = wp ? wp.price : 0;
+                                    const invoiceFee = wp ? (Number(wp.invoiceFee) || 0) : 0;
                                     const gQty = Number(gift.quantity) || 1;
                                     const totalCost = gQty * price;
+                                    const totalGiftInvoice = gQty * invoiceFee;
                                     return `
                                         <div class="bom-item-row" style="background: #fffdf5; border-color: #fde68a; padding: 6px 10px;">
                                             <div>
                                                 <select class="form-control" style="padding: 6px 8px; font-size: 0.85rem;" onchange="onGiftFieldChange(${dIdx}, ${gIdx}, 'productId', this.value)">
                                                     ${warehouseProducts.map(p => `
                                                         <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
-                                                            🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món)
+                                                            🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món${p.invoiceFee ? ` + ${formatMoney(p.invoiceFee)} HĐ` : ''})
                                                         </option>
                                                     `).join('')}
                                                 </select>
@@ -2371,8 +2383,9 @@
                                                     >
                                                 </div>
                                             </div>
-                                            <div style="text-align: right; font-weight: 800; color: #92400e; font-size: 12.5px; white-space: nowrap;">
-                                                ${formatMoney(price)} x ${gQty} = <span style="color:#78350f;">${formatMoney(totalCost)}</span>
+                                            <div style="text-align: right; font-weight: 800; color: #92400e; font-size: 12px; white-space: nowrap;">
+                                                <div>${formatMoney(price)} x ${gQty} = <span style="color:#78350f;">${formatMoney(totalCost)}</span></div>
+                                                ${totalGiftInvoice > 0 ? `<div style="font-size: 10.5px; color: #4338ca; font-weight: 600;">+ ${formatMoney(totalGiftInvoice)} HĐ</div>` : ''}
                                             </div>
                                             <div style="text-align: center;">
                                                 <button type="button" class="btn-icon delete" style="width: 28px; height: 28px;" onclick="removeGiftItemFromDeal(${dIdx}, ${gIdx})" title="Xóa quà này">✕</button>
@@ -2527,16 +2540,24 @@
 
             // 1. TÍNH LẺ (1 SP)
             const singlePlatformFee = singlePrice * (feePercent / 100);
-            const singleProfit = singlePrice - costInfo.baseCost - singlePlatformFee - singlePkgFee;
+            const singleInvoiceFee = Number(costInfo.baseInvoiceFee) || 0;
+            const singleProfit = singlePrice - costInfo.baseCost - singleInvoiceFee - singlePlatformFee - singlePkgFee;
             const singleMargin = singlePrice > 0 ? ((singleProfit / singlePrice) * 100).toFixed(1) : '0.0';
 
             const baseCostEl = document.getElementById('spBaseCostDisplay');
             if (baseCostEl) baseCostEl.textContent = formatMoney(costInfo.baseCost);
+            const baseInvoiceEl = document.getElementById('spBaseInvoiceDisplay');
+            if (baseInvoiceEl) {
+                baseInvoiceEl.textContent = singleInvoiceFee > 0 ? `(+ ${formatMoney(singleInvoiceFee)} HĐ)` : '';
+                baseInvoiceEl.style.display = singleInvoiceFee > 0 ? 'inline' : 'none';
+            }
 
             const sRev = document.getElementById('spSingleRevDisplay');
             if (sRev) sRev.textContent = formatMoney(singlePrice);
             const sCost = document.getElementById('spSingleCostDisplay');
             if (sCost) sCost.textContent = formatMoney(costInfo.baseCost);
+            const sInvoice = document.getElementById('spSingleInvoiceDisplay');
+            if (sInvoice) sInvoice.textContent = formatMoney(singleInvoiceFee);
             const sFeeLabel = document.getElementById('spSingleFeePercentLabel');
             if (sFeeLabel) sFeeLabel.textContent = `${feePercent.toFixed(1)}%`;
             const sFee = document.getElementById('spSingleFeeDisplay');
@@ -2560,20 +2581,24 @@
                 const dealPrice = rawDealPrice > 0 ? rawDealPrice : (singlePrice * buyQty);
                 const pkgFee = Number(deal.packagingFee) > 0 ? Number(deal.packagingFee) : singlePkgFee;
 
-                // Vốn deal
+                // Vốn & Chi phí hóa đơn Deal
                 let giftCost = 0;
+                let giftInvoiceFee = 0;
                 let giftUnits = 0;
                 (deal.giftItems || []).forEach(g => {
                     const wp = warehouseProducts.find(p => p.id === Number(g.productId));
                     const price = wp ? wp.price : 0;
+                    const invoice = wp ? (Number(wp.invoiceFee) || 0) : 0;
                     const qty = Number(g.quantity) || 1;
                     giftCost += qty * price;
+                    giftInvoiceFee += qty * invoice;
                     giftUnits += qty;
                 });
 
                 const dealCost = (costInfo.baseCost * buyQty) + giftCost;
+                const dealInvoiceFee = (singleInvoiceFee * buyQty) + giftInvoiceFee;
                 const dealPlatformFee = dealPrice * (feePercent / 100);
-                const dealProfit = dealPrice - dealCost - dealPlatformFee - pkgFee;
+                const dealProfit = dealPrice - dealCost - dealInvoiceFee - dealPlatformFee - pkgFee;
                 const dealMargin = dealPrice > 0 ? ((dealProfit / dealPrice) * 100).toFixed(1) : '0.0';
 
                 // Placeholder update for price inputs
@@ -2590,6 +2615,10 @@
                     <div class="deal-profit-item">
                         <span class="deal-profit-label">Vốn xuất kho (${buyQty} SP + ${giftUnits} quà):</span>
                         <span class="deal-profit-val" style="color: #0f172a;">${formatMoney(dealCost)}</span>
+                    </div>
+                    <div class="deal-profit-item">
+                        <span class="deal-profit-label">Phí hóa đơn Deal:</span>
+                        <span class="deal-profit-val" style="color: #4338ca;">${formatMoney(dealInvoiceFee)}</span>
                     </div>
                     <div class="deal-profit-item">
                         <span class="deal-profit-label">Phí sàn (${feePercent}%):</span>
@@ -2637,22 +2666,18 @@
                 return;
             }
 
-            if (!sku) {
-                alert('⚠️ Vui lòng nhập Mã SKU cho sản phẩm hoặc bấm nút "⚡ Tạo SKU"!');
-                document.getElementById('spEditSku')?.focus();
-                return;
-            }
-
-            // Validation: Kiểm tra không được trùng mã SKU trên Shop đích
-            const targetShopProds = getShopProducts(targetShopId);
-            const duplicateProduct = targetShopProds.find(p => p.id !== id && p.sku && p.sku.trim().toUpperCase() === sku.toUpperCase());
-            if (duplicateProduct) {
-                const targetShop = getAppShops().find(s => s.id === targetShopId || s.name === targetShopId);
-                const targetShopName = targetShop ? targetShop.name : targetShopId;
-                alert(`⚠️ LỖI TRÙNG MÃ SKU:\n\nMã SKU "${sku}" đã được sử dụng cho sản phẩm "${duplicateProduct.name}"${duplicateProduct.variation ? ` (${duplicateProduct.variation})` : ''} trên Shop "${targetShopName}".\n\nVui lòng đổi mã SKU khác hoặc bấm nút "⚡ Tạo SKU" để sinh mã mới không trùng lặp!`);
-                document.getElementById('spEditSku')?.focus();
-                document.getElementById('spEditSku')?.select();
-                return;
+            // Validation: Nếu có nhập SKU, kiểm tra không được trùng mã SKU trên Shop đích
+            if (sku) {
+                const targetShopProds = getShopProducts(targetShopId);
+                const duplicateProduct = targetShopProds.find(p => p.id !== id && p.sku && p.sku.trim().toUpperCase() === sku.toUpperCase());
+                if (duplicateProduct) {
+                    const targetShop = getAppShops().find(s => s.id === targetShopId || s.name === targetShopId);
+                    const targetShopName = targetShop ? targetShop.name : targetShopId;
+                    alert(`⚠️ LỖI TRÙNG MÃ SKU:\n\nMã SKU "${sku}" đã được sử dụng cho sản phẩm "${duplicateProduct.name}"${duplicateProduct.variation ? ` (${duplicateProduct.variation})` : ''} trên Shop "${targetShopName}".\n\nVui lòng đổi mã SKU khác hoặc bấm nút "⚡ Tạo SKU" để sinh mã mới không trùng lặp!`);
+                    document.getElementById('spEditSku')?.focus();
+                    document.getElementById('spEditSku')?.select();
+                    return;
+                }
             }
 
             if (currentModalItems.length === 0) {

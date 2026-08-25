@@ -491,6 +491,7 @@ function addOrUpdateShopProduct(shopId, productData) {
         id: productData.id || `SP_${shop.id}_${Date.now()}`,
         name: String(productData.name).trim(),
         variation: String(productData.variation || '').trim(),
+        sku: String(productData.sku || '').trim(),
         items: Array.isArray(productData.items) ? productData.items : [],
         deals: cleanDeals,
         deal: primaryDeal, // backward compatibility

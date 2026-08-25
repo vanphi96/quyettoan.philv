@@ -144,21 +144,26 @@ flowchart TD
 ### 4.3. Màn Quyết Toán TikTok Shop (`quyet-toan.html`)
 - **Mục đích:** Xử lý, bóc tách và đối soát dữ liệu từ 2 file báo cáo tải về từ **TikTok Shop Seller Center**:
   1. File quyết toán thu nhập (Settlement file).
-  2. File chi tiết đơn hàng (Order file).
+  2. File chi tiết đơn hàng (Order file / `OrderSKUList`).
 - **Logic xử lý chi tiết:**
+  - **Lọc & Chọn Shop TikTok tự động:** Dropdown ở đầu trang tự động lọc danh sách các Shop thuộc sàn TikTok. Dữ liệu sản phẩm, SKU và Deals được lấy động từ cấu hình Shop tương ứng. Bảng cấu hình mặt hàng thủ công tại màn này đã được loại bỏ để tập trung quản lý tại `quan-ly-shop.html`.
   - **Trình đọc Excel nâng cao (Dual-Engine):** Tự động đọc qua XLSX.js; nếu file bị lỗi cấu trúc nén của TikTok, hệ thống tự động chuyển sang đọc trực tiếp XML từ file Zip (`readWorkbookRowsWithZipFallback`), trích xuất `sharedStrings.xml` và `sheet.xml` mà không bị lỗi crash.
-  - **Tự động nhận diện cột (Smart Header Matching):** Quét các biến thể tên cột của TikTok tiếng Việt / tiếng Anh:
-    - Mã đơn hàng (`Order ID`, `Mã đơn hàng`).
-    - Doanh thu quyết toán (`Settlement Amount`, `Số tiền quyết toán`, `GMV`).
-    - Phí sàn & Phí dịch vụ (`Platform Fee`, `Phí hoa hồng`, `Phí cố định`).
-    - Phí vận chuyển trợ giá (`Shipping Fee subsidy`, `Phí vận chuyển khách trả`).
-    - Đơn hoàn & Khấu trừ (`Refund`, `Hoàn tiền`, `Phạt vi phạm`).
-  - **Cơ chế Mapping Tên Sản Phẩm / Alias với Kho:**
-    - Tự động đối chiếu tên sản phẩm trên TikTok với danh mục mặt hàng kho (qua tên chính và danh sách Alias/tên viết tắt).
-    - Tự động nhân số lượng đơn bán với đơn giá nhập kho để tính ra **Tổng tiền xuất hàng**.
+  - **Cơ chế Map Đơn Hàng Theo Mã SKU & Phân Loại:**
+    1. **Ưu tiên 1 (Mã SKU Cột F `SKU ID`):** Ưu tiên lấy mã SKU ở Cột F (`SKU ID`). Nếu Cột F không có thì lấy Cột G (`Seller SKU`). Nếu đơn hàng có SKU và sản phẩm cấu hình của shop cũng có SKU trùng khớp thì map ngay theo SKU.
+    2. **Ưu tiên 2 (Tên SP & Phân loại):** Nếu đơn hàng không có SKU ở Cột F, HOẶC sản phẩm cấu hình trong Shop không có SKU, HOẶC mã SKU không trùng khớp $\rightarrow$ Tự động so sánh đồng thời cả `Tên sản phẩm` VÀ `Tên phân loại` (Variation) của đơn hàng với sản phẩm shop (sử dụng thuật toán Smart Token Matching).
+    3. **Ưu tiên 3 (Fallback):** Khớp theo Tên sản phẩm chính hoặc tra cứu danh mục mặt hàng kho (qua Alias).
+  - **Tính Toán Xuất Kho Theo Deal Khuyến Mãi (Mua X Tặng Y):**
+    - Khi khách mua số lượng lớn (VD: mua 5 sản phẩm của phân loại 1 hộp có deal *Mua 2 Tặng 1*):
+      $$\text{Số lượt Deal} = \lfloor \text{SL mua} / \text{SL yêu cầu deal} \rfloor = \lfloor 5 / 2 \rfloor = 2 \text{ lượt}$$
+      $$\text{Tổng số hộp thực xuất} = (\text{SL mua} \times \text{Số hộp cơ bản}) + (\text{Số lượt Deal} \times \text{Số hộp quà}) = (5 \times 1) + (2 \times 1) = 7 \text{ hộp}$$
+    - Giá vốn và phí hóa đơn được tự động tính theo toàn bộ 7 hộp thực xuất.
+  - **Tự Động Tính & Cho Phép Chỉnh Sửa Chi Phí Vật Tư & Hóa Đơn (Bảng Chi Phí Khác):**
+    - **Row 1:** `Chi phí vật tư & đóng gói` hiển thị dưới dạng ô input cho phép người dùng tùy chỉnh/ghi đè số tiền và tên gọi, có nút `↺` để khôi phục nhanh về giá trị tự động tính theo số lượng đơn hàng.
+    - **Row 2:** `Chi phí hóa đơn (VAT)` hiển thị dưới dạng ô input cho phép tùy chỉnh/ghi đè số tiền, có nút `↺` để khôi phục nhanh về giá trị tự động tính theo tổng số hộp thực xuất.
+    - Cho phép thêm các chi phí thủ công khác (nhân sự, kho bãi, chi phí vận hành...).
   - **Tổng kết & Lưu kỳ:**
-    - Tính Lợi nhuận kỳ $= \text{Doanh thu thực nhận} - \text{Tiền nhập hàng} - \text{Tiền Ads} - \text{Chi phí khác}$.
-    - Bấm **"Lưu Kỳ Quyết Toán Vào Báo Cáo Tháng"**: Tự động mở popup chọn Shop, chọn Tháng, kiểm tra trùng lặp và lưu vào hệ thống.
+    - Tính Lợi nhuận kỳ $= \text{Doanh thu thực nhận} - \text{Tiền hàng xuất kho} - \text{Tiền Ads} - \text{Chi phí khác (gồm Vật tư + Hóa đơn)}$.
+    - Bấm **"Lưu vào Báo Cáo Tháng"**: Tự động mở popup chọn Shop, chọn Tháng, kiểm tra trùng lặp và lưu vào hệ thống.
 
 ---
 
@@ -197,30 +202,32 @@ flowchart TD
 - **Tính năng Nhân bản sản phẩm (Duplicate `📑`):**
   - Cho phép bấm nút `📑 Duplicate` tại bất kỳ sản phẩm nào để sao chép nguyên vẹn toàn bộ cấu hình (tên, phân loại, BOM kho, deals khuyến mãi, giá lẻ, giá deal, phí đóng gói).
   - Mở popup như khi tạo mới, cho phép chọn **Shop áp dụng** (có thể sao chép sang cùng shop hoặc clone sang Shop khác trên Shopee/TikTok Shop).
-  - Tự động sinh mã SKU mới không trùng lặp cho bản sao.
-  - **Validation bắt buộc:** Bắt buộc phải có mã SKU và **tuyệt đối không được trùng SKU** với bất kỳ sản phẩm nào khác trong Shop đích.
+  - Tự động sinh mã SKU mới không trùng lặp cho bản sao (nếu có dùng SKU).
+  - **Validation:** Mã SKU là **tùy chọn (có thể để trống)**. Nếu có nhập SKU thì hệ thống sẽ kiểm tra và **chặn trùng SKU** với bất kỳ sản phẩm nào khác trong Shop đích.
 - **Popup Thêm / Sửa Sản Phẩm Bán Cho Shop:**
   1. **Chọn Shop áp dụng, Tên sản phẩm bán, Tên phân loại & Mã SKU thông minh:**
      - Cho phép chọn Shop đích cần lưu sản phẩm.
      - Cho phép nhập Tên SP bán (VD: `Trà Ba Kích Hộp 20 Gói`), Phân loại (VD: `Hộp 20 Gói`, `Set 2 Hộp`...).
-     - **Ô Mã SKU & Nút `⚡ Tạo SKU Tự Động`:** Tự động sinh mã SKU chuẩn theo quy tắc:
+     - **Ô Mã SKU (Tùy chọn) & Nút `⚡ Tạo SKU`:** Bạn có thể để trống hoặc bấm nút để tự động sinh mã SKU chuẩn theo quy tắc:
        $$\text{SKU} = [\text{TIỀN\_TỐ\_SHOP}] - [\text{MÃ\_SẢN\_PHẨM}] - [\text{MÃ\_PHÂN\_LOẠI/DEAL}]$$
        - *Tiền tố Shop:* `SHP1` (Shopee Shop 1), `TTS1` (TikTok Shop 1), `SHP-TDX` (Shopee Thảo Dược Xanh)...
        - *Mã SP:* Viết tắt chữ cái đầu không dấu (VD: `TBK` - Trà Ba Kích, `DTC` - Dây Thìa Canh, `CBHS` - Combo Học Sinh...).
        - *Mã Phân loại / Deal:* Trích xuất số lượng/dung tích (VD: `20G`, `500G`, `S2H`, `M2T1`, `MD`...).
        - *Ví dụ kết quả:* `SHP1-TBK-20G`, `TTS1-DTC-M2T1`, `SHP2-CBHS-S2B1T`.
-  2. **1. Thành phần cấu tạo từ kho (BOM):** Chọn 1 hoặc nhiều mặt hàng kho + Số lượng cấu thành $\rightarrow$ Tự động tính giá vốn 1 sản phẩm bán lẻ.
+  2. **1. Thành phần cấu tạo từ kho (BOM):** Chọn 1 hoặc nhiều mặt hàng kho + Số lượng cấu thành $\rightarrow$ Tự động tính giá vốn 1 sản phẩm bán lẻ và tổng chi phí hóa đơn (VAT).
   3. **2. Cài đặt khuyến mãi & Danh sách quà tặng kèm (Deal Mua X Tặng Y):**
      - Nhập số lượng mua (VD: `2`).
      - Bấm **`+ Thêm quà tặng từ kho`** để thêm **danh sách nhiều món quà khác nhau từ kho với số lượng riêng biệt** (VD: `1x Trà Ba Kích`, `2x Bút bi`...).
-     - Tự động cộng dồn giá vốn của tất cả món quà vào giá vốn Deal.
+     - Tự động cộng dồn giá vốn và chi phí hóa đơn của tất cả món quà vào Deal.
   4. **3. Giá bán & Phí đóng gói riêng biệt:**
      - Khung Bán Lẻ: Giá bán lẻ (1 SP) + Phí đóng gói đơn lẻ (VNĐ).
      - Khung Bán Theo Deal: Giá trọn gói Deal (tự tính hoặc tùy chỉnh) + Phí đóng gói đơn Deal (VNĐ).
   5. **4. Dự toán Lợi Nhuận Gộp Song Song (Side-by-side):**
-     - Tính toán và hiển thị độc lập cả 2 kịch bản:
-       - **Khách Mua Lẻ (1 SP):** Doanh thu lẻ $\rightarrow$ Vốn 1 SP $\rightarrow$ Phí sàn $\rightarrow$ Phí gói lẻ $\rightarrow$ **Lợi nhuận lẻ**.
-       - **Khách Mua Theo Deal:** Doanh thu Deal $\rightarrow$ Vốn Deal (Hàng mua + Tất cả quà) $\rightarrow$ Phí sàn $\rightarrow$ Phí gói Deal $\rightarrow$ **Lợi nhuận Deal**.
+     - Tính toán và hiển thị độc lập cả 2 kịch bản (khấu trừ đầy đủ cả Chi phí hóa đơn từ kho):
+       - **Khách Mua Lẻ (1 SP):**
+         $$\text{Lợi Nhuận Lẻ} = \text{Doanh thu lẻ} - \text{Vốn 1 SP} - \mathbf{\text{Phí hóa đơn 1 SP}} - \text{Phí sàn} - \text{Phí gói lẻ}$$
+       - **Khách Mua Theo Deal:**
+         $$\text{Lợi Nhuận Deal} = \text{Doanh thu Deal} - \text{Vốn Deal} - \mathbf{\text{Phí hóa đơn Deal}} - \text{Phí sàn} - \text{Phí gói Deal}$$
   6. **Tối ưu trải nghiệm:** Modal thiết kế Flexbox chuẩn, trang bị thanh cuộn riêng cho danh sách quà và thành phần kho, **không bao giờ bị tràn màn hình hay giật lag**.
 
 ---
