@@ -1,0 +1,29 @@
+{
+  "name": "Hệ Thống Quyết Toán & Quản Lý Doanh Thu",
+  "short_name": "Quyết Toán",
+  "description": "Hệ thống đối soát doanh thu, chi phí và lợi nhuận TikTok & Shopee",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
