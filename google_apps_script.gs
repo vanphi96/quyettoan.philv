@@ -304,9 +304,10 @@ function doPost(e) {
           var pPrice = Number(p.price) || 0;
           var pPkg = Number(p.packagingFee) || 0;
           var pNote = String(p.note || "");
+          var pSku = String(p.sku || "");
 
           allShopProductRows.push([
-            sId, sName, sPlatform, pId, pName, pVar, pItemsStr, pDealStr, pPrice, pPkg, pNote, timeStr
+            sId, sName, sPlatform, pId, pSku, pName, pVar, pItemsStr, pDealStr, pPrice, pPkg, pNote, timeStr
           ]);
         }
       }
@@ -321,7 +322,7 @@ function doPost(e) {
       if (!shopProdSheet) {
         shopProdSheet = spreadsheet.insertSheet("shop_products");
       }
-      var spHeaders = ["Shop ID", "Tên Shop", "Sàn", "Mã SP", "Tên Sản Phẩm Shop", "Phân Loại", "Thành Phần Kho", "Deal Khuyến Mãi", "Giá Bán", "Phí Đóng Gói", "Ghi Chú", "Thời Gian Cập Nhật"];
+      var spHeaders = ["Shop ID", "Tên Shop", "Sàn", "Mã SP", "Mã SKU", "Tên Sản Phẩm Shop", "Phân Loại", "Thành Phần Kho", "Deal Khuyến Mãi", "Giá Bán", "Phí Đóng Gói", "Ghi Chú", "Thời Gian Cập Nhật"];
       if (shopProdSheet.getLastRow() === 0) {
         shopProdSheet.appendRow(spHeaders);
         shopProdSheet.getRange(1, 1, 1, spHeaders.length).setFontWeight("bold").setBackground("#f0fdf4");

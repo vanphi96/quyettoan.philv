@@ -394,7 +394,7 @@
         }
 
         .modal-card.large {
-            max-width: 920px;
+            max-width: 960px;
         }
 
         .modal-form {
@@ -681,6 +681,44 @@
 
         .profit-positive { color: #16a34a; font-weight: 800; }
         .profit-negative { color: #dc2626; font-weight: 800; }
+
+        .btn-generate-sku {
+            background: #eff6ff;
+            border: 1px solid #93c5fd;
+            color: #1d4ed8;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .btn-generate-sku:hover {
+            background: #dbeafe;
+            color: #1e40af;
+            border-color: #60a5fa;
+            transform: translateY(-1px);
+        }
+
+        .sku-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-family: 'Outfit', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            background: #f1f5f9;
+            color: #1e3a8a;
+            border: 1px solid #cbd5e1;
+            padding: 2px 6px;
+            border-radius: 5px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -956,15 +994,37 @@
             <form id="productEditForm" class="modal-form" onsubmit="handleProductEditSubmit(event)">
                 <input type="hidden" id="productEditId">
                 <div class="modal-body">
-                    <!-- THÔNG TIN TÊN SẢN PHẨM & PHÂN LOẠI -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-                        <div class="form-group">
-                            <label class="form-label">Tên sản phẩm đăng bán trên sàn <span style="color:red">*</span></label>
-                            <input type="text" id="spEditName" class="form-control" placeholder="Ví dụ: Combo Học Sinh, Trà Ba Kích Hộp 20 Gói..." required>
+                    <!-- THÔNG TIN CƠ BẢN (2 HÀNG RỘNG RÃI & CÂN ĐỐI) -->
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Hàng 1: Áp dụng cho Shop & Tên sản phẩm bán -->
+                        <div style="display: grid; grid-template-columns: 280px 1fr; gap: 14px;">
+                            <div class="form-group">
+                                <label class="form-label">Áp dụng cho Shop <span style="color:red">*</span></label>
+                                <select id="spEditTargetShop" class="form-control" style="font-weight: 700; color: #1e3a8a; height: 42px;" onchange="onModalTargetShopChange(this.value)" required>
+                                    <!-- Rendered dynamically by populateModalShopDropdown() -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tên sản phẩm đăng bán trên sàn <span style="color:red">*</span></label>
+                                <input type="text" id="spEditName" class="form-control" style="height: 42px;" placeholder="Ví dụ: Trà Ba Kích Hộp 20 Gói, Combo Học Sinh..." required oninput="autoSuggestSkuIfEmpty()">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Tên phân loại / Gói bán <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Tùy chọn, có thể để trống)</span></label>
-                            <input type="text" id="spEditVariation" class="form-control" placeholder="Ví dụ: Set 2 Hộp, Hộp 20 Gói, 500g...">
+
+                        <!-- Hàng 2: Tên phân loại / Gói bán & Mã SKU phân loại -->
+                        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px;">
+                            <div class="form-group">
+                                <label class="form-label">Tên phân loại / Gói bán <span style="font-size:0.75rem; color:#64748b; font-weight:normal;">(Tùy chọn, có thể để trống)</span></label>
+                                <input type="text" id="spEditVariation" class="form-control" style="height: 42px;" placeholder="Ví dụ: Hộp 20 Gói, Set 2 Hộp, 500g..." oninput="autoSuggestSkuIfEmpty()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mã SKU phân loại <span style="color:red">*</span></label>
+                                <div style="display: flex; gap: 8px;">
+                                    <input type="text" id="spEditSku" class="form-control" style="flex: 1; min-width: 0; height: 42px; font-family: monospace; font-weight: 700; text-transform: uppercase; color: #1e3a8a; letter-spacing: 0.5px; font-size: 0.95rem;" placeholder="VD: SHP1-TBK-20G" required>
+                                    <button type="button" class="btn btn-primary" style="padding: 0 16px; height: 42px; font-size: 13px; white-space: nowrap; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;" onclick="generateSkuForModalProduct(true)" title="Bấm để tạo hoặc đổi sang mã SKU tự động khác">
+                                        ⚡ Tạo SKU
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1530,10 +1590,17 @@
                     }).join('');
                 }
 
+                const skuBadgeHtml = p.sku 
+                    ? `<div style="margin-top: 4px;"><span class="sku-badge" title="Mã SKU phân loại">🏷️ ${escapeHtml(p.sku)}</span></div>`
+                    : '';
+
                 return `
                     <tr>
                         <td style="text-align: center; color: var(--text-muted); font-weight: 600;">${idx + 1}</td>
-                        <td><strong style="color: #0f172a;">${escapeHtml(p.name)}</strong></td>
+                        <td>
+                            <strong style="color: #0f172a;">${escapeHtml(p.name)}</strong>
+                            ${skuBadgeHtml}
+                        </td>
                         <td><span style="color: #2563eb; font-weight: 600;">${escapeHtml(p.variation || '-')}</span></td>
                         <td>
                             <div style="font-size: 0.82rem; color: #334155; line-height: 1.35;">
@@ -1556,6 +1623,7 @@
                         </td>
                         <td style="text-align: center;">
                             <div class="action-btns" style="justify-content: center;">
+                                <button type="button" class="btn-icon" onclick="openDuplicateProductModal('${p.id}')" title="Nhân bản (Sao chép) sản phẩm này">📑</button>
                                 <button type="button" class="btn-icon" onclick="openEditProductModal('${p.id}')" title="Sửa sản phẩm">✏️</button>
                                 <button type="button" class="btn-icon delete" onclick="handleDeleteProduct('${p.id}')" title="Xóa sản phẩm">🗑️</button>
                             </div>
@@ -1646,7 +1714,40 @@
             showToast(`🗑️ Đã xóa Shop "${s.name}"!`);
         }
 
-        /* PRODUCT ADD / EDIT MODAL */
+        /* SHOP SELECTION FOR PRODUCT MODAL */
+        function populateModalShopDropdown(selectedShopId) {
+            const dropdown = document.getElementById('spEditTargetShop');
+            if (!dropdown) return;
+            const allShops = getAppShops();
+            const shopeeShops = allShops.filter(s => s.platform.toLowerCase().includes('shopee'));
+            const tiktokShops = allShops.filter(s => s.platform.toLowerCase().includes('tiktok'));
+
+            let html = '';
+            if (shopeeShops.length > 0) {
+                html += `<optgroup label="🛍️ Sàn Shopee">`;
+                shopeeShops.forEach(s => {
+                    html += `<option value="${s.id}" ${s.id === selectedShopId ? 'selected' : ''}>🛍️ ${escapeHtml(s.name)} (${s.feePercent}%)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            if (tiktokShops.length > 0) {
+                html += `<optgroup label="🎵 Sàn TikTok Shop">`;
+                tiktokShops.forEach(s => {
+                    html += `<option value="${s.id}" ${s.id === selectedShopId ? 'selected' : ''}>🎵 ${escapeHtml(s.name)} (${s.feePercent}%)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            dropdown.innerHTML = html;
+        }
+
+        function onModalTargetShopChange(newShopId) {
+            if (document.getElementById('spEditSku')?.dataset.autoGenerated === 'true') {
+                generateSkuForModalProduct(false);
+            }
+            recalcProductModalCost();
+        }
+
+        /* PRODUCT ADD / EDIT / DUPLICATE MODAL */
         function openAddProductModal() {
             if (!currentSelectedShopId) {
                 alert('Vui lòng chọn 1 Shop trước khi thêm sản phẩm.');
@@ -1658,9 +1759,13 @@
             const shopName = s ? s.name : 'Shop';
 
             document.getElementById('productEditModalTitle').innerHTML = `🧩 Thêm Sản Phẩm Mới Cho Shop: <strong>${escapeHtml(shopName)}</strong>`;
+            populateModalShopDropdown(currentSelectedShopId);
+
             document.getElementById('productEditId').value = '';
             document.getElementById('spEditName').value = '';
             document.getElementById('spEditVariation').value = '';
+            document.getElementById('spEditSku').value = '';
+            document.getElementById('spEditSku').dataset.autoGenerated = 'false';
             document.getElementById('spEditPrice').value = '0';
             document.getElementById('spEditPackagingFee').value = '0';
 
@@ -1686,9 +1791,13 @@
             const shopName = s ? s.name : 'Shop';
 
             document.getElementById('productEditModalTitle').innerHTML = `✏️ Chỉnh Sửa Sản Phẩm: <strong>${escapeHtml(p.name)}</strong> (${escapeHtml(shopName)})`;
+            populateModalShopDropdown(currentSelectedShopId);
+
             document.getElementById('productEditId').value = p.id;
             document.getElementById('spEditName').value = p.name || '';
             document.getElementById('spEditVariation').value = p.variation || '';
+            document.getElementById('spEditSku').value = p.sku || '';
+            document.getElementById('spEditSku').dataset.autoGenerated = 'false';
             document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
             document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
 
@@ -1710,7 +1819,7 @@
                     }];
                 }
                 currentModalDeals = [{
-                    id: 'deal_1',
+                    id: `deal_${Date.now()}_1`,
                     name: p.deal.name || 'Deal Mua X Tặng Quà',
                     timeType: 'always',
                     startDate: '',
@@ -1726,6 +1835,69 @@
 
             renderModalWarehouseItems();
             renderModalDeals();
+            recalcProductModalCost();
+            document.getElementById('productEditModal').style.display = 'flex';
+        }
+
+        function openDuplicateProductModal(productId) {
+            if (!currentSelectedShopId) return;
+            const prods = getShopProducts(currentSelectedShopId);
+            const p = prods.find(item => item.id === productId);
+            if (!p) return;
+
+            const shops = getAppShops();
+            const s = shops.find(item => item.id === currentSelectedShopId || item.name === currentSelectedShopId);
+            const shopName = s ? s.name : 'Shop';
+
+            document.getElementById('productEditModalTitle').innerHTML = `📑 Nhân Bản Sản Phẩm: <strong>${escapeHtml(p.name)}</strong> (Từ ${escapeHtml(shopName)})`;
+            populateModalShopDropdown(currentSelectedShopId);
+
+            // Xóa ID để khi lưu sẽ sinh ra sản phẩm mới hoàn toàn
+            document.getElementById('productEditId').value = '';
+            document.getElementById('spEditName').value = p.name ? `${p.name} (Bản sao)` : '';
+            document.getElementById('spEditVariation').value = p.variation || '';
+            document.getElementById('spEditPrice').value = formatInputNumber(p.price || 0);
+            document.getElementById('spEditPackagingFee').value = formatInputNumber(p.packagingFee || 0);
+
+            currentModalItems = (p.items && p.items.length > 0)
+                ? JSON.parse(JSON.stringify(p.items))
+                : [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }];
+
+            if (Array.isArray(p.deals) && p.deals.length > 0) {
+                currentModalDeals = JSON.parse(JSON.stringify(p.deals));
+            } else if (p.deal && (p.deal.giftQty > 0 || p.deal.buyQty > 1 || (Array.isArray(p.deal.giftItems) && p.deal.giftItems.length > 0))) {
+                let gifts = [];
+                if (Array.isArray(p.deal.giftItems)) {
+                    gifts = JSON.parse(JSON.stringify(p.deal.giftItems));
+                } else if (p.deal.giftQty > 0) {
+                    gifts = [{
+                        productId: p.deal.giftProductId || currentModalItems[0]?.productId || 1,
+                        quantity: Number(p.deal.giftQty) || 1
+                    }];
+                }
+                currentModalDeals = [{
+                    id: `deal_${Date.now()}_1`,
+                    name: p.deal.name || 'Deal Mua X Tặng Quà',
+                    timeType: 'always',
+                    startDate: '',
+                    endDate: '',
+                    buyQty: Number(p.deal.buyQty) || 1,
+                    dealPrice: Number(p.dealPrice) || 0,
+                    packagingFee: Number(p.dealPackagingFee) || Number(p.packagingFee) || 0,
+                    giftItems: gifts
+                }];
+            } else {
+                currentModalDeals = [];
+            }
+
+            renderModalWarehouseItems();
+            renderModalDeals();
+
+            // Tự động sinh mã SKU mới không trùng cho bản sao
+            document.getElementById('spEditSku').value = '';
+            document.getElementById('spEditSku').dataset.autoGenerated = 'true';
+            generateSkuForModalProduct(false);
+
             recalcProductModalCost();
             document.getElementById('productEditModal').style.display = 'flex';
         }
@@ -1830,6 +2002,174 @@
 
         function onSinglePriceInput(input) {
             recalcProductModalCost();
+        }
+
+        /* HÀM HỖ TRỢ TỰ ĐỘNG TẠO MÃ SKU THÔNG MINH CHO SẢN PHẨM / SHOP */
+        function removeVietnameseTones(str) {
+            if (!str) return '';
+            str = String(str);
+            str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            str = str.replace(/đ/g, 'd').replace(/Đ/g, 'D');
+            return str;
+        }
+
+        function getAcronym(str, maxWords = 4) {
+            const clean = removeVietnameseTones(str).toUpperCase().replace(/[^A-Z0-9\s]/g, ' ');
+            const words = clean.split(/\s+/).filter(Boolean);
+            if (words.length === 0) return '';
+            if (words.length === 1) return words[0].slice(0, 4);
+
+            let acronym = '';
+            for (let i = 0; i < Math.min(words.length, maxWords); i++) {
+                const w = words[i];
+                if (/^\d+$/.test(w)) {
+                    acronym += w;
+                } else if (/^\d+[A-Z]+$/.test(w)) {
+                    acronym += w;
+                } else {
+                    acronym += w[0];
+                }
+            }
+            return acronym;
+        }
+
+        function generateSkuForModalProduct(showToastNotice = false) {
+            const targetShopId = document.getElementById('spEditTargetShop')?.value || currentSelectedShopId;
+            const shop = getAppShops().find(s => s.id === targetShopId || s.name === targetShopId);
+            
+            // 1. Tiền tố Shop & Sàn (Shop Prefix)
+            let shopPrefix = 'SP';
+            if (shop) {
+                const isShopee = shop.platform.toLowerCase().includes('shopee');
+                const isTiktok = shop.platform.toLowerCase().includes('tiktok');
+                const platPrefix = isShopee ? 'SHP' : (isTiktok ? 'TTS' : 'SHOP');
+                
+                // Trích xuất số thứ tự của shop nếu có trong tên (ví dụ "Shopee Shop 1" -> "SHP1")
+                const shopNumMatch = shop.name.match(/\d+/);
+                if (shopNumMatch) {
+                    shopPrefix = `${platPrefix}${shopNumMatch[0]}`;
+                } else {
+                    const shopAcr = getAcronym(shop.name, 2);
+                    shopPrefix = `${platPrefix}-${shopAcr}`;
+                }
+            }
+            
+            // 2. Mã Tên Sản Phẩm (Product Code)
+            const prodName = document.getElementById('spEditName')?.value.trim() || '';
+            let prodCode = 'PROD';
+            if (prodName) {
+                prodCode = getAcronym(prodName, 4);
+            } else if (currentModalItems && currentModalItems.length > 0) {
+                const firstWp = warehouseProducts.find(wp => wp.id === Number(currentModalItems[0].productId));
+                if (firstWp) prodCode = getAcronym(firstWp.name, 3);
+            }
+            
+            // 3. Mã Phân Loại / Gói Bán / Deal (Variation Tag)
+            const varName = document.getElementById('spEditVariation')?.value.trim() || '';
+            let varTag = '';
+            if (varName && varName.toLowerCase() !== 'mặc định' && varName.toLowerCase() !== 'mac dinh' && varName !== '-') {
+                const cleanVar = removeVietnameseTones(varName).toUpperCase();
+                const numMatch = cleanVar.match(/(\d+)\s*(G|GOI|ML|KG|HOP|H|CHAI|VIEN|CAI|SET|COMBO)?/);
+                if (numMatch && numMatch[1]) {
+                    const unit = numMatch[2] ? numMatch[2][0] : '';
+                    varTag = `${numMatch[1]}${unit}`;
+                } else {
+                    varTag = getAcronym(varName, 3);
+                }
+            } else {
+                if (currentModalDeals && currentModalDeals.length > 0) {
+                    const firstDeal = currentModalDeals[0];
+                    const buyQty = Number(firstDeal.buyQty) || 1;
+                    const giftQty = (firstDeal.giftItems || []).reduce((sum, g) => sum + (Number(g.quantity) || 0), 0);
+                    if (giftQty > 0) {
+                        varTag = `M${buyQty}T${giftQty}`;
+                    } else if (buyQty > 1) {
+                        varTag = `X${buyQty}`;
+                    }
+                }
+            }
+            
+            let skuParts = [shopPrefix, prodCode];
+            if (varTag) skuParts.push(varTag);
+            
+            const baseSku = skuParts.join('-').toUpperCase().replace(/--+/g, '-');
+            const skuInput = document.getElementById('spEditSku');
+            const currentVal = (skuInput?.value || '').trim().toUpperCase();
+
+            const existingProds = getShopProducts(targetShopId);
+            const currentEditId = document.getElementById('productEditId')?.value || '';
+
+            let finalSku = baseSku;
+
+            if (showToastNotice && currentVal) {
+                // Người dùng chủ động bấm nút "⚡ Tạo SKU" -> Xoay vòng / Tăng số thứ tự để sinh mã SKU khác
+                if (currentVal === baseSku) {
+                    let counter = 2;
+                    finalSku = `${baseSku}-${String(counter).padStart(2, '0')}`;
+                    while (existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === finalSku.toUpperCase())) {
+                        counter++;
+                        finalSku = `${baseSku}-${String(counter).padStart(2, '0')}`;
+                    }
+                } else {
+                    const suffixMatch = currentVal.match(/-(\d+)$/);
+                    if (suffixMatch && currentVal.startsWith(baseSku)) {
+                        let nextNum = parseInt(suffixMatch[1], 10) + 1;
+                        finalSku = `${baseSku}-${String(nextNum).padStart(2, '0')}`;
+                        while (existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === finalSku.toUpperCase())) {
+                            nextNum++;
+                            finalSku = `${baseSku}-${String(nextNum).padStart(2, '0')}`;
+                        }
+                    } else if (suffixMatch) {
+                        const prefixPart = currentVal.slice(0, suffixMatch.index);
+                        let nextNum = parseInt(suffixMatch[1], 10) + 1;
+                        finalSku = `${prefixPart}-${String(nextNum).padStart(2, '0')}`;
+                        while (existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === finalSku.toUpperCase())) {
+                            nextNum++;
+                            finalSku = `${prefixPart}-${String(nextNum).padStart(2, '0')}`;
+                        }
+                    } else {
+                        finalSku = `${currentVal}-02`;
+                        let counter = 2;
+                        while (existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === finalSku.toUpperCase())) {
+                            counter++;
+                            finalSku = `${currentVal}-${String(counter).padStart(2, '0')}`;
+                        }
+                    }
+                }
+            } else {
+                // Sinh lần đầu (khi mở modal hoặc tự động gợi ý)
+                let isTaken = existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === baseSku.toUpperCase());
+                if (isTaken) {
+                    let counter = 2;
+                    finalSku = `${baseSku}-${String(counter).padStart(2, '0')}`;
+                    while (existingProds.some(p => p.id !== currentEditId && p.sku && p.sku.trim().toUpperCase() === finalSku.toUpperCase())) {
+                        counter++;
+                        finalSku = `${baseSku}-${String(counter).padStart(2, '0')}`;
+                    }
+                } else {
+                    finalSku = baseSku;
+                }
+            }
+
+            if (skuInput) {
+                skuInput.value = finalSku;
+                skuInput.dataset.autoGenerated = 'true';
+                skuInput.style.backgroundColor = '#fef3c7';
+                setTimeout(() => { skuInput.style.backgroundColor = ''; }, 450);
+            }
+
+            if (showToastNotice) {
+                showToast(`⚡ Đã tạo mã SKU mới: "${finalSku}"`);
+            }
+            return finalSku;
+        }
+
+        function autoSuggestSkuIfEmpty() {
+            const skuInput = document.getElementById('spEditSku');
+            if (skuInput && (!skuInput.value || skuInput.dataset.autoGenerated === 'true')) {
+                const sku = generateSkuForModalProduct(false);
+                skuInput.dataset.autoGenerated = 'true';
+            }
         }
 
         /* 2. CÀI ĐẶT CÁC CHƯƠNG TRÌNH KHUYẾN MÃI (DEALS) */
@@ -2178,7 +2518,8 @@
             };
 
             const costInfo = calcShopProductCost(dummyProduct, warehouseProducts);
-            const shop = getAppShops().find(s => s.id === currentSelectedShopId || s.name === currentSelectedShopId);
+            const targetShopId = document.getElementById('spEditTargetShop')?.value || currentSelectedShopId;
+            const shop = getAppShops().find(s => s.id === targetShopId || s.name === targetShopId);
             const feePercent = shop ? Number(shop.feePercent) || 0 : 14.5;
 
             const singlePrice = parseNumberText(document.getElementById('spEditPrice')?.value);
@@ -2270,7 +2611,12 @@
 
         function handleProductEditSubmit(event) {
             event.preventDefault();
-            if (!currentSelectedShopId) return;
+
+            const targetShopId = document.getElementById('spEditTargetShop')?.value || currentSelectedShopId;
+            if (!targetShopId) {
+                alert('Vui lòng chọn Shop áp dụng cho sản phẩm.');
+                return;
+            }
 
             // Kiểm tra trùng thời gian các deals
             if (!validateModalDealsOverlap()) {
@@ -2281,11 +2627,31 @@
             const id = document.getElementById('productEditId').value;
             const name = document.getElementById('spEditName').value.trim();
             const variation = document.getElementById('spEditVariation').value.trim();
+            const sku = document.getElementById('spEditSku').value.trim();
             const price = parseNumberText(document.getElementById('spEditPrice').value);
             const packagingFee = parseNumberText(document.getElementById('spEditPackagingFee').value);
 
             if (!name) {
                 alert('Vui lòng nhập tên sản phẩm.');
+                document.getElementById('spEditName')?.focus();
+                return;
+            }
+
+            if (!sku) {
+                alert('⚠️ Vui lòng nhập Mã SKU cho sản phẩm hoặc bấm nút "⚡ Tạo SKU"!');
+                document.getElementById('spEditSku')?.focus();
+                return;
+            }
+
+            // Validation: Kiểm tra không được trùng mã SKU trên Shop đích
+            const targetShopProds = getShopProducts(targetShopId);
+            const duplicateProduct = targetShopProds.find(p => p.id !== id && p.sku && p.sku.trim().toUpperCase() === sku.toUpperCase());
+            if (duplicateProduct) {
+                const targetShop = getAppShops().find(s => s.id === targetShopId || s.name === targetShopId);
+                const targetShopName = targetShop ? targetShop.name : targetShopId;
+                alert(`⚠️ LỖI TRÙNG MÃ SKU:\n\nMã SKU "${sku}" đã được sử dụng cho sản phẩm "${duplicateProduct.name}"${duplicateProduct.variation ? ` (${duplicateProduct.variation})` : ''} trên Shop "${targetShopName}".\n\nVui lòng đổi mã SKU khác hoặc bấm nút "⚡ Tạo SKU" để sinh mã mới không trùng lặp!`);
+                document.getElementById('spEditSku')?.focus();
+                document.getElementById('spEditSku')?.select();
                 return;
             }
 
@@ -2333,6 +2699,7 @@
                 id: id || undefined,
                 name: name,
                 variation: variation || '',
+                sku: sku,
                 items: cleanItems,
                 deals: cleanDeals,
                 deal: cleanDeals[0] || { buyQty: 1, giftQty: 0, giftProductId: 'self' },
@@ -2342,11 +2709,19 @@
                 dealPackagingFee: cleanDeals[0]?.packagingFee || packagingFee
             };
 
-            addOrUpdateShopProduct(currentSelectedShopId, productData);
+            addOrUpdateShopProduct(targetShopId, productData);
             closeProductEditModal();
+
+            // Nếu lưu sang Shop khác, chuyển view sang Shop đó
+            if (targetShopId !== currentSelectedShopId) {
+                currentSelectedShopId = targetShopId;
+                const shopDropdown = document.getElementById('selectedShopDropdown');
+                if (shopDropdown) shopDropdown.value = targetShopId;
+            }
+
             renderSelectedShopProducts();
             renderShopTable();
-            showToast(`✅ Đã lưu sản phẩm "${name}"${variation ? ` (${variation})` : ''} với ${cleanDeals.length} khuyến mãi!`);
+            showToast(`✅ Đã lưu sản phẩm "${name}"${variation ? ` (${variation})` : ''} [SKU: ${sku}] vào Shop!`);
         }
 
         function handleDeleteProduct(productId) {
