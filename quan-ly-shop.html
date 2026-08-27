@@ -469,6 +469,8 @@
         }
 
         .form-control {
+            width: 100%;
+            box-sizing: border-box;
             padding: 9px 12px;
             border-radius: 8px;
             border: 1px solid var(--border);
@@ -727,6 +729,44 @@
             letter-spacing: 0.3px;
             white-space: nowrap;
         }
+
+        /* BULK CLONE TOOLBAR & CHECKBOX STYLES */
+        .row-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary);
+            border-radius: 4px;
+            vertical-align: middle;
+            transition: transform 0.1s ease;
+        }
+        .row-checkbox:hover {
+            transform: scale(1.15);
+        }
+
+        .product-preview-list {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #f8fafc;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .product-preview-item {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 13px;
+        }
     </style>
 </head>
 <body>
@@ -797,6 +837,9 @@
                     <span>📦</span> 1. Danh Mục Mặt Hàng Trong Kho (Đọc & Ghi vào Tab "products" trên Google Sheet)
                 </h2>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.82rem; font-weight: 700; color: #1e3a8a; border-color: #93c5fd; background: #eff6ff; display: inline-flex; align-items: center; gap: 5px;" onclick="openBatchWarehousePriceModal()" title="Cập nhật đơn giá và chi phí hóa đơn cho nhiều mặt hàng cùng lúc">
+                        💰 Set Giá & HĐ Hàng Loạt
+                    </button>
                     <button type="button" class="btn btn-primary" style="padding: 5px 12px; font-size: 0.82rem;" onclick="openAddWarehouseProductModal()">
                         + Thêm Mặt Hàng Kho
                     </button>
@@ -872,7 +915,13 @@
                 <h2 class="card-title">
                     <span>🧩</span> 3. Cấu Hình Sản Phẩm Bán Theo Shop (Lưu vào Tab "shop_products")
                 </h2>
-                <div class="header-actions">
+                <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-secondary" style="font-weight: 700; color: #047857; border-color: #a7f3d0; background: #ecfdf5; display: inline-flex; align-items: center; gap: 6px;" onclick="openBatchPriceModal()" title="Cập nhật giá bán và phí đóng gói cho nhiều sản phẩm cùng lúc">
+                        💰 Set Giá & Phí Hàng Loạt
+                    </button>
+                    <button type="button" class="btn btn-secondary" style="font-weight: 700; color: #1e3a8a; border-color: #93c5fd; background: #eff6ff; display: inline-flex; align-items: center; gap: 6px;" onclick="openCloneAllShopsModal()" title="Sao chép sản phẩm sang shop khác">
+                        🌐 Clone Sản Phẩm
+                    </button>
                     <button type="button" class="btn btn-primary" onclick="openAddProductModal()">
                         + Thêm Sản Phẩm Mới Cho Shop
                     </button>
@@ -1126,6 +1175,263 @@
         </div>
     </div>
 
+    <!-- MODAL 4: CLONE SẢN PHẨM SANG SHOP KHÁC -->
+    <div id="cloneAllShopsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 740px;">
+            <div class="modal-header">
+                <h3 class="modal-title">🌐 Clone Sản Phẩm</h3>
+                <button type="button" class="btn-close-modal" onclick="closeCloneAllShopsModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Chọn Shop đích & Nguồn sản phẩm -->
+                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; margin-bottom: 14px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                            <label for="cloneAllTargetShopSelect" class="form-label" style="font-weight: 800; color: #1e3a8a; font-size: 13px; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <span>🎯 Shop đích nhận sản phẩm:</span>
+                            </label>
+                            <select id="cloneAllTargetShopSelect" class="form-control" style="width: 100%; height: 42px; font-weight: 700; color: #1e3a8a; background: #ffffff; border: 1.5px solid #93c5fd; border-radius: 8px; padding: 8px 12px; font-size: 13.5px; box-sizing: border-box; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.04);" onchange="onCloneAllTargetShopChange()">
+                                <!-- Dynamic target shop list -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0; display: flex; flex-direction: column; gap: 6px;">
+                            <label for="cloneAllSourceShopSelect" class="form-label" style="font-weight: 800; color: #166534; font-size: 13px; margin: 0; display: flex; align-items: center; gap: 6px;">
+                                <span>📦 Nguồn sản phẩm cần lấy:</span>
+                            </label>
+                            <select id="cloneAllSourceShopSelect" class="form-control" style="width: 100%; height: 42px; font-weight: 700; color: #166534; background: #ffffff; border: 1.5px solid #86efac; border-radius: 8px; padding: 8px 12px; font-size: 13.5px; box-sizing: border-box; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.04);" onchange="onCloneAllSourceShopChange()">
+                                <!-- Dynamic source shop list -->
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Thống kê so sánh (KPIs) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; text-align: center;">
+                        <div style="font-size: 11.5px; color: #64748b; font-weight: 700; text-transform: uppercase;">Tổng SP khả dụng để clone</div>
+                        <div id="cloneAllKpiTotal" style="font-size: 22px; font-weight: 800; color: #0f172a; margin-top: 2px;">0</div>
+                    </div>
+                    <div style="background: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 10px 14px; text-align: center;">
+                        <div style="font-size: 11.5px; color: #166534; font-weight: 700; text-transform: uppercase;">Đã chọn để Clone</div>
+                        <div id="cloneAllKpiNew" style="font-size: 22px; font-weight: 800; color: #16a34a; margin-top: 2px;">0</div>
+                    </div>
+                </div>
+
+                <!-- Thanh điều khiển: Tích chọn & Tìm kiếm -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; padding: 6px 4px; border-bottom: 1px solid #e2e8f0;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 700; color: #1e3a8a; user-select: none;">
+                        <input type="checkbox" id="cloneAllSelectAllCheckbox" class="row-checkbox" onchange="toggleSelectAllCloneCandidates(this.checked)" checked>
+                        <span>Chọn tất cả sản phẩm</span>
+                    </label>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="text" id="cloneAllSearchInput" class="form-control" style="height: 32px; padding: 4px 10px; font-size: 12px; width: 220px;" placeholder="🔍 Tìm tên sản phẩm, SKU..." oninput="onCloneAllSearchInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- Danh sách sản phẩm ALL có Checkbox -->
+                <div class="product-preview-list" id="cloneAllProductPreviewList" style="max-height: 280px; gap: 8px;">
+                    <!-- Rendered dynamically by JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeCloneAllShopsModal()">Hủy</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmCloneAllShops" onclick="executeCloneAllShops()" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); font-weight: 700;">
+                    🚀 Bắt Đầu Clone Sản Phẩm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: SET GIÁ & PHÍ ĐÓNG GÓI HÀNG LOẠT -->
+    <div id="batchPriceModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 960px; width: 96vw;">
+            <div class="modal-header">
+                <h3 class="modal-title">💰 Cập Nhật Giá & Phí Đóng Gói Hàng Loạt</h3>
+                <button type="button" class="btn-close-modal" onclick="closeBatchPriceModal()">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 16px 20px;">
+                <!-- 1. CỤM CẤU HÌNH GIÁ VÀ PHÍ MỚI -->
+                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px;">
+                    <div style="font-weight: 800; color: #0f172a; font-size: 13.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>⚙️ Thiết Lập Mức Giá & Phí Mới Cần Áp Dụng:</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <!-- Cột 1: Giá bán lẻ -->
+                        <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 10px 14px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #1e3a8a; font-size: 13px; margin-bottom: 6px; user-select: none;">
+                                <input type="checkbox" id="batchApplyPriceCb" class="row-checkbox" onchange="onBatchConfigChange()" checked>
+                                <span>🏷️ Cập nhật Giá Bán Lẻ (VNĐ)</span>
+                            </label>
+                            <input type="text" id="batchNewPriceInput" class="form-control" style="font-weight: 800; color: #1e3a8a; font-size: 15px; height: 40px;" placeholder="Nhập số tiền giá bán (VD: 150,000)..." onfocus="prepareNumberInput(this)" oninput="onBatchPriceInput(this)" onblur="formatMoneyInput(this)">
+                        </div>
+
+                        <!-- Cột 2: Phí đóng gói -->
+                        <div style="background: #ffffff; border: 1.5px solid #bbf7d0; border-radius: 10px; padding: 10px 14px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #166534; font-size: 13px; margin-bottom: 6px; user-select: none;">
+                                <input type="checkbox" id="batchApplyPkgFeeCb" class="row-checkbox" onchange="onBatchConfigChange()" checked>
+                                <span>📦 Cập nhật Phí Đóng Gói (VNĐ)</span>
+                            </label>
+                            <input type="text" id="batchNewPkgFeeInput" class="form-control" style="font-weight: 800; color: #166534; font-size: 15px; height: 40px;" placeholder="Nhập số tiền phí đóng gói (VD: 3,000)..." onfocus="prepareNumberInput(this)" oninput="onBatchPkgFeeInput(this)" onblur="formatMoneyInput(this)">
+                        </div>
+                    </div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 8px; line-height: 1.4;">
+                        💡 <em>Ghi chú: Bạn có thể chọn cập nhật cả 2 hoặc chỉ cập nhật riêng Giá bán / Phí đóng gói. Đối với sản phẩm có Deal, nếu tích chọn <strong>"Cập nhật Deal"</strong> thì phí gói Deal sẽ nhận theo phí đóng gói mới, và giá Deal sẽ tự động cập nhật = Giá bán mới × Số lượng mua.</em>
+                    </div>
+                </div>
+
+                <!-- 2. BỘ LỌC SHOP & TÌM KIẾM SẢN PHẨM -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 260px;">
+                        <label for="batchShopFilterSelect" style="font-weight: 800; color: #334155; font-size: 13px; white-space: nowrap;">
+                            🏪 Chọn Shop:
+                        </label>
+                        <select id="batchShopFilterSelect" class="form-control" style="font-weight: 700; color: #1e3a8a; height: 38px; min-width: 240px;" onchange="onBatchShopFilterChange()">
+                            <!-- Dynamic shop list + 'all' -->
+                        </select>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 260px;">
+                        <input type="text" id="batchSearchInput" class="form-control" style="height: 38px; font-size: 12.5px;" placeholder="🔍 Tìm tên sản phẩm, biến thể, SKU..." oninput="onBatchSearchInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- 3. DANH SÁCH SẢN PHẨM TƯƠNG ỨNG -->
+                <div class="table-responsive" style="max-height: 340px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 2; border-bottom: 2px solid #e2e8f0;">
+                            <tr>
+                                <th style="width: 45px; text-align: center; padding: 8px 6px;">
+                                    <input type="checkbox" id="batchSelectAllProdCb" class="row-checkbox" onchange="toggleSelectAllBatchProducts(this.checked)" title="Chọn tất cả sản phẩm">
+                                </th>
+                                <th style="width: 45px; text-align: center; padding: 8px 4px;">STT</th>
+                                <th style="min-width: 180px; text-align: left; padding: 8px 10px;">Tên Sản Phẩm & Biến Thể</th>
+                                <th style="width: 125px; text-align: center; padding: 8px 6px;">Shop</th>
+                                <th style="width: 110px; text-align: right; padding: 8px 8px;">Giá Lẻ HT</th>
+                                <th style="width: 100px; text-align: right; padding: 8px 8px;">Phí Gói HT</th>
+                                <th style="min-width: 140px; text-align: left; padding: 8px 8px;">Chương Trình Deal</th>
+                                <th style="width: 125px; text-align: center; padding: 8px 6px;">
+                                    <div style="display: inline-flex; align-items: center; gap: 4px;">
+                                        <input type="checkbox" id="batchSelectAllDealCb" class="row-checkbox" onchange="toggleSelectAllBatchDeals(this.checked)" title="Bật/tắt cập nhật cho tất cả Deal">
+                                        <span title="Tích chọn để cập nhật giá/phí vào Deal của sản phẩm">Cập nhật Deal</span>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchProductsTableBody">
+                            <!-- Dynamic rows rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 4. THANH TRẠNG THÁI & KPI CHỌN -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 700;">
+                        <span style="color: #475569;">Tổng SP: <strong id="batchTotalCount" style="color: #0f172a;">0</strong></span>
+                        <span style="color: #1e3a8a;">Đã chọn: <strong id="batchSelectedCount" style="color: #2563eb;">0</strong> SP</span>
+                        <span style="color: #166534;">Cập nhật Deal: <strong id="batchDealSelectedCount" style="color: #16a34a;">0</strong> SP</span>
+                    </div>
+                    <div id="batchPreviewSummaryText" style="font-size: 12.5px; font-weight: 700; color: #047857;">
+                        <!-- E.g.: "Sẽ cập nhật: Giá 120,000đ | Phí gói 3,000đ" -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeBatchPriceModal()">Hủy Bỏ</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBatchPrice" onclick="executeBatchPriceUpdate()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-color: #047857; font-weight: 700; padding: 9px 20px;">
+                    💾 Áp Dụng Cập Nhật
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 6: SET ĐƠN GIÁ & CHI PHÍ HÓA ĐƠN KHO HÀNG LOẠT -->
+    <div id="batchWarehousePriceModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card" style="max-width: 880px; width: 95vw;">
+            <div class="modal-header">
+                <h3 class="modal-title">📦 Cập Nhật Đơn Giá & Chi Phí Hóa Đơn Kho Hàng Loạt</h3>
+                <button type="button" class="btn-close-modal" onclick="closeBatchWarehousePriceModal()">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 16px 20px;">
+                <!-- 1. CỤM CẤU HÌNH ĐƠN GIÁ VÀ CHI PHÍ HÓA ĐƠN -->
+                <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px;">
+                    <div style="font-weight: 800; color: #0f172a; font-size: 13.5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>⚙️ Thiết Lập Đơn Giá & Chi Phí Hóa Đơn Mới Cần Áp Dụng:</span>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <!-- Cột 1: Đơn giá nhập kho -->
+                        <div style="background: #ffffff; border: 1.5px solid #bfdbfe; border-radius: 10px; padding: 10px 14px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #1e3a8a; font-size: 13px; margin-bottom: 6px; user-select: none;">
+                                <input type="checkbox" id="batchWpApplyPriceCb" class="row-checkbox" onchange="onBatchWpConfigChange()" checked>
+                                <span>🏷️ Cập nhật Đơn Giá Nhập Kho (VNĐ)</span>
+                            </label>
+                            <input type="text" id="batchWpNewPriceInput" class="form-control" style="font-weight: 800; color: #1e3a8a; font-size: 15px; height: 40px;" placeholder="Nhập số tiền đơn giá (VD: 25,000)..." onfocus="prepareNumberInput(this)" oninput="onBatchWpPriceInput(this)" onblur="formatMoneyInput(this)">
+                        </div>
+
+                        <!-- Cột 2: Chi phí hóa đơn -->
+                        <div style="background: #ffffff; border: 1.5px solid #fde68a; border-radius: 10px; padding: 10px 14px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #b45309; font-size: 13px; margin-bottom: 6px; user-select: none;">
+                                <input type="checkbox" id="batchWpApplyInvoiceFeeCb" class="row-checkbox" onchange="onBatchWpConfigChange()" checked>
+                                <span>🧾 Cập nhật Chi Phí Xuất Hóa Đơn (VNĐ)</span>
+                            </label>
+                            <input type="text" id="batchWpNewInvoiceFeeInput" class="form-control" style="font-weight: 800; color: #b45309; font-size: 15px; height: 40px;" placeholder="Nhập số tiền chi phí hóa đơn (VD: 2,000)..." onfocus="prepareNumberInput(this)" oninput="onBatchWpInvoiceFeeInput(this)" onblur="formatMoneyInput(this)">
+                        </div>
+                    </div>
+                    <div style="font-size: 11.5px; color: #64748b; margin-top: 8px; line-height: 1.4;">
+                        💡 <em>Ghi chú: Bạn có thể chọn cập nhật cả 2 hoặc chỉ cập nhật riêng Đơn giá kho / Chi phí hóa đơn. Sau khi cập nhật, giá vốn cấu thành (BOM) của các sản phẩm bán thuộc tất cả các Shop sẽ được tự động tính toán lại theo giá mới.</em>
+                    </div>
+                </div>
+
+                <!-- 2. THANH TÌM KIẾM MẶT HÀNG KHO -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-weight: 700; color: #334155; font-size: 13px;">📋 Danh sách mặt hàng kho:</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px; min-width: 260px;">
+                        <input type="text" id="batchWpSearchInput" class="form-control" style="height: 38px; font-size: 12.5px; width: 280px;" placeholder="🔍 Tìm tên mặt hàng, từ khóa aliases..." oninput="onBatchWpSearchInput(this.value)">
+                    </div>
+                </div>
+
+                <!-- 3. BẢNG DANH SÁCH MẶT HÀNG KHO CÓ CHECKBOX -->
+                <div class="table-responsive" style="max-height: 340px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 2; border-bottom: 2px solid #e2e8f0;">
+                            <tr>
+                                <th style="width: 45px; text-align: center; padding: 8px 6px;">
+                                    <input type="checkbox" id="batchWpSelectAllCb" class="row-checkbox" onchange="toggleSelectAllBatchWp(this.checked)" title="Chọn tất cả mặt hàng kho">
+                                </th>
+                                <th style="width: 45px; text-align: center; padding: 8px 4px;">STT</th>
+                                <th style="min-width: 200px; text-align: left; padding: 8px 10px;">Tên Mặt Hàng Trong Kho</th>
+                                <th style="min-width: 180px; text-align: left; padding: 8px 8px;">Từ Khóa Nhận Diện (Aliases)</th>
+                                <th style="width: 140px; text-align: right; padding: 8px 8px;">Đơn Giá HT</th>
+                                <th style="width: 140px; text-align: right; padding: 8px 8px;">Chi Phí HĐ HT</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batchWpTableBody">
+                            <!-- Dynamic rows rendered by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 4. THANH TRẠNG THÁI & KPI CHỌN -->
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; padding: 10px 14px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; font-weight: 700;">
+                        <span style="color: #475569;">Tổng mặt hàng: <strong id="batchWpTotalCount" style="color: #0f172a;">0</strong></span>
+                        <span style="color: #1e3a8a;">Đã chọn: <strong id="batchWpSelectedCount" style="color: #2563eb;">0</strong> món</span>
+                    </div>
+                    <div id="batchWpPreviewSummaryText" style="font-size: 12.5px; font-weight: 700; color: #1e3a8a;">
+                        <!-- E.g.: "Sẽ cập nhật: Giá 25,000đ | Hóa đơn 2,000đ" -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn btn-secondary" onclick="closeBatchWarehousePriceModal()">Hủy Bỏ</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmBatchWpPrice" onclick="executeBatchWarehousePriceUpdate()" style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); border-color: #1e3a8a; font-weight: 700; padding: 9px 20px;">
+                    💾 Áp Dụng Cập Nhật Kho
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let currentFilter = 'all';
         let currentSelectedShopId = null;
@@ -1237,6 +1543,303 @@
                     showToast('❌ Lỗi khi đọc tab products. Đang dùng dữ liệu đã lưu.');
                 }
             }
+        }
+
+        /* =========================================================================
+           CHỨC NĂNG CẬP NHẬT ĐƠN GIÁ & CHI PHÍ HÓA ĐƠN KHO HÀNG LOẠT (BATCH WAREHOUSE)
+           ========================================================================= */
+        let batchWpSelectedIds = new Set();
+        let batchWpSearchKeyword = '';
+
+        function openBatchWarehousePriceModal() {
+            if (!Array.isArray(warehouseProducts) || warehouseProducts.length === 0) {
+                alert('Chưa có mặt hàng nào trong kho để cập nhật.');
+                return;
+            }
+
+            document.getElementById('batchWpApplyPriceCb').checked = true;
+            document.getElementById('batchWpApplyInvoiceFeeCb').checked = true;
+            document.getElementById('batchWpNewPriceInput').value = '';
+            document.getElementById('batchWpNewInvoiceFeeInput').value = '';
+            document.getElementById('batchWpSearchInput').value = '';
+            batchWpSearchKeyword = '';
+
+            // Mặc định chọn tất cả mặt hàng kho
+            batchWpSelectedIds = new Set(warehouseProducts.map(p => p.id));
+
+            renderBatchWpTable();
+            document.getElementById('batchWarehousePriceModal').style.display = 'flex';
+        }
+
+        function closeBatchWarehousePriceModal() {
+            document.getElementById('batchWarehousePriceModal').style.display = 'none';
+        }
+
+        function onBatchWpConfigChange() {
+            renderBatchWpTable();
+        }
+
+        function onBatchWpSearchInput(val) {
+            batchWpSearchKeyword = String(val || '').trim();
+            renderBatchWpTable();
+        }
+
+        function onBatchWpPriceInput(input) {
+            updateBatchWpSummary();
+            renderBatchWpPreviews();
+        }
+
+        function onBatchWpInvoiceFeeInput(input) {
+            updateBatchWpSummary();
+            renderBatchWpPreviews();
+        }
+
+        function getFilteredBatchWpItems() {
+            if (!batchWpSearchKeyword) return warehouseProducts;
+            const kw = removeVietnameseTones(batchWpSearchKeyword).toLowerCase();
+            return warehouseProducts.filter(wp => {
+                const name = removeVietnameseTones(wp.name || '').toLowerCase();
+                const aliasStr = Array.isArray(wp.aliases) ? wp.aliases.join(' ') : String(wp.aliases || '');
+                const aliases = removeVietnameseTones(aliasStr).toLowerCase();
+                return name.includes(kw) || aliases.includes(kw);
+            });
+        }
+
+        function toggleSelectAllBatchWp(checked) {
+            const filtered = getFilteredBatchWpItems();
+            filtered.forEach(wp => {
+                if (checked) {
+                    batchWpSelectedIds.add(wp.id);
+                } else {
+                    batchWpSelectedIds.delete(wp.id);
+                }
+            });
+            renderBatchWpTable();
+        }
+
+        function onBatchWpCheckboxChange(id, checked) {
+            if (checked) {
+                batchWpSelectedIds.add(Number(id));
+            } else {
+                batchWpSelectedIds.delete(Number(id));
+            }
+            updateBatchWpSummary();
+        }
+
+        function renderBatchWpTable() {
+            const tbody = document.getElementById('batchWpTableBody');
+            if (!tbody) return;
+
+            const filtered = getFilteredBatchWpItems();
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #64748b; padding: 30px;">
+                            ${warehouseProducts.length === 0 ? 'Kho chưa có mặt hàng nào.' : 'Không tìm thấy mặt hàng nào khớp với tìm kiếm.'}
+                        </td>
+                    </tr>
+                `;
+                updateBatchWpSummary();
+                return;
+            }
+
+            const applyPrice = document.getElementById('batchWpApplyPriceCb')?.checked ?? true;
+            const applyInvFee = document.getElementById('batchWpApplyInvoiceFeeCb')?.checked ?? true;
+            const newPriceVal = parseNumberText(document.getElementById('batchWpNewPriceInput')?.value);
+            const newInvFeeVal = parseNumberText(document.getElementById('batchWpNewInvoiceFeeInput')?.value);
+
+            tbody.innerHTML = filtered.map((wp, idx) => {
+                const isSelected = batchWpSelectedIds.has(wp.id);
+                const aliasStr = Array.isArray(wp.aliases) && wp.aliases.length > 0 
+                    ? wp.aliases.join(', ') 
+                    : (typeof wp.aliases === 'string' && wp.aliases ? wp.aliases : '<span style="color:#94a3b8; font-size:11px;">(Không có)</span>');
+
+                // Giá mới preview
+                let pricePreviewHtml = `<div style="font-weight: 800; color: #1e3a8a;">${formatMoney(wp.price || 0)}</div>`;
+                if (isSelected && applyPrice && Number.isFinite(newPriceVal) && newPriceVal >= 0 && document.getElementById('batchWpNewPriceInput')?.value.trim() !== '') {
+                    pricePreviewHtml += `<div style="font-size: 11px; font-weight: 700; color: #2563eb; margin-top: 2px;">➔ ${formatMoney(newPriceVal)}</div>`;
+                }
+
+                // Phí HĐ preview
+                let invFeePreviewHtml = `<div style="font-weight: 700; color: #b45309;">${formatMoney(wp.invoiceFee || 0)}</div>`;
+                if (isSelected && applyInvFee && Number.isFinite(newInvFeeVal) && newInvFeeVal >= 0 && document.getElementById('batchWpNewInvoiceFeeInput')?.value.trim() !== '') {
+                    invFeePreviewHtml += `<div style="font-size: 11px; font-weight: 700; color: #d97706; margin-top: 2px;">➔ ${formatMoney(newInvFeeVal)}</div>`;
+                }
+
+                return `
+                    <tr style="${isSelected ? 'background: #eff6ff;' : ''}">
+                        <td style="text-align: center;">
+                            <input 
+                                type="checkbox" 
+                                class="row-checkbox batch-wp-cb" 
+                                value="${wp.id}"
+                                ${isSelected ? 'checked' : ''} 
+                                onchange="onBatchWpCheckboxChange(${wp.id}, this.checked)"
+                                title="Tích chọn để cập nhật mặt hàng này"
+                            >
+                        </td>
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                        <td><strong style="color: #0f172a; font-size: 0.92rem;">${escapeHtml(wp.name)}</strong></td>
+                        <td style="color: #475569; font-size: 0.82rem;">${escapeHtml(aliasStr)}</td>
+                        <td style="text-align: right;" class="batch-wp-col-price" data-id="${wp.id}">
+                            ${pricePreviewHtml}
+                        </td>
+                        <td style="text-align: right;" class="batch-wp-col-invfee" data-id="${wp.id}">
+                            ${invFeePreviewHtml}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateBatchWpSummary();
+        }
+
+        function renderBatchWpPreviews() {
+            const applyPrice = document.getElementById('batchWpApplyPriceCb')?.checked ?? true;
+            const applyInvFee = document.getElementById('batchWpApplyInvoiceFeeCb')?.checked ?? true;
+            const newPriceVal = parseNumberText(document.getElementById('batchWpNewPriceInput')?.value);
+            const newInvFeeVal = parseNumberText(document.getElementById('batchWpNewInvoiceFeeInput')?.value);
+
+            document.querySelectorAll('#batchWpTableBody tr').forEach(tr => {
+                const cb = tr.querySelector('.batch-wp-cb');
+                if (!cb) return;
+                const id = Number(cb.value);
+                const wp = warehouseProducts.find(p => p.id === id);
+                if (!wp) return;
+
+                const isSelected = batchWpSelectedIds.has(id);
+
+                const priceCell = tr.querySelector('.batch-wp-col-price');
+                if (priceCell) {
+                    let html = `<div style="font-weight: 800; color: #1e3a8a;">${formatMoney(wp.price || 0)}</div>`;
+                    if (isSelected && applyPrice && Number.isFinite(newPriceVal) && newPriceVal >= 0 && document.getElementById('batchWpNewPriceInput')?.value.trim() !== '') {
+                        html += `<div style="font-size: 11px; font-weight: 700; color: #2563eb; margin-top: 2px;">➔ ${formatMoney(newPriceVal)}</div>`;
+                    }
+                    priceCell.innerHTML = html;
+                }
+
+                const invFeeCell = tr.querySelector('.batch-wp-col-invfee');
+                if (invFeeCell) {
+                    let html = `<div style="font-weight: 700; color: #b45309;">${formatMoney(wp.invoiceFee || 0)}</div>`;
+                    if (isSelected && applyInvFee && Number.isFinite(newInvFeeVal) && newInvFeeVal >= 0 && document.getElementById('batchWpNewInvoiceFeeInput')?.value.trim() !== '') {
+                        html += `<div style="font-size: 11px; font-weight: 700; color: #d97706; margin-top: 2px;">➔ ${formatMoney(newInvFeeVal)}</div>`;
+                    }
+                    invFeeCell.innerHTML = html;
+                }
+            });
+        }
+
+        function updateBatchWpSummary() {
+            const totalCountEl = document.getElementById('batchWpTotalCount');
+            const selectedCountEl = document.getElementById('batchWpSelectedCount');
+            const previewTextEl = document.getElementById('batchWpPreviewSummaryText');
+            const confirmBtn = document.getElementById('btnConfirmBatchWpPrice');
+            const selectAllCb = document.getElementById('batchWpSelectAllCb');
+
+            const filtered = getFilteredBatchWpItems();
+            const totalFiltered = filtered.length;
+
+            const selectedCount = filtered.filter(wp => batchWpSelectedIds.has(wp.id)).length;
+
+            if (totalCountEl) totalCountEl.textContent = totalFiltered;
+            if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+
+            if (selectAllCb) {
+                selectAllCb.checked = (totalFiltered > 0 && selectedCount === totalFiltered);
+                selectAllCb.indeterminate = (selectedCount > 0 && selectedCount < totalFiltered);
+            }
+
+            const applyPrice = document.getElementById('batchWpApplyPriceCb')?.checked ?? false;
+            const applyInvFee = document.getElementById('batchWpApplyInvoiceFeeCb')?.checked ?? false;
+            const rawPrice = document.getElementById('batchWpNewPriceInput')?.value.trim();
+            const rawInvFee = document.getElementById('batchWpNewInvoiceFeeInput')?.value.trim();
+            const newPriceVal = parseNumberText(rawPrice);
+            const newInvFeeVal = parseNumberText(rawInvFee);
+
+            const hasValidPrice = applyPrice && rawPrice !== '' && Number.isFinite(newPriceVal) && newPriceVal >= 0;
+            const hasValidInvFee = applyInvFee && rawInvFee !== '' && Number.isFinite(newInvFeeVal) && newInvFeeVal >= 0;
+
+            let previewParts = [];
+            if (hasValidPrice) previewParts.push(`Đơn giá kho: ${formatMoney(newPriceVal)}`);
+            if (hasValidInvFee) previewParts.push(`Phí hóa đơn: ${formatMoney(newInvFeeVal)}`);
+
+            if (previewParts.length > 0 && selectedCount > 0) {
+                if (previewTextEl) {
+                    previewTextEl.innerHTML = `✨ Sẽ áp dụng: <strong>${previewParts.join(' | ')}</strong> cho <strong>${selectedCount} mặt hàng</strong>`;
+                }
+            } else {
+                if (previewTextEl) {
+                    if (!applyPrice && !applyInvFee) {
+                        previewTextEl.textContent = '⚠️ Hãy tích chọn ít nhất 1 mục: Đơn giá kho hoặc Phí hóa đơn.';
+                    } else if (!hasValidPrice && !hasValidInvFee) {
+                        previewTextEl.textContent = 'ℹ️ Vui lòng nhập số tiền cần cập nhật.';
+                    } else if (selectedCount === 0) {
+                        previewTextEl.textContent = '⚠️ Chưa có mặt hàng nào được chọn.';
+                    } else {
+                        previewTextEl.textContent = '';
+                    }
+                }
+            }
+
+            const canConfirm = selectedCount > 0 && (hasValidPrice || hasValidInvFee);
+            if (confirmBtn) {
+                confirmBtn.disabled = !canConfirm;
+                confirmBtn.textContent = canConfirm 
+                    ? `💾 Áp Dụng Cho ${selectedCount} Mặt Hàng` 
+                    : (selectedCount === 0 ? `⚠️ Chưa Chọn Mặt Hàng Nào` : `ℹ️ Nhập Số Tiền Cần Set`);
+            }
+        }
+
+        function executeBatchWarehousePriceUpdate() {
+            const applyPrice = document.getElementById('batchWpApplyPriceCb')?.checked ?? false;
+            const applyInvFee = document.getElementById('batchWpApplyInvoiceFeeCb')?.checked ?? false;
+            const rawPrice = document.getElementById('batchWpNewPriceInput')?.value.trim();
+            const rawInvFee = document.getElementById('batchWpNewInvoiceFeeInput')?.value.trim();
+            const newPriceVal = parseNumberText(rawPrice);
+            const newInvFeeVal = parseNumberText(rawInvFee);
+
+            const hasValidPrice = applyPrice && rawPrice !== '' && Number.isFinite(newPriceVal) && newPriceVal >= 0;
+            const hasValidInvFee = applyInvFee && rawInvFee !== '' && Number.isFinite(newInvFeeVal) && newInvFeeVal >= 0;
+
+            if (!hasValidPrice && !hasValidInvFee) {
+                alert('Vui lòng nhập số tiền hợp lệ cho Đơn giá kho hoặc Chi phí hóa đơn cần cập nhật.');
+                return;
+            }
+
+            const selectedItems = warehouseProducts.filter(wp => batchWpSelectedIds.has(wp.id));
+            if (selectedItems.length === 0) {
+                alert('Vui lòng tích chọn ít nhất 1 mặt hàng để cập nhật.');
+                return;
+            }
+
+            let msg = `Bạn có chắc chắn muốn cập nhật hàng loạt cho ${selectedItems.length} mặt hàng kho đã chọn?\n\n`;
+            if (hasValidPrice) msg += `- Đổi Đơn Giá Kho thành: ${formatMoney(newPriceVal)}\n`;
+            if (hasValidInvFee) msg += `- Đổi Chi Phí Hóa Đơn thành: ${formatMoney(newInvFeeVal)}\n`;
+            msg += `\nLưu ý: Giá vốn (BOM) của các sản phẩm bán thuộc các Shop sẽ tự động cập nhật lại theo giá mới.`;
+
+            if (!confirm(msg)) return;
+
+            let updatedCount = 0;
+            warehouseProducts.forEach(wp => {
+                if (!batchWpSelectedIds.has(wp.id)) return;
+                if (hasValidPrice) {
+                    wp.price = newPriceVal;
+                }
+                if (hasValidInvFee) {
+                    wp.invoiceFee = newInvFeeVal;
+                }
+                updatedCount++;
+            });
+
+            saveCachedWarehouseProducts(warehouseProducts);
+
+            closeBatchWarehousePriceModal();
+            renderWarehouseTable();
+            renderSelectedShopProducts();
+            renderModalWarehouseItems();
+
+            showToast(`🎉 Đã cập nhật thành công ${updatedCount} mặt hàng kho! Nhớ bấm "💾 Lưu lên Sheet" để đồng bộ lên Google Sheet.`);
         }
 
         function renderWarehouseTable() {
@@ -1456,6 +2059,7 @@
 
         function selectShopToConfigure(shopId) {
             currentSelectedShopId = shopId;
+            clearSelectedShopProducts();
             const dropdown = document.getElementById('selectedShopDropdown');
             if (dropdown) dropdown.value = shopId;
             renderShopTable();
@@ -1507,6 +2111,941 @@
             renderSelectedShopProducts();
         }
 
+        /* CHỨC NĂNG CLONE SẢN PHẨM SANG SHOP KHÁC */
+        function openCloneAllShopsModal(preferTargetShopId = null) {
+            const allShops = getAppShops();
+            if (!Array.isArray(allShops) || allShops.length <= 1) {
+                alert('Hệ thống cần ít nhất 2 Shop để có thể thực hiện sao chép sản phẩm.');
+                return;
+            }
+
+            const targetSelect = document.getElementById('cloneAllTargetShopSelect');
+            if (!targetSelect) return;
+
+            let targetId = preferTargetShopId || currentSelectedShopId || allShops[0]?.id;
+            if (!allShops.some(s => s.id === targetId)) {
+                targetId = allShops[0]?.id;
+            }
+
+            const shopeeShops = allShops.filter(s => s.platform.toLowerCase().includes('shopee'));
+            const tiktokShops = allShops.filter(s => s.platform.toLowerCase().includes('tiktok'));
+
+            let html = '';
+            if (shopeeShops.length > 0) {
+                html += `<optgroup label="🛍️ Sàn Shopee">`;
+                shopeeShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}" ${s.id === targetId ? 'selected' : ''}>🛍️ ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            if (tiktokShops.length > 0) {
+                html += `<optgroup label="🎵 Sàn TikTok Shop">`;
+                tiktokShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}" ${s.id === targetId ? 'selected' : ''}>🎵 ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            targetSelect.innerHTML = html;
+            targetSelect.value = targetId;
+
+            // Đổ danh sách Shop nguồn (loại trừ Shop đích)
+            populateCloneSourceShopDropdown(targetId);
+
+            initCloneAllCandidatesData();
+            document.getElementById('cloneAllShopsModal').style.display = 'flex';
+        }
+
+        function populateCloneSourceShopDropdown(targetShopId) {
+            const sourceSelect = document.getElementById('cloneAllSourceShopSelect');
+            if (!sourceSelect) return;
+
+            const allShops = getAppShops();
+            const sourceShops = allShops.filter(s => s.id !== targetShopId && s.name !== targetShopId);
+
+            let html = `<option value="all">🌐 Tất cả các Shop (${sourceShops.length} Shop)</option>`;
+
+            const shopeeShops = sourceShops.filter(s => s.platform.toLowerCase().includes('shopee'));
+            const tiktokShops = sourceShops.filter(s => s.platform.toLowerCase().includes('tiktok'));
+
+            if (shopeeShops.length > 0) {
+                html += `<optgroup label="🛍️ Sàn Shopee">`;
+                shopeeShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}">🛍️ ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            if (tiktokShops.length > 0) {
+                html += `<optgroup label="🎵 Sàn TikTok Shop">`;
+                tiktokShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}">🎵 ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            sourceSelect.innerHTML = html;
+            sourceSelect.value = 'all';
+        }
+
+        function closeCloneAllShopsModal() {
+            document.getElementById('cloneAllShopsModal').style.display = 'none';
+        }
+
+        function onCloneAllTargetShopChange() {
+            const targetSelect = document.getElementById('cloneAllTargetShopSelect');
+            const targetShopId = targetSelect?.value;
+            populateCloneSourceShopDropdown(targetShopId);
+            initCloneAllCandidatesData();
+        }
+
+        function onCloneAllSourceShopChange() {
+            initCloneAllCandidatesData();
+        }
+
+        /* DỮ LIỆU & TRẠNG THÁI TÍCH CHỌN SẢN PHẨM KHẢ DỤNG */
+        let cloneAllCandidateItems = [];
+        let cloneAllSelectedKeys = new Set();
+        let cloneAllSearchKeyword = '';
+
+        function initCloneAllCandidatesData() {
+            const targetSelect = document.getElementById('cloneAllTargetShopSelect');
+            const targetShopId = targetSelect?.value;
+            const sourceSelect = document.getElementById('cloneAllSourceShopSelect');
+            const sourceChoice = sourceSelect?.value || 'all';
+
+            const allShops = getAppShops();
+            const targetShop = allShops.find(s => s.id === targetShopId || s.name === targetShopId);
+
+            cloneAllCandidateItems = [];
+            cloneAllSelectedKeys.clear();
+            cloneAllSearchKeyword = '';
+            const searchInput = document.getElementById('cloneAllSearchInput');
+            if (searchInput) searchInput.value = '';
+
+            if (!targetShop) {
+                renderCloneAllShopsPreview();
+                return;
+            }
+
+            // Tập hợp ID các sản phẩm ĐÃ TỒN TẠI trong Shop đích
+            const existingTargetIds = new Set(
+                (Array.isArray(targetShop.products) ? targetShop.products : [])
+                    .map(p => String(p.id || '').trim())
+                    .filter(Boolean)
+            );
+
+            // Xác định danh sách Shop nguồn cần lấy sản phẩm
+            let candidateSourceShops = [];
+            if (sourceChoice === 'all') {
+                candidateSourceShops = allShops.filter(s => s.id !== targetShop.id && s.name !== targetShop.name);
+            } else {
+                const sShop = allShops.find(s => s.id === sourceChoice || s.name === sourceChoice);
+                if (sShop && sShop.id !== targetShop.id) {
+                    candidateSourceShops = [sShop];
+                }
+            }
+
+            const items = [];
+            const seenIdsInScan = new Set();
+            let keyCounter = 0;
+
+            candidateSourceShops.forEach(sourceShop => {
+                const prods = Array.isArray(sourceShop.products) ? sourceShop.products : [];
+                prods.forEach(p => {
+                    const pId = String(p.id || '').trim();
+
+                    // TỰ ĐỘNG LOẠI BỎ: KHÔNG HIỂN THỊ CÁC SẢN PHẨM ĐANG TỒN TẠI TRONG SHOP ĐÍCH
+                    if (pId && existingTargetIds.has(pId)) {
+                        return; // Bỏ qua hoàn toàn, không đưa vào danh sách!
+                    }
+
+                    // Tự động loại bỏ trùng lặp nếu giữa các shop nguồn có cùng ID sản phẩm
+                    if (pId && seenIdsInScan.has(pId)) {
+                        return;
+                    }
+                    if (pId) seenIdsInScan.add(pId);
+
+                    keyCounter++;
+                    const key = `cand_${pId || 'noid'}_${keyCounter}`;
+
+                    // Mặc định tích chọn (checked) sản phẩm hợp lệ
+                    cloneAllSelectedKeys.add(key);
+
+                    items.push({
+                        key: key,
+                        product: p,
+                        sourceShop: sourceShop
+                    });
+                });
+            });
+
+            cloneAllCandidateItems = items;
+            renderCloneAllShopsPreview();
+        }
+
+        function onCloneCandidateCheckboxChange(key, checked) {
+            if (checked) {
+                cloneAllSelectedKeys.add(key);
+            } else {
+                cloneAllSelectedKeys.delete(key);
+            }
+            updateCloneAllKpisAndControls();
+        }
+
+        function toggleSelectAllCloneCandidates(checked) {
+            cloneAllCandidateItems.forEach(item => {
+                if (checked) {
+                    cloneAllSelectedKeys.add(item.key);
+                } else {
+                    cloneAllSelectedKeys.delete(item.key);
+                }
+            });
+            renderCloneAllShopsPreview();
+        }
+
+        function onCloneAllSearchInput(val) {
+            cloneAllSearchKeyword = String(val || '').trim();
+            renderCloneAllShopsPreview();
+        }
+
+        function updateCloneAllKpisAndControls() {
+            const kpiTotalEl = document.getElementById('cloneAllKpiTotal');
+            const kpiNewEl = document.getElementById('cloneAllKpiNew');
+            const confirmBtn = document.getElementById('btnConfirmCloneAllShops');
+            const selectAllCb = document.getElementById('cloneAllSelectAllCheckbox');
+
+            const totalAvailable = cloneAllCandidateItems.length;
+            const checkedCount = cloneAllSelectedKeys.size;
+
+            if (kpiTotalEl) kpiTotalEl.textContent = totalAvailable;
+            if (kpiNewEl) kpiNewEl.textContent = checkedCount;
+
+            if (selectAllCb) {
+                selectAllCb.checked = (totalAvailable > 0 && checkedCount === totalAvailable);
+                selectAllCb.indeterminate = (checkedCount > 0 && checkedCount < totalAvailable);
+            }
+
+            if (confirmBtn) {
+                confirmBtn.disabled = checkedCount === 0;
+                confirmBtn.textContent = checkedCount > 0 
+                    ? `🚀 Bắt Đầu Clone (${checkedCount} sản phẩm đã chọn)` 
+                    : (totalAvailable === 0 ? `ℹ️ Không Có SP Mới Để Clone` : `⚠️ Chưa Chọn SP Nào Để Clone`);
+            }
+        }
+
+        function renderCloneAllShopsPreview() {
+            updateCloneAllKpisAndControls();
+
+            const listEl = document.getElementById('cloneAllProductPreviewList');
+            if (!listEl) return;
+
+            if (cloneAllCandidateItems.length === 0) {
+                listEl.innerHTML = `
+                    <div style="padding: 30px; text-align: center; color: #64748b; font-size: 13.5px; line-height: 1.5;">
+                        <span style="font-size: 24px;">✨</span><br>
+                        <strong>Shop đích đã có đầy đủ toàn bộ sản phẩm từ nguồn này</strong><br>
+                        <span style="font-size: 12px; color: #94a3b8;">(Tất cả sản phẩm đều đã tồn tại trong Shop đích hoặc nguồn chưa có sản phẩm nào)</span>
+                    </div>
+                `;
+                return;
+            }
+
+            let displayItems = cloneAllCandidateItems;
+            if (cloneAllSearchKeyword) {
+                const kw = removeVietnameseTones(cloneAllSearchKeyword).toLowerCase();
+                displayItems = displayItems.filter(item => {
+                    const p = item.product;
+                    const name = removeVietnameseTones(p.name || '').toLowerCase();
+                    const sku = (p.sku || '').toLowerCase();
+                    const varName = removeVietnameseTones(p.variation || '').toLowerCase();
+                    const shopName = removeVietnameseTones(item.sourceShop.name || '').toLowerCase();
+                    return name.includes(kw) || sku.includes(kw) || varName.includes(kw) || shopName.includes(kw);
+                });
+            }
+
+            if (displayItems.length === 0) {
+                listEl.innerHTML = `
+                    <div style="padding: 24px; text-align: center; color: #64748b; font-size: 13px;">
+                        Không tìm thấy sản phẩm nào khớp với từ khóa "${escapeHtml(cloneAllSearchKeyword)}".
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = displayItems.map(item => {
+                const p = item.product;
+                const isSelected = cloneAllSelectedKeys.has(item.key);
+                const isShopee = String(item.sourceShop.platform || '').toLowerCase().includes('shopee');
+
+                const badgeHtml = isSelected 
+                    ? `<span style="background: #dcfce7; color: #166534; border: 1px solid #86efac; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 700; white-space: nowrap;">🟢 Sẽ clone</span>`
+                    : `<span style="background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; font-size: 11px; padding: 2px 7px; border-radius: 4px; font-weight: 600; white-space: nowrap;">Chưa chọn</span>`;
+
+                const borderLeft = isSelected ? 'border-left: 3.5px solid #22c55e;' : 'border-left: 3.5px solid #cbd5e1;';
+
+                return `
+                    <div class="product-preview-item" style="${isSelected ? 'background: #f0fdf4;' : 'background: #ffffff;'} ${borderLeft} transition: all 0.15s ease;">
+                        <div style="display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0;">
+                            <input 
+                                type="checkbox" 
+                                class="row-checkbox" 
+                                value="${item.key}"
+                                ${isSelected ? 'checked' : ''} 
+                                onchange="onCloneCandidateCheckboxChange('${item.key}', this.checked)"
+                                style="margin-top: 2px; cursor: pointer;"
+                                title="Tích chọn để clone sản phẩm này"
+                            >
+                            <div style="min-width: 0; flex: 1;">
+                                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                                    <strong style="color: #0f172a; font-size: 13.5px;">${escapeHtml(p.name)}</strong>
+                                    ${p.variation ? `<span style="color: #2563eb; font-weight: 600; font-size: 12.5px;">[${escapeHtml(p.variation)}]</span>` : ''}
+                                    ${p.sku ? `<span class="sku-badge">🏷️ ${escapeHtml(p.sku)}</span>` : ''}
+                                </div>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 3px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                    <span class="platform-badge ${isShopee ? 'shopee' : 'tiktok'}" style="font-size: 10px; padding: 1px 6px;">${escapeHtml(item.sourceShop.name)}</span>
+                                    ${p.id ? `<span style="font-family: monospace; color: #475569;">[ID: ${escapeHtml(p.id)}]</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+                            <strong style="color: #0f172a; font-size: 13px;">${formatMoney(p.price || 0)}</strong>
+                            ${badgeHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function executeCloneAllShops() {
+            const targetSelect = document.getElementById('cloneAllTargetShopSelect');
+            const targetShopId = targetSelect?.value;
+            if (!targetShopId) {
+                alert('Vui lòng chọn Shop đích.');
+                return;
+            }
+
+            const shops = getAppShops();
+            const targetShop = shops.find(s => s.id === targetShopId || s.name === targetShopId);
+
+            if (!targetShop) {
+                alert('Không tìm thấy thông tin Shop đích.');
+                return;
+            }
+
+            if (!Array.isArray(targetShop.products)) {
+                targetShop.products = [];
+            }
+
+            // Lấy danh sách sản phẩm ĐÃ ĐƯỢC CHỌN
+            const selectedItems = cloneAllCandidateItems.filter(item => cloneAllSelectedKeys.has(item.key));
+
+            if (selectedItems.length === 0) {
+                alert('Vui lòng tích chọn ít nhất 1 sản phẩm để sao chép.');
+                return;
+            }
+
+            const existingTargetSkus = new Set(
+                targetShop.products
+                    .map(p => String(p.sku || '').toUpperCase().trim())
+                    .filter(Boolean)
+            );
+
+            let clonedCount = 0;
+
+            selectedItems.forEach(item => {
+                const origProd = item.product;
+                const pId = String(origProd.id || '').trim();
+
+                // Xử lý mã SKU tránh trùng lặp với sản phẩm khác trong Shop đích
+                let newSku = String(origProd.sku || '').trim();
+                if (newSku) {
+                    if (existingTargetSkus.has(newSku.toUpperCase())) {
+                        let copyCounter = 1;
+                        let candidate = `${newSku}_COPY`;
+                        while (existingTargetSkus.has(candidate.toUpperCase())) {
+                            copyCounter++;
+                            candidate = `${newSku}_COPY${copyCounter}`;
+                        }
+                        newSku = candidate;
+                    }
+                    existingTargetSkus.add(newSku.toUpperCase());
+                }
+
+                // Deep clone BOM items
+                const clonedItems = Array.isArray(origProd.items)
+                    ? JSON.parse(JSON.stringify(origProd.items))
+                    : [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }];
+
+                // Deep clone Deals
+                let clonedDeals = [];
+                if (Array.isArray(origProd.deals) && origProd.deals.length > 0) {
+                    clonedDeals = JSON.parse(JSON.stringify(origProd.deals));
+                } else if (origProd.deal && typeof origProd.deal === 'object') {
+                    clonedDeals = [JSON.parse(JSON.stringify(origProd.deal))];
+                }
+
+                const primaryDeal = clonedDeals[0] || origProd.deal || { buyQty: 1, giftQty: 0, giftProductId: 'self' };
+
+                // Giữ nguyên ID sản phẩm để đảm bảo tính duy nhất và đối soát giữa các shop
+                const preservedId = pId || `SP_${targetShop.id}_${Date.now()}_${clonedCount + 1}`;
+
+                const clonedProd = {
+                    id: preservedId,
+                    name: String(origProd.name || '').trim(),
+                    variation: String(origProd.variation || '').trim(),
+                    sku: newSku,
+                    items: clonedItems,
+                    deals: clonedDeals,
+                    deal: primaryDeal,
+                    price: Number(origProd.price) || 0,
+                    dealPrice: Number(origProd.dealPrice) || Number(primaryDeal?.dealPrice) || (Number(origProd.price) * (Number(primaryDeal?.buyQty) || 1)),
+                    packagingFee: Number(origProd.packagingFee) || 0,
+                    dealPackagingFee: Number(origProd.dealPackagingFee) || Number(origProd.packagingFee) || 0
+                };
+
+                targetShop.products.push(clonedProd);
+                clonedCount++;
+            });
+
+            // Lưu toàn bộ danh sách shop
+            saveAppShops(shops);
+
+            closeCloneAllShopsModal();
+            renderShopTable();
+
+            // Chuyển view sang Shop đích để người dùng thấy ngay kết quả
+            currentSelectedShopId = targetShop.id;
+            const shopDropdown = document.getElementById('selectedShopDropdown');
+            if (shopDropdown) shopDropdown.value = targetShop.id;
+            renderSelectedShopProducts();
+
+            showToast(`🎉 Đã clone thành công ${clonedCount} sản phẩm đã chọn sang Shop "${targetShop.name}"!`);
+        }
+
+        /* ============================================================
+           CHỨC NĂNG CẬP NHẬT GIÁ & PHÍ ĐÓNG GÓI HÀNG LOẠT (BATCH PRICE)
+           ============================================================ */
+        let batchCandidateList = []; // Mảng danh sách sản phẩm hiển thị: { key, shopId, shopName, platform, product, hasDeals, dealCount }
+        let batchSelectedProductKeys = new Set(); // Key sản phẩm được tích chọn cập nhật
+        let batchSelectedDealKeys = new Set(); // Key sản phẩm được tích chọn cập nhật Deal
+        let batchSearchKeyword = '';
+
+        function openBatchPriceModal() {
+            const allShops = getAppShops();
+            if (!Array.isArray(allShops) || allShops.length === 0) {
+                alert('Chưa có Shop nào trong hệ thống để cập nhật giá.');
+                return;
+            }
+
+            const shopSelect = document.getElementById('batchShopFilterSelect');
+            if (!shopSelect) return;
+
+            let html = `<option value="all">🌐 Tất cả các Shop (${allShops.length} Shop)</option>`;
+            const shopeeShops = allShops.filter(s => s.platform.toLowerCase().includes('shopee'));
+            const tiktokShops = allShops.filter(s => s.platform.toLowerCase().includes('tiktok'));
+
+            if (shopeeShops.length > 0) {
+                html += `<optgroup label="🛍️ Sàn Shopee">`;
+                shopeeShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}">🛍️ ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            if (tiktokShops.length > 0) {
+                html += `<optgroup label="🎵 Sàn TikTok Shop">`;
+                tiktokShops.forEach(s => {
+                    const count = Array.isArray(s.products) ? s.products.length : 0;
+                    html += `<option value="${s.id}">🎵 ${escapeHtml(s.name)} (${count} SP)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+            shopSelect.innerHTML = html;
+
+            // Mặc định chọn shop đang xem nếu có, hoặc 'all'
+            if (currentSelectedShopId && allShops.some(s => s.id === currentSelectedShopId)) {
+                shopSelect.value = currentSelectedShopId;
+            } else {
+                shopSelect.value = 'all';
+            }
+
+            // Reset inputs
+            document.getElementById('batchApplyPriceCb').checked = true;
+            document.getElementById('batchApplyPkgFeeCb').checked = true;
+            document.getElementById('batchNewPriceInput').value = '';
+            document.getElementById('batchNewPkgFeeInput').value = '';
+            document.getElementById('batchSearchInput').value = '';
+            batchSearchKeyword = '';
+
+            initBatchPriceData();
+            document.getElementById('batchPriceModal').style.display = 'flex';
+        }
+
+        function closeBatchPriceModal() {
+            document.getElementById('batchPriceModal').style.display = 'none';
+        }
+
+        function onBatchShopFilterChange() {
+            initBatchPriceData();
+        }
+
+        function onBatchSearchInput(val) {
+            batchSearchKeyword = String(val || '').trim();
+            renderBatchProductsTable();
+        }
+
+        function onBatchConfigChange() {
+            renderBatchProductsTable();
+        }
+
+        function onBatchPriceInput(input) {
+            updateBatchSummary();
+            renderBatchPricePreviews();
+        }
+
+        function onBatchPkgFeeInput(input) {
+            updateBatchSummary();
+            renderBatchPricePreviews();
+        }
+
+        function initBatchPriceData() {
+            const allShops = getAppShops();
+            const shopSelect = document.getElementById('batchShopFilterSelect');
+            const selectedShopId = shopSelect?.value || 'all';
+
+            let targetShops = [];
+            if (selectedShopId === 'all') {
+                targetShops = allShops;
+            } else {
+                const s = allShops.find(item => item.id === selectedShopId || item.name === selectedShopId);
+                if (s) targetShops = [s];
+            }
+
+            batchCandidateList = [];
+            batchSelectedProductKeys.clear();
+            batchSelectedDealKeys.clear();
+
+            targetShops.forEach(shop => {
+                const prods = Array.isArray(shop.products) ? shop.products : [];
+                prods.forEach((p, idx) => {
+                    const key = `${shop.id}_${p.id || idx}`;
+                    const hasDeals = (Array.isArray(p.deals) && p.deals.length > 0) || (p.deal && typeof p.deal === 'object');
+                    const dealCount = Array.isArray(p.deals) ? p.deals.length : (p.deal ? 1 : 0);
+
+                    batchCandidateList.push({
+                        key: key,
+                        shopId: shop.id,
+                        shopName: shop.name,
+                        platform: shop.platform,
+                        product: p,
+                        hasDeals: hasDeals,
+                        dealCount: dealCount
+                    });
+
+                    // Mặc định tích chọn tất cả sản phẩm
+                    batchSelectedProductKeys.add(key);
+
+                    // Nếu sản phẩm có deal, mặc định tích chọn cập nhật Deal
+                    if (hasDeals) {
+                        batchSelectedDealKeys.add(key);
+                    }
+                });
+            });
+
+            renderBatchProductsTable();
+        }
+
+        function toggleSelectAllBatchProducts(checked) {
+            const filteredItems = getFilteredBatchCandidates();
+            filteredItems.forEach(item => {
+                if (checked) {
+                    batchSelectedProductKeys.add(item.key);
+                } else {
+                    batchSelectedProductKeys.delete(item.key);
+                }
+            });
+            renderBatchProductsTable();
+        }
+
+        function toggleSelectAllBatchDeals(checked) {
+            const filteredItems = getFilteredBatchCandidates();
+            filteredItems.forEach(item => {
+                if (item.hasDeals) {
+                    if (checked) {
+                        batchSelectedDealKeys.add(item.key);
+                    } else {
+                        batchSelectedDealKeys.delete(item.key);
+                    }
+                }
+            });
+            renderBatchProductsTable();
+        }
+
+        function onBatchProductCheckboxChange(key, checked) {
+            if (checked) {
+                batchSelectedProductKeys.add(key);
+            } else {
+                batchSelectedProductKeys.delete(key);
+            }
+            updateBatchSummary();
+        }
+
+        function onBatchDealCheckboxChange(key, checked) {
+            if (checked) {
+                batchSelectedDealKeys.add(key);
+            } else {
+                batchSelectedDealKeys.delete(key);
+            }
+            updateBatchSummary();
+        }
+
+        function getFilteredBatchCandidates() {
+            if (!batchSearchKeyword) return batchCandidateList;
+            const kw = removeVietnameseTones(batchSearchKeyword).toLowerCase();
+            return batchCandidateList.filter(item => {
+                const p = item.product;
+                const name = removeVietnameseTones(p.name || '').toLowerCase();
+                const sku = String(p.sku || '').toLowerCase();
+                const varName = removeVietnameseTones(p.variation || '').toLowerCase();
+                const shopName = removeVietnameseTones(item.shopName || '').toLowerCase();
+                return name.includes(kw) || sku.includes(kw) || varName.includes(kw) || shopName.includes(kw);
+            });
+        }
+
+        function renderBatchProductsTable() {
+            const tbody = document.getElementById('batchProductsTableBody');
+            if (!tbody) return;
+
+            const filteredItems = getFilteredBatchCandidates();
+
+            if (filteredItems.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #64748b; padding: 30px;">
+                            ${batchCandidateList.length === 0 ? 'Shop được chọn chưa có sản phẩm nào.' : 'Không tìm thấy sản phẩm nào khớp với tìm kiếm.'}
+                        </td>
+                    </tr>
+                `;
+                updateBatchSummary();
+                return;
+            }
+
+            const applyPrice = document.getElementById('batchApplyPriceCb')?.checked ?? true;
+            const applyPkgFee = document.getElementById('batchApplyPkgFeeCb')?.checked ?? true;
+            const newPriceVal = parseNumberText(document.getElementById('batchNewPriceInput')?.value);
+            const newPkgFeeVal = parseNumberText(document.getElementById('batchNewPkgFeeInput')?.value);
+
+            tbody.innerHTML = filteredItems.map((item, idx) => {
+                const p = item.product;
+                const isSelected = batchSelectedProductKeys.has(item.key);
+                const isDealSelected = batchSelectedDealKeys.has(item.key);
+                const isShopee = String(item.platform || '').toLowerCase().includes('shopee');
+
+                // Deal summary HTML
+                let dealBadgeHtml = '<span style="color: #94a3b8; font-size: 11px;">(Không có deal)</span>';
+                if (item.hasDeals) {
+                    if (Array.isArray(p.deals) && p.deals.length > 0) {
+                        dealBadgeHtml = p.deals.map(d => `
+                            <div style="font-size: 11px; font-weight: 600; color: #92400e;">
+                                ⚡ ${escapeHtml(d.name || `Mua ${d.buyQty || 1}`)} (${formatMoney(d.dealPrice || 0)})
+                            </div>
+                        `).join('');
+                    } else if (p.deal) {
+                        dealBadgeHtml = `<span style="font-size: 11px; font-weight: 600; color: #92400e;">⚡ Mua ${p.deal.buyQty || 1} (${formatMoney(p.dealPrice || 0)})</span>`;
+                    }
+                }
+
+                // Giá mới preview
+                let pricePreviewHtml = `<div style="font-weight: 700; color: #0f172a;">${formatMoney(p.price || 0)}</div>`;
+                if (isSelected && applyPrice && Number.isFinite(newPriceVal) && newPriceVal >= 0 && document.getElementById('batchNewPriceInput')?.value.trim() !== '') {
+                    pricePreviewHtml += `<div style="font-size: 10.5px; font-weight: 700; color: #2563eb; margin-top: 2px;">➔ ${formatMoney(newPriceVal)}</div>`;
+                }
+
+                // Phí gói preview
+                let pkgFeePreviewHtml = `<div style="font-weight: 700; color: #334155;">${formatMoney(p.packagingFee || 0)}</div>`;
+                if (isSelected && applyPkgFee && Number.isFinite(newPkgFeeVal) && newPkgFeeVal >= 0 && document.getElementById('batchNewPkgFeeInput')?.value.trim() !== '') {
+                    pkgFeePreviewHtml += `<div style="font-size: 10.5px; font-weight: 700; color: #166534; margin-top: 2px;">➔ ${formatMoney(newPkgFeeVal)}</div>`;
+                }
+
+                // Cột checkbox Deal
+                let dealCbCellHtml = `<span style="color: #cbd5e1; font-weight: 600;">—</span>`;
+                if (item.hasDeals) {
+                    dealCbCellHtml = `
+                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; font-size: 11.5px; font-weight: 700; color: ${isDealSelected ? '#166534' : '#64748b'};">
+                            <input 
+                                type="checkbox" 
+                                class="row-checkbox batch-deal-cb" 
+                                value="${item.key}"
+                                ${isDealSelected ? 'checked' : ''} 
+                                ${!isSelected ? 'disabled' : ''}
+                                onchange="onBatchDealCheckboxChange('${item.key}', this.checked)"
+                                title="Tích chọn để cập nhật giá/phí vào các Deal của sản phẩm này"
+                            >
+                            <span>${item.dealCount} Deal</span>
+                        </label>
+                    `;
+                }
+
+                return `
+                    <tr style="${isSelected ? 'background: #f0fdf4;' : ''}">
+                        <td style="text-align: center;">
+                            <input 
+                                type="checkbox" 
+                                class="row-checkbox batch-prod-cb" 
+                                value="${item.key}"
+                                ${isSelected ? 'checked' : ''} 
+                                onchange="onBatchProductCheckboxChange('${item.key}', this.checked)"
+                                title="Tích chọn để cập nhật sản phẩm này"
+                            >
+                        </td>
+                        <td style="text-align: center; color: #64748b; font-weight: 600;">${idx + 1}</td>
+                        <td>
+                            <strong style="color: #0f172a;">${escapeHtml(p.name)}</strong>
+                            ${p.variation ? `<span style="color: #2563eb; font-weight: 600; margin-left: 6px; font-size: 12px;">[${escapeHtml(p.variation)}]</span>` : ''}
+                            ${p.sku ? `<div style="margin-top: 2px;"><span class="sku-badge" style="font-size: 10.5px;">🏷️ ${escapeHtml(p.sku)}</span></div>` : ''}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="platform-badge ${isShopee ? 'shopee' : 'tiktok'}" style="font-size: 10px; padding: 1px 6px;">
+                                ${escapeHtml(item.shopName)}
+                            </span>
+                        </td>
+                        <td style="text-align: right;" class="batch-col-price" data-key="${item.key}">
+                            ${pricePreviewHtml}
+                        </td>
+                        <td style="text-align: right;" class="batch-col-pkgfee" data-key="${item.key}">
+                            ${pkgFeePreviewHtml}
+                        </td>
+                        <td style="text-align: left;">
+                            ${dealBadgeHtml}
+                        </td>
+                        <td style="text-align: center;">
+                            ${dealCbCellHtml}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            updateBatchSummary();
+        }
+
+        function renderBatchPricePreviews() {
+            // Cập nhật nhanh các cột preview trong bảng mà không cần re-render toàn bộ table
+            const applyPrice = document.getElementById('batchApplyPriceCb')?.checked ?? true;
+            const applyPkgFee = document.getElementById('batchApplyPkgFeeCb')?.checked ?? true;
+            const newPriceVal = parseNumberText(document.getElementById('batchNewPriceInput')?.value);
+            const newPkgFeeVal = parseNumberText(document.getElementById('batchNewPkgFeeInput')?.value);
+
+            document.querySelectorAll('#batchProductsTableBody tr').forEach(tr => {
+                const cb = tr.querySelector('.batch-prod-cb');
+                if (!cb) return;
+                const key = cb.value;
+                const item = batchCandidateList.find(i => i.key === key);
+                if (!item) return;
+
+                const isSelected = batchSelectedProductKeys.has(key);
+                const p = item.product;
+
+                const priceCell = tr.querySelector('.batch-col-price');
+                if (priceCell) {
+                    let html = `<div style="font-weight: 700; color: #0f172a;">${formatMoney(p.price || 0)}</div>`;
+                    if (isSelected && applyPrice && Number.isFinite(newPriceVal) && newPriceVal >= 0 && document.getElementById('batchNewPriceInput')?.value.trim() !== '') {
+                        html += `<div style="font-size: 10.5px; font-weight: 700; color: #2563eb; margin-top: 2px;">➔ ${formatMoney(newPriceVal)}</div>`;
+                    }
+                    priceCell.innerHTML = html;
+                }
+
+                const pkgFeeCell = tr.querySelector('.batch-col-pkgfee');
+                if (pkgFeeCell) {
+                    let html = `<div style="font-weight: 700; color: #334155;">${formatMoney(p.packagingFee || 0)}</div>`;
+                    if (isSelected && applyPkgFee && Number.isFinite(newPkgFeeVal) && newPkgFeeVal >= 0 && document.getElementById('batchNewPkgFeeInput')?.value.trim() !== '') {
+                        html += `<div style="font-size: 10.5px; font-weight: 700; color: #166534; margin-top: 2px;">➔ ${formatMoney(newPkgFeeVal)}</div>`;
+                    }
+                    pkgFeeCell.innerHTML = html;
+                }
+            });
+        }
+
+        function updateBatchSummary() {
+            const totalCountEl = document.getElementById('batchTotalCount');
+            const selectedCountEl = document.getElementById('batchSelectedCount');
+            const dealSelectedCountEl = document.getElementById('batchDealSelectedCount');
+            const previewTextEl = document.getElementById('batchPreviewSummaryText');
+            const confirmBtn = document.getElementById('btnConfirmBatchPrice');
+            const selectAllProdCb = document.getElementById('batchSelectAllProdCb');
+            const selectAllDealCb = document.getElementById('batchSelectAllDealCb');
+
+            const filteredItems = getFilteredBatchCandidates();
+            const totalFiltered = filteredItems.length;
+
+            const selectedInFiltered = filteredItems.filter(i => batchSelectedProductKeys.has(i.key));
+            const selectedCount = selectedInFiltered.length;
+
+            const itemsWithDeals = filteredItems.filter(i => i.hasDeals && batchSelectedProductKeys.has(i.key));
+            const dealsSelectedCount = itemsWithDeals.filter(i => batchSelectedDealKeys.has(i.key)).length;
+
+            if (totalCountEl) totalCountEl.textContent = totalFiltered;
+            if (selectedCountEl) selectedCountEl.textContent = selectedCount;
+            if (dealSelectedCountEl) dealSelectedCountEl.textContent = dealsSelectedCount;
+
+            // Trạng thái checkbox master sản phẩm
+            if (selectAllProdCb) {
+                selectAllProdCb.checked = (totalFiltered > 0 && selectedCount === totalFiltered);
+                selectAllProdCb.indeterminate = (selectedCount > 0 && selectedCount < totalFiltered);
+            }
+
+            // Trạng thái checkbox master deal
+            if (selectAllDealCb) {
+                const totalDealsInSelected = itemsWithDeals.length;
+                selectAllDealCb.checked = (totalDealsInSelected > 0 && dealsSelectedCount === totalDealsInSelected);
+                selectAllDealCb.indeterminate = (dealsSelectedCount > 0 && dealsSelectedCount < totalDealsInSelected);
+            }
+
+            const applyPrice = document.getElementById('batchApplyPriceCb')?.checked ?? false;
+            const applyPkgFee = document.getElementById('batchApplyPkgFeeCb')?.checked ?? false;
+            const rawPrice = document.getElementById('batchNewPriceInput')?.value.trim();
+            const rawPkgFee = document.getElementById('batchNewPkgFeeInput')?.value.trim();
+            const newPriceVal = parseNumberText(rawPrice);
+            const newPkgFeeVal = parseNumberText(rawPkgFee);
+
+            const hasValidPrice = applyPrice && rawPrice !== '' && Number.isFinite(newPriceVal) && newPriceVal >= 0;
+            const hasValidPkgFee = applyPkgFee && rawPkgFee !== '' && Number.isFinite(newPkgFeeVal) && newPkgFeeVal >= 0;
+
+            // Tạo preview text
+            let previewParts = [];
+            if (hasValidPrice) previewParts.push(`Giá bán: ${formatMoney(newPriceVal)}`);
+            if (hasValidPkgFee) previewParts.push(`Phí gói: ${formatMoney(newPkgFeeVal)}`);
+
+            if (previewParts.length > 0 && selectedCount > 0) {
+                if (previewTextEl) {
+                    previewTextEl.innerHTML = `✨ Sẽ áp dụng: <strong>${previewParts.join(' | ')}</strong> cho <strong>${selectedCount} SP</strong> (${dealsSelectedCount} deal)`;
+                }
+            } else {
+                if (previewTextEl) {
+                    if (!applyPrice && !applyPkgFee) {
+                        previewTextEl.textContent = '⚠️ Hãy tích chọn ít nhất 1 mục: Giá bán hoặc Phí đóng gói.';
+                    } else if (!hasValidPrice && !hasValidPkgFee) {
+                        previewTextEl.textContent = 'ℹ️ Vui lòng nhập số tiền cần cập nhật.';
+                    } else if (selectedCount === 0) {
+                        previewTextEl.textContent = '⚠️ Chưa có sản phẩm nào được chọn.';
+                    } else {
+                        previewTextEl.textContent = '';
+                    }
+                }
+            }
+
+            // Nút xác nhận
+            const canConfirm = selectedCount > 0 && (hasValidPrice || hasValidPkgFee);
+            if (confirmBtn) {
+                confirmBtn.disabled = !canConfirm;
+                confirmBtn.textContent = canConfirm 
+                    ? `💾 Áp Dụng Cho ${selectedCount} Sản Phẩm` 
+                    : (selectedCount === 0 ? `⚠️ Chưa Chọn SP Nào` : `ℹ️ Nhập Số Tiền Cần Set`);
+            }
+        }
+
+        function executeBatchPriceUpdate() {
+            const applyPrice = document.getElementById('batchApplyPriceCb')?.checked ?? false;
+            const applyPkgFee = document.getElementById('batchApplyPkgFeeCb')?.checked ?? false;
+            const rawPrice = document.getElementById('batchNewPriceInput')?.value.trim();
+            const rawPkgFee = document.getElementById('batchNewPkgFeeInput')?.value.trim();
+            const newPriceVal = parseNumberText(rawPrice);
+            const newPkgFeeVal = parseNumberText(rawPkgFee);
+
+            const hasValidPrice = applyPrice && rawPrice !== '' && Number.isFinite(newPriceVal) && newPriceVal >= 0;
+            const hasValidPkgFee = applyPkgFee && rawPkgFee !== '' && Number.isFinite(newPkgFeeVal) && newPkgFeeVal >= 0;
+
+            if (!hasValidPrice && !hasValidPkgFee) {
+                alert('Vui lòng nhập số tiền hợp lệ cho Giá bán hoặc Phí đóng gói cần cập nhật.');
+                return;
+            }
+
+            const selectedItems = batchCandidateList.filter(item => batchSelectedProductKeys.has(item.key));
+            if (selectedItems.length === 0) {
+                alert('Vui lòng tích chọn ít nhất 1 sản phẩm để cập nhật.');
+                return;
+            }
+
+            let msg = `Bạn có chắc chắn muốn cập nhật hàng loạt cho ${selectedItems.length} sản phẩm đã chọn?\n\n`;
+            if (hasValidPrice) msg += `- Đổi Giá Bán Lẻ thành: ${formatMoney(newPriceVal)}\n`;
+            if (hasValidPkgFee) msg += `- Đổi Phí Đóng Gói thành: ${formatMoney(newPkgFeeVal)}\n`;
+            const dealsWillUpdateCount = selectedItems.filter(i => i.hasDeals && batchSelectedDealKeys.has(i.key)).length;
+            if (dealsWillUpdateCount > 0) {
+                msg += `- Cập nhật đồng bộ vào các Deal của: ${dealsWillUpdateCount} sản phẩm\n`;
+            }
+
+            if (!confirm(msg)) return;
+
+            const allShops = getAppShops();
+            let updatedCount = 0;
+            let updatedDealsCount = 0;
+
+            allShops.forEach(shop => {
+                if (!Array.isArray(shop.products)) return;
+                shop.products.forEach((p, idx) => {
+                    const key = `${shop.id}_${p.id || idx}`;
+                    if (!batchSelectedProductKeys.has(key)) return;
+
+                    // Cập nhật giá bán lẻ
+                    if (hasValidPrice) {
+                        p.price = newPriceVal;
+                    }
+
+                    // Cập nhật phí đóng gói
+                    if (hasValidPkgFee) {
+                        p.packagingFee = newPkgFeeVal;
+                    }
+
+                    // Cập nhật vào Deal nếu được tích chọn
+                    const shouldUpdateDeals = batchSelectedDealKeys.has(key);
+                    if (shouldUpdateDeals) {
+                        if (Array.isArray(p.deals) && p.deals.length > 0) {
+                            p.deals.forEach(deal => {
+                                if (hasValidPrice) {
+                                    const buyQty = Number(deal.buyQty) || 1;
+                                    deal.dealPrice = newPriceVal * buyQty;
+                                }
+                                if (hasValidPkgFee) {
+                                    deal.packagingFee = newPkgFeeVal;
+                                }
+                                updatedDealsCount++;
+                            });
+                            // Cập nhật deal chính của sản phẩm
+                            if (hasValidPrice) {
+                                p.dealPrice = p.deals[0].dealPrice;
+                            }
+                            if (hasValidPkgFee) {
+                                p.dealPackagingFee = p.deals[0].packagingFee;
+                            }
+                        } else if (p.deal && typeof p.deal === 'object') {
+                            if (hasValidPrice) {
+                                const buyQty = Number(p.deal.buyQty) || 1;
+                                p.deal.dealPrice = newPriceVal * buyQty;
+                                p.dealPrice = p.deal.dealPrice;
+                            }
+                            if (hasValidPkgFee) {
+                                p.deal.packagingFee = newPkgFeeVal;
+                                p.dealPackagingFee = newPkgFeeVal;
+                            }
+                            updatedDealsCount++;
+                        }
+                    }
+
+                    updatedCount++;
+                });
+            });
+
+            // Lưu toàn bộ danh sách shop
+            saveAppShops(allShops);
+
+            closeBatchPriceModal();
+            renderShopTable();
+            renderSelectedShopProducts();
+
+            showToast(`🎉 Đã cập nhật thành công ${updatedCount} sản phẩm${updatedDealsCount > 0 ? ` (${updatedDealsCount} deal)` : ''}!`);
+        }
+
         function renderSelectedShopProducts() {
             const tbody = document.getElementById('selectedShopProductsTableBody');
             const badgeInfo = document.getElementById('selectedShopBadgeInfo');
@@ -1547,7 +3086,14 @@
                     <tr>
                         <td colspan="9" style="text-align:center; color: var(--text-muted); padding: 35px;">
                             Shop <strong>"${escapeHtml(shop.name)}"</strong> chưa có sản phẩm bán nào (Mặc định trống).<br>
-                            Bấm <strong>+ Thêm Sản Phẩm Mới Cho Shop</strong> để bắt đầu tạo sản phẩm từ danh mục kho.
+                            <div style="margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-primary" style="font-size: 13px;" onclick="openAddProductModal()">
+                                    + Thêm Sản Phẩm Mới Cho Shop
+                                </button>
+                                <button type="button" class="btn btn-secondary" style="font-size: 13px; font-weight: 700; color: #1e3a8a; border-color: #93c5fd; background: #eff6ff;" onclick="openCloneAllShopsModal('${shop.id}')">
+                                    🌐 Clone Sản Phẩm
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1638,7 +3184,7 @@
                         </td>
                         <td style="text-align: center;">
                             <div class="action-btns" style="justify-content: center;">
-                                <button type="button" class="btn-icon" onclick="openDuplicateProductModal('${p.id}')" title="Nhân bản (Sao chép) sản phẩm này">📑</button>
+                                <button type="button" class="btn-icon" onclick="openDuplicateProductModal('${p.id}')" title="Nhân bản (Sao chép) sản phẩm này trong shop">📑</button>
                                 <button type="button" class="btn-icon" onclick="openEditProductModal('${p.id}')" title="Sửa sản phẩm">✏️</button>
                                 <button type="button" class="btn-icon delete" onclick="handleDeleteProduct('${p.id}')" title="Xóa sản phẩm">🗑️</button>
                             </div>
@@ -1991,10 +3537,30 @@
 
         function onModalItemProductChange(index, value) {
             if (!currentModalItems[index]) return;
-            currentModalItems[index].productId = Number(value);
-            const wp = warehouseProducts.find(p => p.id === Number(value));
+            const oldId = Number(currentModalItems[index].productId);
+            const newId = Number(value);
+            currentModalItems[index].productId = newId;
+            const wp = warehouseProducts.find(p => p.id === newId);
             if (wp) currentModalItems[index].productName = wp.name;
             
+            // Nếu đổi sản phẩm chính đầu tiên (index === 0), tự động đồng bộ quà tặng deal cùng loại (nếu đang là sản phẩm cũ)
+            if (index === 0 && Array.isArray(currentModalDeals)) {
+                let hasGiftChanged = false;
+                currentModalDeals.forEach(deal => {
+                    if (Array.isArray(deal.giftItems)) {
+                        deal.giftItems.forEach(gift => {
+                            if (Number(gift.productId) === oldId) {
+                                gift.productId = newId;
+                                hasGiftChanged = true;
+                            }
+                        });
+                    }
+                });
+                if (hasGiftChanged) {
+                    renderModalDeals();
+                }
+            }
+
             const price = wp ? wp.price : 0;
             const qty = Number(currentModalItems[index].quantity) || 1;
             const totalItemCost = qty * price;
@@ -2049,6 +3615,53 @@
                 }
             }
             return acronym;
+        }
+
+        function buildSmartSkuForShop(shop, prodName = '', variation = '', existingProducts = []) {
+            let shopPrefix = 'SP';
+            if (shop) {
+                const isShopee = shop.platform.toLowerCase().includes('shopee');
+                const isTiktok = shop.platform.toLowerCase().includes('tiktok');
+                const platPrefix = isShopee ? 'SHP' : (isTiktok ? 'TTS' : 'SHOP');
+                const shopNumMatch = shop.name.match(/\d+/);
+                if (shopNumMatch) {
+                    shopPrefix = `${platPrefix}${shopNumMatch[0]}`;
+                } else {
+                    const shopAcr = getAcronym(shop.name, 2);
+                    shopPrefix = `${platPrefix}-${shopAcr}`;
+                }
+            }
+
+            let prodCode = 'PROD';
+            if (prodName) {
+                prodCode = getAcronym(prodName, 4);
+            }
+
+            let varTag = '';
+            if (variation && variation.toLowerCase() !== 'mặc định' && variation.toLowerCase() !== 'mac dinh' && variation !== '-') {
+                const cleanVar = removeVietnameseTones(variation).toUpperCase();
+                const numMatch = cleanVar.match(/(\d+)\s*(G|GOI|ML|KG|HOP|H|CHAI|VIEN|CAI|SET|COMBO)?/);
+                if (numMatch && numMatch[1]) {
+                    const unit = numMatch[2] ? numMatch[2][0] : '';
+                    varTag = `${numMatch[1]}${unit}`;
+                } else {
+                    varTag = getAcronym(variation, 3);
+                }
+            }
+
+            let skuParts = [shopPrefix, prodCode];
+            if (varTag) skuParts.push(varTag);
+            const baseSku = skuParts.join('-').toUpperCase().replace(/--+/g, '-');
+
+            const existingSkus = new Set(existingProducts.map(p => String(p.sku || '').toUpperCase()).filter(Boolean));
+            if (!existingSkus.has(baseSku)) {
+                return baseSku;
+            }
+            let counter = 2;
+            while (existingSkus.has(`${baseSku}-${counter}`)) {
+                counter++;
+            }
+            return `${baseSku}-${counter}`;
         }
 
         function generateSkuForModalProduct(showToastNotice = false) {
@@ -2371,11 +3984,14 @@
                                         <div class="bom-item-row" style="background: #fffdf5; border-color: #fde68a; padding: 6px 10px;">
                                             <div>
                                                 <select class="form-control" style="padding: 6px 8px; font-size: 0.85rem;" onchange="onGiftFieldChange(${dIdx}, ${gIdx}, 'productId', this.value)">
-                                                    ${warehouseProducts.map(p => `
-                                                        <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
-                                                            🎁 ${escapeHtml(p.name)} (${formatMoney(p.price)}/món${p.invoiceFee ? ` + ${formatMoney(p.invoiceFee)} HĐ` : ''})
-                                                        </option>
-                                                    `).join('')}
+                                                    ${warehouseProducts.map(p => {
+                                                        const isSameType = (currentModalItems && currentModalItems.length > 0 && p.id === Number(currentModalItems[0].productId));
+                                                        return `
+                                                            <option value="${p.id}" ${p.id === Number(gift.productId) ? 'selected' : ''}>
+                                                                🎁 ${escapeHtml(p.name)}${isSameType ? ' ⭐ (Cùng loại)' : ''} (${formatMoney(p.price)}/món${p.invoiceFee ? ` + ${formatMoney(p.invoiceFee)} HĐ` : ''})
+                                                            </option>
+                                                        `;
+                                                    }).join('')}
                                                 </select>
                                             </div>
                                             <div>
@@ -2422,6 +4038,11 @@
             nextMonth.setDate(nextMonth.getDate() + 30);
             const nextMonthStr = nextMonth.toISOString().split('T')[0];
 
+            // Mặc định chọn sản phẩm cùng loại với sản phẩm chính đang cấu hình ở Thành phần kho (BOM)
+            const sameProductId = (currentModalItems && currentModalItems.length > 0 && currentModalItems[0]?.productId)
+                ? Number(currentModalItems[0].productId)
+                : (warehouseProducts[0]?.id || 1);
+
             currentModalDeals.push({
                 id: `deal_${Date.now()}_${currentModalDeals.length}`,
                 name: `Deal #${currentModalDeals.length + 1}`,
@@ -2431,7 +4052,7 @@
                 buyQty: 2,
                 dealPrice: 0,
                 packagingFee: 0,
-                giftItems: [{ productId: warehouseProducts[0]?.id || 1, quantity: 1 }]
+                giftItems: [{ productId: sameProductId, quantity: 1 }]
             });
 
             renderModalDeals();
@@ -2476,8 +4097,13 @@
             if (!Array.isArray(currentModalDeals[dealIndex].giftItems)) {
                 currentModalDeals[dealIndex].giftItems = [];
             }
+            // Mặc định chọn sản phẩm cùng loại với sản phẩm chính đang cấu hình ở Thành phần kho (BOM)
+            const sameProductId = (currentModalItems && currentModalItems.length > 0 && currentModalItems[0]?.productId)
+                ? Number(currentModalItems[0].productId)
+                : (warehouseProducts[0]?.id || 1);
+
             currentModalDeals[dealIndex].giftItems.push({
-                productId: warehouseProducts[0]?.id || 1,
+                productId: sameProductId,
                 quantity: 1
             });
             renderModalDeals();

@@ -168,17 +168,29 @@ flowchart TD
 ---
 
 ### 4.4. Màn Quyết Toán Shopee (`quyet-toan-shopee.html`)
-- **Mục đích:** Xử lý và đối soát báo cáo doanh thu từ **Shopee Seller Center** (Báo cáo thu nhập & Báo cáo đơn hàng).
-- **Logic xử lý chi tiết:**
-  - **Bóc tách các loại phí Shopee:**
-    - Phí thanh toán (Payment Fee).
-    - Phí cố định (Commission Fee).
-    - Phí dịch vụ (Freeship Xtra, Hoàn xu Xtra).
-    - Voucher người bán & Trợ giá Shopee.
-    - Phí vận chuyển người bán chịu.
-  - **Phân loại đơn:** Đơn giao thành công, Đơn hủy, Đơn trả hàng hoàn tiền.
-  - **Ánh xạ SKU Shopee với Kho:** Map tên phân loại hàng/mã SKU của Shopee với bảng mặt hàng kho để tính giá vốn.
-  - **Đẩy dữ liệu:** Tương tự TikTok, đẩy kết quả đối soát thành 1 bản ghi kỳ quyết toán của Shop Shopee vào hệ thống.
+- **Mục đích:** Xử lý và đối soát báo cáo doanh thu từ **Shopee Seller Center** (Báo cáo số dư ví / Balance transaction & Báo cáo đơn hàng `Order.all...xlsx`).
+- **Logic xử lý chi tiết (Đồng bộ hoàn toàn với TikTok Settlement):**
+  - **Lọc & Chọn Shop Shopee tự động:** Dropdown ở đầu trang tự động lọc danh sách các Shop thuộc sàn Shopee. Dữ liệu sản phẩm, SKU và Deals được lấy động từ cấu hình Shop tương ứng. Đã loại bỏ bảng cấu hình thủ công để tập trung quản lý tại `quan-ly-shop.html`.
+  - **Trình đọc Excel nâng cao (Dual-Engine):** Tự động đọc qua XLSX.js; nếu file Shopee bị nén định dạng XML đặc thù (`<is><t>` inlineStr), hệ thống tự động chuyển sang đọc trực tiếp XML từ file Zip (`readWorkbookRowsWithZipFallback`), trích xuất đầy đủ mà không bị lỗi crash.
+  - **Cơ chế Map Đơn Hàng Theo Mã SKU & Phân Loại:**
+    1. **Ưu tiên 1 (Mã SKU):** So sánh `SKU phân loại hàng` (Cột T) hoặc `SKU sản phẩm` (Cột P) trên file Shopee với mã SKU cấu hình của shop.
+    2. **Ưu tiên 2 (Tên SP & Phân loại):** Nếu không có SKU hoặc không khớp, so sánh đồng thời cả `Tên sản phẩm` (Cột Q) VÀ `Tên phân loại hàng` (Cột U) bằng thuật toán *Smart Token Matching*.
+    3. **Ưu tiên 3 (Fallback Kho):** Tra cứu trực tiếp với danh mục mặt hàng kho tab `products` trên Google Sheet (qua Aliases và Token Matching).
+  - **Tính Toán Xuất Kho Theo Deal Khuyến Mãi (Mua X Tặng Y):**
+    - Tự động nhận diện deal khuyến mãi hoặc quy đổi số lượng hộp thực tế xuất:
+      - Đơn `[MUA 2 TẶNG 1] ... (Combo 2 hộp)` $\rightarrow$ Quy đổi thành **3 hộp thực xuất**.
+      - Đơn `Combo 2 hộp` $\rightarrow$ Quy đổi thành **2 hộp thực xuất**.
+      - Đơn `1 Hộp 30 Gói` $\rightarrow$ Quy đổi thành **1 hộp thực xuất**.
+  - **Tự Động Tính & Cho Phép Chỉnh Sửa Chi Phí Vật Tư & Hóa Đơn (Bảng Chi Phí Khác):**
+    - **Row 1:** `Chi phí vật tư & đóng gói` tự động tính theo số đơn, hiển thị dạng ô input cho phép sửa tay, có nút `↺` để reset về giá trị tự động.
+    - **Row 2:** `Chi phí hóa đơn (VAT)` tự động tính $=\text{Tổng số hộp thực xuất} \times \text{Đơn giá phí HĐ}$ từ tab `products`, hiển thị dạng ô input cho phép sửa tay, có nút `↺` để reset.
+    - Cho phép thêm chi phí thủ công khác.
+  - **Tự Động Bóc Tách Chi Phí Quảng Cáo Shopee:**
+    - Tự động lọc các giao dịch `Nạp tiền quảng cáo Shopee`, `Cấn trừ Số dư TK Shopee` đưa vào Section 4 (Nạp tiền quảng cáo).
+    - Tự động bỏ qua các dòng `Rút Tiền` về ngân hàng.
+  - **Tổng kết & Lưu kỳ:**
+    - Lợi nhuận kỳ $= \text{Doanh thu thực nhận} - \text{Tiền hàng xuất kho} - \text{Tiền Ads} - \text{Chi phí khác}$.
+    - Bấm **"Lưu vào Báo Cáo Tháng"**: Mở popup lưu trực tiếp vào hệ thống quản lý tài chính.
 
 ---
 
@@ -190,6 +202,15 @@ flowchart TD
 - Quản lý các mặt hàng nguyên liệu/hàng nhập đơn lẻ trong kho.
 - Mỗi mặt hàng có: **Tên mặt hàng**, **Đơn giá nhập kho**, **Chi phí xuất hóa đơn VAT (VNĐ)**.
 - Đầy đủ tính năng: Thêm mới, Sửa giá/hóa đơn, Xóa mặt hàng, Tải từ Sheet, Lưu lên Sheet.
+- **Tính năng Set Giá & Chi Phí Hóa Đơn Kho Hàng Loạt (`💰 Set Giá & HĐ Hàng Loạt`):**
+  - **Mục đích:** Giúp cập nhật nhanh Đơn giá nhập kho và/hoặc Chi phí xuất hóa đơn cho nhiều mặt hàng kho cùng lúc.
+  - **Thiết Lập Số Tiền Mới:**
+    - `🏷️ Cập nhật Đơn Giá Nhập Kho (VNĐ)`: Nhập số tiền đơn giá mới.
+    - `🧾 Cập nhật Chi Phí Xuất Hóa Đơn (VNĐ)`: Nhập số tiền chi phí hóa đơn mới.
+    - Cho phép tích chọn cập nhật đồng thời cả hai hoặc chỉ một trong hai mục.
+  - **Tích Chọn Checkbox Từng Mặt Hàng:** Có checkbox trên từng dòng và checkbox "Chọn tất cả" ở tiêu đề bảng, kèm ô tìm kiếm nhanh mặt hàng theo tên/aliases.
+  - **Live Preview Trực Quan:** Hiển thị trực tiếp đơn giá mới và chi phí hóa đơn mới xem trước trên từng dòng (`➔ Giá mới`) khi người dùng gõ số tiền.
+  - **Tự Động Cập Nhật Giá Vốn BOM Cho Tất Cả Các Shop:** Khi lưu mức giá kho mới, hệ thống tự động tính toán lại giá vốn cấu thành (BOM) và chi phí hóa đơn cho tất cả các sản phẩm bán thuộc mọi Shop trong hệ thống.
 
 #### Section 2: Danh Sách Shop Theo Sàn (Tab `shops`)
 - Phân nhóm 2 sàn: **🛍️ Shopee** và **🎵 TikTok Shop**.
@@ -199,7 +220,34 @@ flowchart TD
 #### Section 3: Cấu Hình Sản Phẩm Bán Theo Shop (Tab `shop_products`)
 - Có **Dropdown chọn Shop** phân nhóm theo sàn trên thanh tiêu đề.
 - **Mặc định:** Danh sách sản phẩm của mỗi Shop là **TRỐNG** cho đến khi người dùng tự tạo.
-- **Tính năng Nhân bản sản phẩm (Duplicate `📑`):**
+- **Tính năng Clone Sản Phẩm Sang Shop Khác (Lọc theo Nguồn Shop & Tích chọn):**
+  - Nút **`🌐 Clone Sản Phẩm`** ở tiêu đề Section 3 và tại bảng trống khi Shop chưa có sản phẩm.
+  - **Linh hoạt chọn Shop đích & Nguồn sản phẩm:**
+    - Dropdown chọn **Shop đích nhận sản phẩm**.
+    - Dropdown chọn **Nguồn sản phẩm cần lấy**: Có thể chọn `🌐 Tất cả các Shop` hoặc chọn riêng một Shop cụ thể (Shopee/TikTok Shop) để hiển thị danh sách sản phẩm tương ứng.
+  - **Tự động loại bỏ hoàn toàn các sản phẩm đã có trong Shop đích:** Những sản phẩm đang tồn tại trong Shop đích (cùng ID) được tự động loại bỏ khỏi danh sách hiển thị, người dùng chỉ nhìn thấy danh sách các sản phẩm mới hợp lệ để tích chọn clone.
+  - **Tích Chọn Checkbox Trực Quan:** Cho phép người dùng trực tiếp **tích chọn các sản phẩm muốn clone**, có checkbox "Chọn tất cả sản phẩm" và ô tìm kiếm nhanh sản phẩm/SKU.
+  - Giữ nguyên ID sản phẩm gốc để đảm bảo tính nhất quán và dễ dàng đối soát giữa các Shop.
+  - Thống kê KPI trực quan thời gian thực: *Tổng SP khả dụng để clone* và *Đã chọn để Clone* (tự động cập nhật theo số lượng checkbox được tích).
+- **Tính năng Set Giá & Phí Đóng Gói Hàng Loạt (`💰 Set Giá & Phí Hàng Loạt`):**
+  - **Mục đích:** Giúp người dùng điều chỉnh Giá bán lẻ và/hoặc Phí đóng gói cho nhiều sản phẩm cùng lúc trên một hoặc tất cả các Shop mà không cần vào sửa từng sản phẩm thủ công.
+  - **Bộ Lọc Nguồn Linh Hoạt:**
+    - Dropdown chọn **Shop áp dụng**: Cho phép chọn `🌐 Tất cả các Shop` hoặc chọn riêng một Shop cụ thể (Shopee/TikTok Shop) để hiển thị danh sách sản phẩm tương ứng.
+    - Ô tìm kiếm nhanh theo tên sản phẩm, biến thể, SKU, hoặc tên Shop.
+  - **Thiết Lập Số Tiền Cần Set:**
+    - `🏷️ Cập nhật Giá Bán Lẻ (VNĐ)`: Nhập số tiền giá mới.
+    - `📦 Cập nhật Phí Đóng Gói (VNĐ)`: Nhập số tiền phí gói mới.
+    - Cho phép chọn cập nhật đồng thời cả hai hoặc chỉ chọn riêng một trong hai mục.
+  - **Tích Chọn Checkbox Sản Phẩm & Checkbox Deal:**
+    - Mỗi dòng sản phẩm có checkbox riêng để chọn cập nhật; có checkbox "Chọn tất cả" trên tiêu đề bảng.
+    - Xem trước (Live Preview) Giá bán mới và Phí gói mới trực tiếp trên từng dòng sản phẩm theo thời gian thực khi gõ số tiền.
+    - **Cập nhật Deal:** Với các sản phẩm có chương trình Deal khuyến mãi, hiển thị checkbox riêng `[x] Cập nhật Deal` trên dòng đó (và checkbox chọn tất cả Deal ở tiêu đề).
+      - Nếu **tích chọn Cập nhật Deal**: Phí gói Deal sẽ nhận theo Phí đóng gói mới, và Giá Deal tự động cập nhật $= \text{Giá bán lẻ mới} \times \text{Số lượng mua của Deal}$.
+      - Nếu **không tích chọn**: Giữ nguyên toàn bộ giá và phí gói của Deal, chỉ thay đổi giá và phí gói lẻ của sản phẩm chính.
+  - **Thanh Thống Kê & Cảnh Báo An Toàn:**
+    - Đếm trực tiếp: *Tổng SP*, *Đã chọn (SP)*, *Cập nhật Deal (SP)*.
+    - Popup xác nhận chi tiết số lượng sản phẩm, mức giá và phí đóng gói mới trước khi lưu vào hệ thống.
+- **Tính năng Nhân bản sản phẩm đơn lẻ (Duplicate `📑`):**
   - Cho phép bấm nút `📑 Duplicate` tại bất kỳ sản phẩm nào để sao chép nguyên vẹn toàn bộ cấu hình (tên, phân loại, BOM kho, deals khuyến mãi, giá lẻ, giá deal, phí đóng gói).
   - Mở popup như khi tạo mới, cho phép chọn **Shop áp dụng** (có thể sao chép sang cùng shop hoặc clone sang Shop khác trên Shopee/TikTok Shop).
   - Tự động sinh mã SKU mới không trùng lặp cho bản sao (nếu có dùng SKU).
