@@ -765,8 +765,10 @@
         let customInvoiceNote = null;
 
         window.onload = async () => {
-            document.getElementById('endDate').value = '';
-            document.getElementById('startDate').value = '';
+            const endDateEl = document.getElementById('modalEndDate') || document.getElementById('endDate');
+            const startDateEl = document.getElementById('modalStartDate') || document.getElementById('startDate');
+            if (endDateEl) endDateEl.value = '';
+            if (startDateEl) startDateEl.value = '';
             setupScrollableTables();
             await loadInitialData();
             renderAds();
@@ -2236,12 +2238,19 @@
                 eDate = formatDateDisplay(minMax.maxDate);
                 dateRange = `${sDate} - ${eDate}`;
             } else {
-                const sInput = document.getElementById('startDate')?.value || '';
-                const eInput = document.getElementById('endDate')?.value || '';
+                const sInput = document.getElementById('modalStartDate')?.value || document.getElementById('startDate')?.value || '';
+                const eInput = document.getElementById('modalEndDate')?.value || document.getElementById('endDate')?.value || '';
                 if (sInput && eInput) {
-                    const formatD = (ds) => { const p = ds.split('-'); return `${p[2]}/${p[1]}/${p[0]}`; };
-                    sDate = formatD(sInput);
-                    eDate = formatD(eInput);
+                    const sParsed = parseDateValue(sInput);
+                    const eParsed = parseDateValue(eInput);
+                    if (sParsed && eParsed) {
+                        sDate = formatDateDisplay(sParsed);
+                        eDate = formatDateDisplay(eParsed);
+                    } else {
+                        const formatD = (ds) => { const p = ds.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : ds; };
+                        sDate = formatD(sInput);
+                        eDate = formatD(eInput);
+                    }
                     dateRange = `${sDate} - ${eDate}`;
                 }
             }
