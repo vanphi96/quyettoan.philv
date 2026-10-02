@@ -2308,9 +2308,9 @@
                 revenue: totalF || 0,
                 goodsCost: totalGoods || 0,
                 adsCost: adsTotal,
-                materialCost: totalMaterialExpense,
-                invoiceFee: totalInvoiceExpense,
-                otherExpenses: expTotal - totalMaterialExpense - totalInvoiceExpense,
+                materialCost: effMaterialExpense,
+                invoiceFee: effInvoiceExpense,
+                otherExpenses: expTotal - effMaterialExpense - effInvoiceExpense,
                 expenses: currentExpenses,
                 profit: profit,
                 note: ''

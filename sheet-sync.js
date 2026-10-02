@@ -2156,6 +2156,7 @@ function showSaveSettlementPeriodDialog(data = {}, onSavedCallback = null) {
     document.getElementById('spDialogReturnOrders').value = data.returnOrders || '';
     document.getElementById('spDialogRevenue').value = (Number(data.revenue) || 0).toLocaleString('vi-VN');
     document.getElementById('spDialogGoodsCost').value = (Number(data.goodsCost) || 0).toLocaleString('vi-VN');
+    document.getElementById('spDialogAdsCost').value = (Number(data.adsCost) || 0).toLocaleString('vi-VN');
     const dialogNoteVal = data.note && String(data.note).trim() !== 'null' && String(data.note).trim() !== 'undefined' ? String(data.note).trim() : '';
     document.getElementById('spDialogNote').value = dialogNoteVal;
 
