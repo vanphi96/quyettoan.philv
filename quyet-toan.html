@@ -817,17 +817,54 @@
         return [];
     }
 
+    const SMART_MATCH_STOP_WORDS = new Set([
+        'tra', 'hop', 'goi', 'tui', 'combo', 'tang', 'mua', 'loai', 'chinh', 'hang',
+        'thao', 'moc', 'thien', 'nhien', 'ho', 'tro', 'cao', 'cap', 'chuyen', 'loc',
+        '1', '2', '3', '4', '5', '10', '20', '30', '40', '50', '60', '100', 'g', 'gram'
+    ]);
+
+    function getSignificantTokens(textNorm) {
+        return String(textNorm || '').split(/\s+/).filter(t => t.length > 1 && !SMART_MATCH_STOP_WORDS.has(t));
+    }
+
     function isSmartNameMatch(targetNameNorm, sourceTextNorm) {
         if (!targetNameNorm || !sourceTextNorm) return false;
         if (targetNameNorm === sourceTextNorm || sourceTextNorm.includes(targetNameNorm) || targetNameNorm.includes(sourceTextNorm)) {
             return true;
         }
-        const stopWords = new Set(['tra', 'hop', 'goi', 'tui', 'combo', 'tang', 'loai', 'chinh', 'hang', 'thao', 'moc']);
-        const tokens = targetNameNorm.split(/\s+/).filter(t => t.length > 1 && !stopWords.has(t));
-        if (tokens.length > 0 && tokens.every(tok => sourceTextNorm.includes(tok))) {
+        const tTokens = getSignificantTokens(targetNameNorm);
+        const sTokens = getSignificantTokens(sourceTextNorm);
+        if (tTokens.length === 0 || sTokens.length === 0) return false;
+
+        // Kiểm tra bao hàm toàn bộ token có nghĩa (hai chiều)
+        if (tTokens.every(tok => sourceTextNorm.includes(tok)) || sTokens.every(tok => targetNameNorm.includes(tok))) {
+            return true;
+        }
+
+        // Giao các từ khóa dược liệu/thành phần cốt lõi
+        const tSet = new Set(tTokens);
+        const common = sTokens.filter(tok => tSet.has(tok));
+        const minLen = Math.min(tTokens.length, sTokens.length);
+        if (common.length >= 2 || (minLen === 1 && common.length === 1)) {
             return true;
         }
         return false;
+    }
+
+    function getShopDefaultPackagingFee(shopProducts, isDealOrCombo = false) {
+        if (Array.isArray(shopProducts) && shopProducts.length > 0) {
+            if (isDealOrCombo) {
+                const dealProduct = shopProducts.find(p => Number(p.dealPackagingFee) > 0);
+                if (dealProduct && Number(dealProduct.dealPackagingFee) > 0) {
+                    return Number(dealProduct.dealPackagingFee);
+                }
+            }
+            const retailProduct = shopProducts.find(p => Number(p.packagingFee) > 0);
+            if (retailProduct && Number(retailProduct.packagingFee) > 0) {
+                return Number(retailProduct.packagingFee);
+            }
+        }
+        return isDealOrCombo ? 4000 : 3000;
     }
 
     function inferBoxesPerQuantity(variantName, productName) {
@@ -900,25 +937,23 @@
 
         // 2. So sánh Tên sản phẩm VÀ Phân loại
         if (itemProdName) {
-            const byNameAndVar = shopProducts.find(p => {
-                const pName = normalizeText(p.name);
-                const pVar = normalizeText(p.variation);
-                const isNameMatch = isSmartNameMatch(pName, itemProdName);
-                if (!isNameMatch) return false;
-
-                if (itemVarName && pVar && pVar !== 'mac dinh' && pVar !== '-') {
-                    return pVar === itemVarName || pVar.includes(itemVarName) || itemVarName.includes(pVar) || isSmartNameMatch(pVar, itemVarName);
+            const matchedByName = shopProducts.filter(p => isSmartNameMatch(normalizeText(p.name), itemProdName));
+            if (matchedByName.length > 0) {
+                const byVar = matchedByName.filter(p => {
+                    const pVar = normalizeText(p.variation);
+                    if (itemVarName && pVar && pVar !== 'mac dinh' && pVar !== '-') {
+                        return pVar === itemVarName || pVar.includes(itemVarName) || itemVarName.includes(pVar) || isSmartNameMatch(pVar, itemVarName);
+                    }
+                    return true;
+                });
+                if (byVar.length === 1) return byVar[0];
+                if (byVar.length > 1) {
+                    const exactVar = byVar.find(p => normalizeText(p.variation) === itemVarName);
+                    if (exactVar) return exactVar;
+                    return byVar[0];
                 }
-                return true;
-            });
-            if (byNameAndVar) return byNameAndVar;
-
-            // 3. Fallback theo tên sản phẩm (Smart Token Match)
-            const byNameOnly = shopProducts.find(p => {
-                const pName = normalizeText(p.name);
-                return pName && isSmartNameMatch(pName, itemProdName);
-            });
-            if (byNameOnly) return byNameOnly;
+                return matchedByName[0];
+            }
         }
 
         return null;
@@ -968,9 +1003,24 @@
             const totalBoxes = mainUnits + giftUnits;
             const totalCost = (qty * costInfo.baseCost) + giftCostTotal;
             const totalInvoiceFee = (qty * costInfo.baseInvoiceFee) + giftInvoiceFeeTotal;
-            const packagingFee = Number(matched.packagingFee) || 0;
 
-            if (totalCost > 0 || costInfo.baseCost > 0) {
+            // Tính phí đóng gói
+            let packagingFee = 0;
+            const retailPkgFee = Number(matched.packagingFee) > 0 ? Number(matched.packagingFee) : getShopDefaultPackagingFee(shopProducts, false);
+            const dealPkgFee = Number(activeDeal?.packagingFee) > 0 
+                ? Number(activeDeal.packagingFee) 
+                : (Number(matched.dealPackagingFee) > 0 ? Number(matched.dealPackagingFee) : (retailPkgFee > 0 ? retailPkgFee : getShopDefaultPackagingFee(shopProducts, true)));
+
+            if (dealCount > 0) {
+                const remainderQty = Math.max(0, qty - (dealCount * (activeDeal.buyQty || 1)));
+                packagingFee = (dealCount * dealPkgFee) + (remainderQty * retailPkgFee);
+            } else {
+                const isComboVariant = normalizeText(matched.variation).includes('combo') || (costInfo.baseUnits || 1) > 1;
+                const unitPkgFee = isComboVariant ? dealPkgFee : retailPkgFee;
+                packagingFee = qty * unitPkgFee;
+            }
+
+            if (totalCost > 0 || costInfo.baseCost > 0 || packagingFee > 0) {
                 return {
                     isMatched: true,
                     matchedProduct: matched,
@@ -1009,6 +1059,18 @@
             dealDesc = `Combo ${inferredBoxesPerQty} hộp`;
         }
 
+        let fallbackPkgFee = 0;
+        const relatedShopProduct = wp ? shopProducts.find(p => p.items && p.items.some(it => String(it.productId) === String(wp.id) || normalizeText(it.productName) === normalizeText(wp.name))) : null;
+        if (relatedShopProduct) {
+            const relRetail = Number(relatedShopProduct.packagingFee) || 3000;
+            const relDeal = Number(relatedShopProduct.dealPackagingFee) || Number(relatedShopProduct.packagingFee) || 4000;
+            fallbackPkgFee = qty * (inferredBoxesPerQty > 1 ? relDeal : relRetail);
+        } else {
+            const isCombo = inferredBoxesPerQty > 1 || Boolean(dealDesc);
+            const defaultFee = getShopDefaultPackagingFee(shopProducts, isCombo);
+            fallbackPkgFee = qty * defaultFee;
+        }
+
         return {
             isMatched: !!wp,
             matchedProduct: wp ? { id: wp.id || wp.name, name: wp.name, variation: item.variantName || '' } : null,
@@ -1025,7 +1087,7 @@
             totalBoxes: totalBoxes,
             totalCost: totalCost,
             totalInvoiceFee: totalInvoiceFee,
-            packagingFee: 0,
+            packagingFee: fallbackPkgFee,
             dealDesc: dealDesc
         };
     }
